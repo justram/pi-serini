@@ -64,6 +64,7 @@ export function detectEvalSummaryPath(runRoot: string, explicitPath?: string): s
     resolve(runRoot, "evaluation_summary.json"),
     resolve(runRoot, "merged", "evaluation_summary.json"),
     resolve("evals", "pi_judge", basename(runRoot), "evaluation_summary.json"),
+    resolve("evals", "pi_judge", basename(runRoot), "merged", "evaluation_summary.json"),
   ];
 
   return candidates.find((candidate) => existsSync(candidate));

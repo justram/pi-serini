@@ -14,10 +14,15 @@ EVAL_SUMMARY="${EVAL_SUMMARY:-}"
 AUTO_DETECT_MERGED="${AUTO_DETECT_MERGED:-1}"
 
 if [[ -n "$RUN_DIR" && "$AUTO_DETECT_MERGED" == "1" ]]; then
+  RUN_BASENAME="$(basename "$RUN_DIR")"
   if [[ -z "$EVAL_SUMMARY" && -f "$RUN_DIR/merged/evaluation_summary.json" ]]; then
     EVAL_SUMMARY="$RUN_DIR/merged/evaluation_summary.json"
   elif [[ -z "$EVAL_SUMMARY" && -f "$RUN_DIR/evaluation_summary.json" ]]; then
     EVAL_SUMMARY="$RUN_DIR/evaluation_summary.json"
+  elif [[ -z "$EVAL_SUMMARY" && -f "evals/pi_judge/$RUN_BASENAME/merged/evaluation_summary.json" ]]; then
+    EVAL_SUMMARY="evals/pi_judge/$RUN_BASENAME/merged/evaluation_summary.json"
+  elif [[ -z "$EVAL_SUMMARY" && -f "evals/pi_judge/$RUN_BASENAME/evaluation_summary.json" ]]; then
+    EVAL_SUMMARY="evals/pi_judge/$RUN_BASENAME/evaluation_summary.json"
   fi
 fi
 
