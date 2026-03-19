@@ -201,7 +201,7 @@ class SharedBm25RpcDaemon {
         resolvePromise();
       };
 
-      const stopReadingStdout = attachJsonlLineReader(child.stdout, (line) => {
+      const handleReadyLine = (line: string, source: "line" | "trailing") => {
         const trimmed = line.trim();
         if (!trimmed || settled) return;
         let ready: Bm25RpcReadyMessage;
@@ -210,7 +210,9 @@ class SharedBm25RpcDaemon {
         } catch (error) {
           finish(
             new Error(
-              `Failed to parse BM25 RPC daemon readiness line: ${trimmed}\n${String(error)}`,
+              source === "trailing"
+                ? `BM25 RPC daemon stdout ended with an invalid trailing JSON line: ${trimmed}\n${String(error)}`
+                : `Failed to parse BM25 RPC daemon readiness line: ${trimmed}\n${String(error)}`,
             ),
           );
           return;
@@ -227,7 +229,19 @@ class SharedBm25RpcDaemon {
         this.endpoint = { host: ready.host, port: ready.port, initMs: ready.timing_ms?.init };
         this.stopReadingStdout = stopReadingStdout;
         finish();
-      });
+      };
+
+      const stopReadingStdout = attachJsonlLineReader(
+        child.stdout,
+        (line) => {
+          handleReadyLine(line, "line");
+        },
+        {
+          onTrailingLine: (line) => {
+            handleReadyLine(line, "trailing");
+          },
+        },
+      );
 
       child.on("error", (error) => {
         finish(error instanceof Error ? error : new Error(String(error)));
@@ -840,21 +854,37 @@ async function runPiOnce(
       );
     }, 15_000);
 
-    const stopReadingStdout = attachJsonlLineReader(child.stdout, (line) => {
+    const handlePiStdoutLine = (line: string, source: "line" | "trailing") => {
       const trimmed = line.trim();
       if (!trimmed) return;
-      rawEventsStream.write(`${trimmed}\n`);
       let event: PiEvent;
       try {
         event = JSON.parse(trimmed) as PiEvent;
       } catch (error) {
-        fail(new Error(`Failed to parse pi JSON line: ${trimmed}\n${String(error)}`));
+        fail(new Error(
+          source === "trailing"
+            ? `Pi stdout ended with an invalid trailing JSON line: ${trimmed}\n${String(error)}`
+            : `Failed to parse pi JSON line: ${trimmed}\n${String(error)}`,
+        ));
         return;
       }
+      rawEventsStream.write(`${trimmed}\n`);
       applyEventToAccumulator(state, event);
       lastProgressAt = Date.now();
       logEventProgress(options.queryId, event, (lastProgressAt - startedAt) / 1000);
-    });
+    };
+
+    const stopReadingStdout = attachJsonlLineReader(
+      child.stdout,
+      (line) => {
+        handlePiStdoutLine(line, "line");
+      },
+      {
+        onTrailingLine: (line) => {
+          handlePiStdoutLine(line, "trailing");
+        },
+      },
+    );
 
     child.stderr.on("data", (chunk) => {
       const text = chunk.toString();
@@ -1064,31 +1094,52 @@ async function main() {
       mkdirSync(dirname(outputPath), { recursive: true });
       mkdirSync(dirname(rawEventsPath), { recursive: true });
       mkdirSync(dirname(stderrPath), { recursive: true });
-      const phase = await runPiOnce({
-        piBinary: args.piBinary,
-        model: args.model,
-        thinking: args.thinking,
-        extensionPath: args.extensionPath,
-        prompt: formatPrompt(query, args.promptVariant),
-        queryId,
-        timeoutSeconds: args.timeoutSeconds,
-        isolatedAgentDir,
-        extraEnv: bm25RpcEnv,
-        rawEventsPath,
-        stderrPath,
-      });
-      const run = finalizeRun(
-        queryId,
-        query,
-        args.model,
-        args.outputDir,
-        args.promptVariant,
-        phase.state,
-        phase.stderrTail,
-        phase.exitCode,
-        phase.timedOut,
-        phase.elapsedSeconds,
-      );
+      const queryStartedAt = Date.now();
+      let run: BenchmarkRun;
+      try {
+        const phase = await runPiOnce({
+          piBinary: args.piBinary,
+          model: args.model,
+          thinking: args.thinking,
+          extensionPath: args.extensionPath,
+          prompt: formatPrompt(query, args.promptVariant),
+          queryId,
+          timeoutSeconds: args.timeoutSeconds,
+          isolatedAgentDir,
+          extraEnv: bm25RpcEnv,
+          rawEventsPath,
+          stderrPath,
+        });
+        run = finalizeRun(
+          queryId,
+          query,
+          args.model,
+          args.outputDir,
+          args.promptVariant,
+          phase.state,
+          phase.stderrTail,
+          phase.exitCode,
+          phase.timedOut,
+          phase.elapsedSeconds,
+        );
+      } catch (error) {
+        const message = error instanceof Error
+          ? error.stack ?? error.message
+          : String(error);
+        console.error(`[${index + 1}/${queries.length}] Query ${queryId} failed without a finalized run artifact; recording failed query.\n${message}`);
+        run = finalizeRun(
+          queryId,
+          query,
+          args.model,
+          args.outputDir,
+          args.promptVariant,
+          createQueryRunAccumulator(),
+          message,
+          null,
+          false,
+          (Date.now() - queryStartedAt) / 1000,
+        );
+      }
       writeFileSync(outputPath, `${JSON.stringify(run, null, 2)}\n`, "utf8");
       const queryRecall = updateRunningRecall(runningRecall, run, qrels);
       const running = formatRunningRecall(runningRecall);

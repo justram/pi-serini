@@ -4,15 +4,21 @@ export function serializeJsonLine(value: unknown): string {
   return `${JSON.stringify(value)}\n`;
 }
 
+type JsonlLineReaderOptions = {
+  onTrailingLine?: (line: string) => void;
+};
+
 export function attachJsonlLineReader(
   stream: NodeJS.ReadableStream,
   onLine: (line: string) => void,
+  options?: JsonlLineReaderOptions,
 ): () => void {
   const decoder = new StringDecoder("utf8");
   let buffer = "";
 
+  const normalizeLine = (line: string) => (line.endsWith("\r") ? line.slice(0, -1) : line);
   const emitLine = (line: string) => {
-    onLine(line.endsWith("\r") ? line.slice(0, -1) : line);
+    onLine(normalizeLine(line));
   };
 
   const onData = (chunk: Buffer | string) => {
@@ -30,8 +36,13 @@ export function attachJsonlLineReader(
   const onEnd = () => {
     buffer += decoder.end();
     if (buffer.length > 0) {
-      emitLine(buffer);
+      const line = normalizeLine(buffer);
       buffer = "";
+      if (options?.onTrailingLine) {
+        options.onTrailingLine(line);
+      } else {
+        onLine(line);
+      }
     }
   };
 
