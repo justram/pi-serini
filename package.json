@@ -1,0 +1,46 @@
+{
+  "name": "pi-serini",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "setup:browsecomp-plus": "bash scripts/setup_browsecomp_plus.sh",
+    "setup:ground-truth:browsecomp-plus": "bash scripts/setup_ground_truth_browsecomp_plus.sh",
+    "sample:browsecomp-plus:slices": "bash scripts/generate_browsecomp_plus_query_slices.sh",
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check .",
+    "lint": "oxlint --type-aware --tsconfig tsconfig.json .",
+    "typecheck": "tsc --noEmit",
+    "test": "node --import tsx --test src/**/*.test.ts",
+    "check": "npm run format:check && npm run lint && npm run typecheck",
+    "run:benchmark:shared": "bash scripts/launch_shared_bm25_benchmark.sh",
+    "run:browsecomp-plus:slice": "bash scripts/run_browsecomp_plus_slice_plain_minimal_excerpt.sh",
+    "run:browsecomp-plus:slice:shared": "bash scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_shared_server.sh",
+    "run:browsecomp-plus:slice:sharded": "bash scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
+    "run:q9": "bash scripts/run_q9_plain_minimal_excerpt.sh",
+    "run:q9:shared": "bash scripts/launch_q9_plain_minimal_excerpt_shared_server.sh",
+    "summarize:run": "bash scripts/summarize_run.sh",
+    "evaluate:run": "bash scripts/evaluate_run_with_pi.sh",
+    "evaluate:retrieval": "bash scripts/evaluate_retrieval.sh",
+    "report:run": "bash scripts/report_run_markdown.sh",
+    "tune:bm25": "bash scripts/tune_bm25.sh",
+    "compare:bm25": "tsx src/compare_bm25_runs.ts",
+    "bench": "tsx src/benchctl.ts",
+    "bench:status": "tsx src/benchctl.ts status",
+    "bench:managed": "tsx src/benchctl.ts managed",
+    "bench:tui": "tsx src/benchctl.ts tui"
+  },
+  "dependencies": {
+    "@mariozechner/pi-tui": "file:../../oss/pi-mono/packages/tui",
+    "chalk": "^5.6.2"
+  },
+  "devDependencies": {
+    "@mariozechner/pi-coding-agent": "^0.60.0",
+    "@sinclair/typebox": "^0.34.48",
+    "@types/node": "^24.5.2",
+    "oxfmt": "^0.36.0",
+    "oxlint": "^1.49.0",
+    "oxlint-tsgolint": "^0.16.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.2"
+  }
+}
