@@ -31,13 +31,38 @@ Current packaged defaults:
 
 - `pi` installed and logged in for the model you want to use
 - Node.js with `npx`
-- Java 21
+- Java 21+
+- `python3`
 - `uv` for setup scripts
+- `curl` or `wget` for setup downloads
+
+Supported developer environments:
+
+- macOS
+- Linux
+
+Java resolution behavior:
+
+- If `JAVA_HOME` is already set, the scripts use it.
+- On macOS, the helper also tries Homebrew `openjdk@21` automatically.
+- On Linux and other environments, if `JAVA_HOME` is unset but `java` is on `PATH`, the scripts derive `JAVA_HOME` from the resolved `java` binary.
+- `JVM_PATH` is auto-populated when the JDK exposes a standard `libjvm.dylib` or `libjvm.so` path.
+
+If Java is installed in a non-standard location, set `JAVA_HOME` explicitly before running setup or benchmark scripts.
 
 ## One-command BrowseComp-Plus asset setup
 
 ```bash
 cd ~/Projects/ir-research/pi-serini
+npm run setup:browsecomp-plus
+```
+
+Example on Linux when Java is not already configured globally:
+
+```bash
+cd ~/Projects/ir-research/pi-serini
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export PATH="$JAVA_HOME/bin:$PATH"
 npm run setup:browsecomp-plus
 ```
 
@@ -436,6 +461,15 @@ Live TUI dashboard:
 
 ```bash
 npm run bench:tui
+```
+
+Example on Linux when `JAVA_HOME` must be set explicitly for the benchmark launchers:
+
+```bash
+export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
+export PATH="$JAVA_HOME/bin:$PATH"
+PI_BM25_THREADS=4 PI_BM25_K1=25 PI_BM25_B=1 \
+  npm run bench -- run --preset q100_sharded --shards 8 --model openai-codex/gpt-5.4-mini
 ```
 
 Current MVP shows, per run:
