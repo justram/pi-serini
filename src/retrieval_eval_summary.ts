@@ -52,3 +52,42 @@ export function maybeLoadRetrievalEvalSummary(path?: string): RetrievalEvalSumma
   const resolved = resolve(path);
   return existsSync(resolved) ? loadRetrievalEvalSummary(resolved) : undefined;
 }
+
+export function getRetrievalEvalMetricValue(
+  summary: RetrievalEvalSummary,
+  metric: string,
+  scope = "all",
+): number | undefined {
+  return summary.metrics.find((entry) => entry.metric === metric && entry.scope === scope)?.value;
+}
+
+export function maybeLoadMatchingRetrievalEvalSummary(options: {
+  benchmarkId: string;
+  sourcePath: string;
+  qrelsPath: string;
+  sourceType?: RetrievalEvalSummary["sourceType"];
+  querySetId?: string;
+  queryCount?: number;
+  requireQueryCountMatch?: boolean;
+}): RetrievalEvalSummary | undefined {
+  const summary = maybeLoadRetrievalEvalSummary(
+    buildRetrievalEvalSummaryPath({
+      benchmarkId: options.benchmarkId,
+      sourcePath: options.sourcePath,
+    }),
+  );
+  if (!summary) return undefined;
+  if (summary.benchmarkId !== options.benchmarkId) return undefined;
+  if (resolve(summary.sourcePath) !== resolve(options.sourcePath)) return undefined;
+  if (resolve(summary.qrelsPath) !== resolve(options.qrelsPath)) return undefined;
+  if (options.sourceType && summary.sourceType !== options.sourceType) return undefined;
+  if (options.querySetId && summary.querySetId !== options.querySetId) return undefined;
+  if (options.queryCount !== undefined) {
+    if (summary.queryCount === undefined) {
+      if (options.requireQueryCountMatch) return undefined;
+    } else if (summary.queryCount !== options.queryCount) {
+      return undefined;
+    }
+  }
+  return summary;
+}

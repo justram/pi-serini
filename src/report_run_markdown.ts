@@ -31,6 +31,11 @@ import {
   loadRunSetup,
 } from "./report_markdown_data";
 import {
+  getRetrievalEvalMetricValue,
+  maybeLoadMatchingRetrievalEvalSummary,
+  type RetrievalEvalSummary,
+} from "./retrieval_eval_summary";
+import {
   buildLogLikeDepthTicks,
   buildNiceTicks,
   renderBeeswarmPanelSvg,
@@ -156,6 +161,49 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
+function metricKeyToSummaryMetricId(key: string): string {
+  if (key.startsWith("recall@")) return `recall_${key.slice("recall@".length)}`;
+  if (key.startsWith("ndcg@")) return `ndcg_cut_${key.slice("ndcg@".length)}`;
+  if (key.startsWith("mrr@")) return `recip_rank_${key.slice("mrr@".length)}`;
+  return key;
+}
+
+function getAggregateMetricValue(options: {
+  key: string;
+  computedValue: number;
+  retrievalSummary?: RetrievalEvalSummary;
+}): number {
+  if (!options.retrievalSummary) return options.computedValue;
+  return (
+    getRetrievalEvalMetricValue(
+      options.retrievalSummary,
+      metricKeyToSummaryMetricId(options.key),
+      "all",
+    ) ?? options.computedValue
+  );
+}
+
+function formatAggregatePrefixMetricSummary(
+  metricSpecs: Array<{
+    key: string;
+    summaryLabel: string;
+    extractFromResult: (result: ReturnType<typeof evaluateRankings>) => number;
+  }>,
+  computedResult: ReturnType<typeof evaluateRankings>,
+  retrievalSummary?: RetrievalEvalSummary,
+): string {
+  return metricSpecs
+    .map((spec) => {
+      const value = getAggregateMetricValue({
+        key: spec.key,
+        computedValue: spec.extractFromResult(computedResult),
+        retrievalSummary,
+      });
+      return `${spec.summaryLabel}=${formatPercentFromRate(value)}`;
+    })
+    .join(", ");
+}
+
 function printHelpAndExit(): never {
   console.log(`Usage: npx tsx src/report_run_markdown.ts --runDir runs/<run> [options]
 
@@ -225,6 +273,15 @@ export function buildReport(args: Args): {
     internalMetricSemantics,
   );
   const primaryCoverage = computeCoverageSummary(runFiles, benchmarkResultDir, primaryQrelsPath);
+  const primaryRetrievalSummary = maybeLoadMatchingRetrievalEvalSummary({
+    benchmarkId,
+    sourcePath: benchmarkResultDir,
+    qrelsPath: primaryQrelsPath,
+    sourceType: "run-dir",
+    querySetId: manifest?.snapshot.query_set_id,
+    queryCount: runFiles.length,
+    requireQueryCountMatch: true,
+  });
   const primaryQueryCoverageRows = buildQueryCoverageRows(
     runFiles,
     benchmarkResultDir,
@@ -280,7 +337,15 @@ export function buildReport(args: Args): {
   const prefixRows = [
     [
       qrelsLabel(primaryQrelsPath),
-      ...metricSpecs.map((spec) => formatPercentFromRate(spec.extractFromResult(primaryResult))),
+      ...metricSpecs.map((spec) =>
+        formatPercentFromRate(
+          getAggregateMetricValue({
+            key: spec.key,
+            computedValue: spec.extractFromResult(primaryResult),
+            retrievalSummary: primaryRetrievalSummary,
+          }),
+        ),
+      ),
     ],
     ...(secondaryResult
       ? [
@@ -529,7 +594,7 @@ export function buildReport(args: Args): {
     `- Agent-set full-sequence coverage on ${qrelsLabel(primaryQrelsPath)} qrels is ${formatPercentFromRate(primaryCoverage.macroRecall)} macro and ${formatPercentFromRate(primaryCoverage.microRecall)} micro.`,
   );
   lines.push(
-    `- Prefix-of-agent-set ${qrelsLabel(primaryQrelsPath)} metrics are ${formatPrefixMetricSummary(metricSpecs, primaryResult)}.`,
+    `- Prefix-of-agent-set ${qrelsLabel(primaryQrelsPath)} metrics are ${formatAggregatePrefixMetricSummary(metricSpecs, primaryResult, primaryRetrievalSummary)}.`,
   );
   lines.push("");
   lines.push("## Agent-set evaluation semantics");

@@ -15,6 +15,10 @@ import {
   type Qrels,
   type Rankings,
 } from "./retrieval_metrics";
+import {
+  getRetrievalEvalMetricValue,
+  maybeLoadMatchingRetrievalEvalSummary,
+} from "./retrieval_eval_summary";
 
 type Args = {
   benchmarkId: string;
@@ -23,6 +27,7 @@ type Args = {
   qrelsPath: string;
   secondaryQrelsPath?: string;
   queryTsv: string;
+  querySetId?: string;
   ndcgCutoff: number;
   recallCutoff: number;
 };
@@ -126,6 +131,9 @@ function parseArgs(argv: string[]): Args {
     args.secondaryQrelsPath = benchmark.secondaryQrelsPath;
   }
   args.queryTsv ||= compareConfig.queryPath;
+  if (resolve(args.queryTsv) === resolve(compareConfig.queryPath)) {
+    args.querySetId = compareConfig.querySetId;
+  }
 
   return args;
 }
@@ -296,8 +304,59 @@ function printMetricTable(
   }
 }
 
+export function resolveOverallMetrics(options: {
+  benchmarkId: string;
+  querySetId?: string;
+  runPath: string;
+  qrelsPath: string;
+  queryCount: number;
+  queryIds: string[];
+  rankings: Rankings;
+  qrels: Qrels;
+  ndcgCutoff: number;
+  recallCutoff: number;
+  semantics: Parameters<typeof evaluateRankings>[4];
+}): { ndcg: number; recall: number; usedSummary: boolean } {
+  const summary = maybeLoadMatchingRetrievalEvalSummary({
+    benchmarkId: options.benchmarkId,
+    sourcePath: options.runPath,
+    qrelsPath: options.qrelsPath,
+    sourceType: "run-file",
+    querySetId: options.querySetId,
+    queryCount: options.queryCount,
+    requireQueryCountMatch: false,
+  });
+
+  const computed = evaluateRankings(
+    options.qrels,
+    options.rankings,
+    options.queryIds,
+    {
+      recallCutoffs: [options.recallCutoff],
+      ndcgCutoffs: [options.ndcgCutoff],
+      mrrCutoffs: [10],
+    },
+    options.semantics,
+  );
+
+  const summaryNdcg = summary
+    ? getRetrievalEvalMetricValue(summary, `ndcg_cut_${options.ndcgCutoff}`)
+    : undefined;
+  const summaryRecall = summary
+    ? getRetrievalEvalMetricValue(summary, `recall_${options.recallCutoff}`)
+    : undefined;
+
+  return {
+    ndcg: summaryNdcg ?? getMetricValue(computed, `ndcg_cut_${options.ndcgCutoff}`),
+    recall: summaryRecall ?? getMetricValue(computed, `recall_${options.recallCutoff}`),
+    usedSummary: summaryNdcg !== undefined && summaryRecall !== undefined,
+  };
+}
+
 function printOverall(
   label: string,
+  args: Args,
+  qrelsPath: string,
   queryIds: string[],
   baselineRankings: Rankings,
   candidateRankings: Rankings,
@@ -306,36 +365,45 @@ function printOverall(
   recallCutoff: number,
   semantics: Parameters<typeof evaluateRankings>[4],
 ): void {
-  const baseline = evaluateRankings(
-    qrels,
-    baselineRankings,
+  const baseline = resolveOverallMetrics({
+    benchmarkId: args.benchmarkId,
+    querySetId: args.querySetId,
+    runPath: args.baselineRunPath,
+    qrelsPath,
+    queryCount: queryIds.length,
     queryIds,
-    {
-      recallCutoffs: [recallCutoff],
-      ndcgCutoffs: [ndcgCutoff],
-      mrrCutoffs: [10],
-    },
-    semantics,
-  );
-  const candidate = evaluateRankings(
+    rankings: baselineRankings,
     qrels,
-    candidateRankings,
-    queryIds,
-    {
-      recallCutoffs: [recallCutoff],
-      ndcgCutoffs: [ndcgCutoff],
-      mrrCutoffs: [10],
-    },
+    ndcgCutoff,
+    recallCutoff,
     semantics,
-  );
+  });
+  const candidate = resolveOverallMetrics({
+    benchmarkId: args.benchmarkId,
+    querySetId: args.querySetId,
+    runPath: args.candidateRunPath,
+    qrelsPath,
+    queryCount: queryIds.length,
+    queryIds,
+    rankings: candidateRankings,
+    qrels,
+    ndcgCutoff,
+    recallCutoff,
+    semantics,
+  });
 
-  const baselineNdcg = getMetricValue(baseline, `ndcg_cut_${ndcgCutoff}`);
-  const candidateNdcg = getMetricValue(candidate, `ndcg_cut_${ndcgCutoff}`);
-  const baselineRecall = getMetricValue(baseline, `recall_${recallCutoff}`);
-  const candidateRecall = getMetricValue(candidate, `recall_${recallCutoff}`);
+  const baselineNdcg = baseline.ndcg;
+  const candidateNdcg = candidate.ndcg;
+  const baselineRecall = baseline.recall;
+  const candidateRecall = candidate.recall;
 
   console.log(`\n${label}`);
   console.log(`queries=${queryIds.length}`);
+  if (baseline.usedSummary || candidate.usedSummary) {
+    console.log(
+      `retrieval_summary=${baseline.usedSummary ? "baseline" : ""}${baseline.usedSummary && candidate.usedSummary ? "," : ""}${candidate.usedSummary ? "candidate" : ""}`,
+    );
+  }
   console.log(`baseline ndcg_cut_${ndcgCutoff}=${roundMetric(baselineNdcg)}`);
   console.log(`candidate ndcg_cut_${ndcgCutoff}=${roundMetric(candidateNdcg)}`);
   console.log(`delta ndcg_cut_${ndcgCutoff}=${roundMetric(candidateNdcg - baselineNdcg)}`);
@@ -364,6 +432,8 @@ function runComparison(
 
   printOverall(
     "Overall",
+    args,
+    qrelsPath,
     queryIds,
     baselineRankings,
     candidateRankings,

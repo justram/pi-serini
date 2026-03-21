@@ -148,6 +148,95 @@ test("buildReport formats judged incorrect query recall as a percent, not a rate
   assert.doesNotMatch(report.markdown, /\| 1265 \| 2500\.00% \|/);
 });
 
+test("buildReport prefers matching normalized retrieval summaries for aggregate prefix metrics", () => {
+  const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
+  const cwd = process.cwd();
+  const runDir = join(root, "run");
+  const mergedDir = join(runDir, "merged");
+  const summaryDir = join(root, "evals", "retrieval", "msmarco-v1-passage");
+  mkdirSync(mergedDir, { recursive: true });
+  mkdirSync(summaryDir, { recursive: true });
+
+  writeFileSync(
+    join(runDir, "benchmark_manifest_snapshot.json"),
+    JSON.stringify(
+      {
+        benchmark_id: "msmarco-v1-passage",
+        benchmark_display_name: "MS MARCO v1 Passage",
+        dataset_id: "msmarco-v1-passage",
+        query_set_id: "dl19",
+        prompt_variant: "plain_minimal",
+        query_path: join(root, "queries.tsv"),
+        qrels_path: join(root, "qrels.txt"),
+        index_path: "indexes/msmarco-v1-passage",
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  writeFileSync(join(root, "queries.tsv"), "1\tquery\n", "utf8");
+  writeFileSync(join(root, "qrels.txt"), "1 0 d1 2\n1 0 d2 1\n", "utf8");
+  writeFileSync(
+    join(mergedDir, "1.json"),
+    JSON.stringify(
+      { query_id: "1", status: "completed", retrieved_docids: ["d1"], stats: {} },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  writeFileSync(
+    join(summaryDir, "merged.summary.json"),
+    JSON.stringify(
+      {
+        benchmarkId: "msmarco-v1-passage",
+        querySetId: "dl19",
+        backend: "internal",
+        sourceType: "run-dir",
+        sourcePath: mergedDir,
+        qrelsPath: join(root, "qrels.txt"),
+        queryCount: 1,
+        metricSemantics: {
+          ndcgGainMode: "linear",
+          recallRelevantThreshold: 2,
+          binaryRelevantThreshold: 1,
+        },
+        metrics: [
+          { metric: "recall_1000", scope: "all", value: 0.66 },
+          { metric: "ndcg_cut_10", scope: "all", value: 0.77 },
+          { metric: "recip_rank_10", scope: "all", value: 0.88 },
+          { metric: "map", scope: "all", value: 0.55 },
+        ],
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  process.chdir(root);
+  try {
+    const report = buildReport({
+      benchmarkId: "msmarco-v1-passage",
+      runDir,
+      qrelsPath: "",
+      secondaryQrelsPath: undefined,
+      recallCutoffs: [1000],
+      ndcgCutoffs: [10],
+      mrrCutoffs: [10],
+    });
+
+    assert.match(
+      report.markdown,
+      /Prefix-of-agent-set qrels\.txt metrics are recall@1000=66\.00%, ndcg@10=77\.00%, mrr@10=88\.00%, map=55\.00%\./,
+    );
+    assert.match(report.markdown, /\| qrels\.txt \| 66\.00% \| 77\.00% \| 88\.00% \| 55\.00% \|/);
+  } finally {
+    process.chdir(cwd);
+  }
+});
+
 test("buildReport surfaces benchmark-specific retrieval semantics for MSMARCO-style runs", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const runDir = join(root, "run");
