@@ -1,13 +1,17 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
+import { resolveInternalRetrievalMetricSemantics } from "./benchmarks/registry";
 import {
   type EvaluationCutoffs,
   type EvaluationMetricSemantics,
   type EvaluationResult,
   evaluateRankings,
   type Qrels,
+  getRunFiles,
   readQrels,
   readRunDir,
+  resolveBenchmarkResultDir,
 } from "./retrieval_metrics";
 import type {
   BenchmarkRun,
@@ -26,12 +30,26 @@ export function loadRun(path: string): BenchmarkRun {
   return JSON.parse(readFileSync(path, "utf8")) as BenchmarkRun;
 }
 
+function filterQrelsForCoverage(qrels: Qrels, benchmarkId: string): Qrels {
+  const semantics = resolveInternalRetrievalMetricSemantics(benchmarkId);
+  const recallRelevantThreshold = Math.max(1, semantics.recallRelevantThreshold ?? 1);
+  const filtered: Qrels = new Map();
+  for (const [queryId, docs] of qrels) {
+    const relevantDocs = new Map(
+      [...docs.entries()].filter(([, rel]) => rel >= recallRelevantThreshold),
+    );
+    filtered.set(queryId, relevantDocs);
+  }
+  return filtered;
+}
+
 export function computeCoverageSummary(
   runFiles: string[],
   runDir: string,
   qrelsPath: string,
+  benchmarkId: string,
 ): CoverageSummary {
-  const qrels = readQrels(resolve(qrelsPath));
+  const qrels = filterQrelsForCoverage(readQrels(resolve(qrelsPath)), benchmarkId);
   let macroRecallSum = 0;
   let microHits = 0;
   let microGold = 0;
@@ -79,8 +97,9 @@ export function buildQueryCoverageRows(
   runFiles: string[],
   runDir: string,
   qrelsPath: string,
+  benchmarkId: string,
 ): QueryCoverageRow[] {
-  const qrels = readQrels(resolve(qrelsPath));
+  const qrels = filterQrelsForCoverage(readQrels(resolve(qrelsPath)), benchmarkId);
   const rows: QueryCoverageRow[] = [];
 
   for (const fileName of runFiles) {
@@ -174,8 +193,9 @@ export function computeHitDepthSummary(
   runFiles: string[],
   runDir: string,
   qrelsPath: string,
+  benchmarkId: string,
 ): HitDepthSummary {
-  const qrels = readQrels(resolve(qrelsPath));
+  const qrels = filterQrelsForCoverage(readQrels(resolve(qrelsPath)), benchmarkId);
   const allHitDepths: number[] = [];
   const firstHitDepths: number[] = [];
   const perQueryMeanHitDepths: number[] = [];
@@ -239,7 +259,7 @@ export function buildCoverageRow(summary: CoverageSummary): string[] {
   ];
 }
 
-export function loadRunSetup(runRoot: string): RunSetup | undefined {
+function loadRunSetupFromLog(runRoot: string): RunSetup | undefined {
   const runLogPath = resolve(runRoot, "logs", "run.log");
   if (!existsSync(runLogPath)) return undefined;
 
@@ -271,4 +291,41 @@ export function loadRunSetup(runRoot: string): RunSetup | undefined {
   }
 
   return Object.keys(setup).length > 0 ? setup : undefined;
+}
+
+function loadRunSetupFromArtifact(runRoot: string): RunSetup | undefined {
+  const path = resolve(runRoot, "run_setup.json");
+  if (!existsSync(path)) return undefined;
+  return JSON.parse(readFileSync(path, "utf8")) as RunSetup;
+}
+
+function buildFallbackRunSetup(runRoot: string): RunSetup | undefined {
+  const manifest = detectBenchmarkManifestSnapshot(runRoot);
+  const benchmarkResultDir = resolveBenchmarkResultDir(runRoot);
+  const runFiles = getRunFiles(benchmarkResultDir);
+  const firstRun =
+    runFiles.length > 0 ? loadRun(resolve(benchmarkResultDir, runFiles[0])) : undefined;
+
+  const setup: RunSetup = {
+    slice: manifest?.snapshot.query_set_id,
+    model: typeof firstRun?.metadata?.model === "string" ? firstRun.metadata.model : undefined,
+    queryFile: manifest?.snapshot.query_path,
+    qrelsFile: manifest?.snapshot.qrels_path,
+    totalQueries: runFiles.length > 0 ? String(runFiles.length) : undefined,
+    indexPath: manifest?.snapshot.index_path,
+  };
+
+  return Object.values(setup).some((value) => value !== undefined) ? setup : undefined;
+}
+
+export function loadRunSetup(runRoot: string): RunSetup | undefined {
+  const setupFromLog = loadRunSetupFromLog(runRoot);
+  const setupFromArtifact = loadRunSetupFromArtifact(runRoot);
+  const fallbackSetup = buildFallbackRunSetup(runRoot);
+  const merged = {
+    ...fallbackSetup,
+    ...setupFromLog,
+    ...setupFromArtifact,
+  } satisfies RunSetup;
+  return Object.values(merged).some((value) => value !== undefined) ? merged : undefined;
 }

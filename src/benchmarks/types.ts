@@ -38,6 +38,13 @@ export type BenchmarkRetrievalEvaluationDefinition = {
   internalMetrics?: BenchmarkInternalRetrievalMetricSemantics;
 };
 
+export type BenchmarkJudgeEvalMode = "gold-answer" | "reference-free";
+
+export type BenchmarkJudgeEvaluationDefinition = {
+  supportedModes: BenchmarkJudgeEvalMode[];
+  defaultMode: BenchmarkJudgeEvalMode;
+};
+
 export type BenchmarkQuerySetDefinition = {
   queryPath: string;
   qrelsPath?: string;
@@ -64,6 +71,7 @@ export type BenchmarkDefinition = {
   managedPresets: Record<string, BenchmarkManagedPresetDefinition>;
   setup: BenchmarkSetupDefinition;
   retrievalEvaluation: BenchmarkRetrievalEvaluationDefinition;
+  judgeEvaluation?: BenchmarkJudgeEvaluationDefinition;
 };
 
 export type ResolvedBenchmarkConfig = {

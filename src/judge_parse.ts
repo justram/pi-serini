@@ -1,3 +1,5 @@
+import type { BenchmarkJudgeEvalMode } from "./benchmarks/types";
+
 export type JudgeResult = {
   extracted_final_answer: string | null;
   correct_answer: string;
@@ -52,7 +54,10 @@ function normalizeConfidence(value: unknown): number | null {
   return null;
 }
 
-export function parseJudgeResponse(judgeText: string): JudgeResult {
+export function parseJudgeResponse(
+  judgeText: string,
+  options: { mode: BenchmarkJudgeEvalMode },
+): JudgeResult {
   if (!judgeText.trim()) {
     return {
       extracted_final_answer: null,
@@ -112,8 +117,12 @@ export function parseJudgeResponse(judgeText: string): JudgeResult {
     if (lowered === "false" || lowered === "no") correct = false;
   }
 
+  const requiresCorrectAnswer = options.mode === "gold-answer";
   const parseError =
-    correct === null || confidence === null || correctAnswer.length === 0 || reasoning.length === 0;
+    correct === null ||
+    confidence === null ||
+    reasoning.length === 0 ||
+    (requiresCorrectAnswer && correctAnswer.length === 0);
   return {
     extracted_final_answer: extractedFinalAnswer,
     correct_answer: correctAnswer,
@@ -122,7 +131,11 @@ export function parseJudgeResponse(judgeText: string): JudgeResult {
     confidence,
     parse_error: parseError,
     ...(parseError
-      ? { error: "Judge JSON was missing required fields or had invalid field types." }
+      ? {
+          error: requiresCorrectAnswer
+            ? "Judge JSON was missing required fields or had invalid field types."
+            : "Reference-free judge JSON was missing required fields or had invalid field types.",
+        }
       : {}),
   };
 }

@@ -30,4 +30,8 @@ export const templateBenchmark: BenchmarkDefinition = {
     runFileBackend: "internal",
     runDirBackend: "internal",
   },
+  judgeEvaluation: {
+    supportedModes: ["gold-answer", "reference-free"],
+    defaultMode: "gold-answer",
+  },
 };

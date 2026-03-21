@@ -8,6 +8,7 @@ import {
   resolveBenchmarkIdFromRunPath,
 } from "./downstream_tool_wrappers";
 import { resolveBenchmarkConfig } from "./benchmarks/registry";
+import type { BenchmarkJudgeEvalMode } from "./benchmarks/types";
 
 type Args = {
   benchmarkId?: string;
@@ -15,6 +16,7 @@ type Args = {
   evalDir?: string;
   groundTruthPath?: string;
   qrelEvidencePath?: string;
+  judgeMode?: BenchmarkJudgeEvalMode;
   model?: string;
   thinking?: string;
   piBin?: string;
@@ -57,6 +59,15 @@ function parseArgs(argv: string[]): Args {
       case "--qrel-evidence":
         if (!next) throw new Error(`${arg} requires a value`);
         args.qrelEvidencePath = next;
+        index += 1;
+        break;
+      case "--judgeMode":
+      case "--judge-mode":
+        if (!next) throw new Error(`${arg} requires a value`);
+        if (next !== "gold-answer" && next !== "reference-free") {
+          throw new Error(`Unsupported judge mode: ${next}`);
+        }
+        args.judgeMode = next;
         index += 1;
         break;
       case "--model":
@@ -110,8 +121,9 @@ Options:
   --benchmark <id>
   --input-dir <dir>
   --eval-dir <dir>
-  --ground-truth <path>  Required for benchmarks without a configured default judge ground truth
+  --ground-truth <path>  Required in gold-answer mode unless the benchmark/run manifest provides a default
   --qrel-evidence <path>
+  --judge-mode <gold-answer|reference-free>
   --model <model>
   --thinking <level>
   --pi <path>
@@ -134,6 +146,23 @@ function main(): void {
     runPath: inputDir,
   });
   const benchmarkConfig = resolveBenchmarkConfig({ benchmarkId: benchmarkResolution.benchmarkId });
+  const judgeMode =
+    args.judgeMode ??
+    (readEnv("JUDGE_MODE") as BenchmarkJudgeEvalMode | undefined) ??
+    benchmarkConfig.benchmark.judgeEvaluation?.defaultMode ??
+    (benchmarkConfig.groundTruthPath ? "gold-answer" : "reference-free");
+  if (judgeMode !== "gold-answer" && judgeMode !== "reference-free") {
+    throw new Error(`Unsupported judge mode: ${judgeMode}`);
+  }
+  const supportedJudgeModes = benchmarkConfig.benchmark.judgeEvaluation?.supportedModes ?? [
+    benchmarkConfig.groundTruthPath ? "gold-answer" : "reference-free",
+  ];
+  if (!supportedJudgeModes.includes(judgeMode)) {
+    throw new Error(
+      `Judge mode ${judgeMode} is not supported for benchmark ${benchmarkResolution.benchmarkId}. Supported modes: ${supportedJudgeModes.join(", ")}`,
+    );
+  }
+
   const groundTruthWasSet = args.groundTruthPath !== undefined || hasEnv("GROUND_TRUTH");
   const qrelEvidenceWasSet = args.qrelEvidencePath !== undefined || hasEnv("QREL_EVIDENCE");
   const groundTruthPath =
@@ -141,9 +170,14 @@ function main(): void {
   const qrelEvidencePath =
     args.qrelEvidencePath ?? readEnv("QREL_EVIDENCE") ?? benchmarkConfig.qrelsPath;
 
-  if (!benchmarkResolution.manifestPresent && !groundTruthWasSet && !groundTruthPath) {
+  if (
+    judgeMode === "gold-answer" &&
+    !benchmarkResolution.manifestPresent &&
+    !groundTruthWasSet &&
+    !groundTruthPath
+  ) {
     throw new Error(
-      `Judge evaluation is not configured by default for benchmark ${benchmarkResolution.benchmarkId}. Pass --groundTruth <path> to opt in explicitly.`,
+      `Judge evaluation in gold-answer mode is not configured by default for benchmark ${benchmarkResolution.benchmarkId}. Pass --groundTruth <path> to opt in explicitly or use --judge-mode reference-free.`,
     );
   }
 
@@ -157,6 +191,8 @@ function main(): void {
     inputDir,
     "--evalDir",
     args.evalDir ?? readEnv("EVAL_DIR") ?? "evals/pi_judge",
+    "--judgeMode",
+    judgeMode,
     "--model",
     args.model ?? readEnv("MODEL") ?? "openai-codex/gpt-5.3-codex",
     "--thinking",
@@ -172,7 +208,11 @@ function main(): void {
     ),
   ];
 
-  if ((!benchmarkResolution.manifestPresent || groundTruthWasSet) && groundTruthPath) {
+  if (
+    judgeMode === "gold-answer" &&
+    (!benchmarkResolution.manifestPresent || groundTruthWasSet) &&
+    groundTruthPath
+  ) {
     command.push("--groundTruth", groundTruthPath);
   }
   if (!benchmarkResolution.manifestPresent || qrelEvidenceWasSet) {
@@ -191,8 +231,11 @@ function main(): void {
     BENCHMARK: benchmarkResolution.benchmarkId,
     INPUT_DIR: inputDir,
     USE_RUN_MANIFEST_DEFAULTS: benchmarkResolution.manifestPresent,
+    JUDGE_MODE: judgeMode,
     GROUND_TRUTH:
-      (!benchmarkResolution.manifestPresent || groundTruthWasSet) && groundTruthPath
+      judgeMode === "gold-answer" &&
+      (!benchmarkResolution.manifestPresent || groundTruthWasSet) &&
+      groundTruthPath
         ? groundTruthPath
         : undefined,
     QREL_EVIDENCE:

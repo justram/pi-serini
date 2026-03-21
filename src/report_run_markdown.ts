@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { basename, dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -204,6 +205,50 @@ function formatAggregatePrefixMetricSummary(
     .join(", ");
 }
 
+function resolveJudgeMode(
+  summary?: JudgeEvaluationSummary,
+): "gold-answer" | "reference-free" | null {
+  return summary?.judge?.mode ?? summary?.["Judge Mode"] ?? null;
+}
+
+function formatJudgeAccuracyLabel(summary?: JudgeEvaluationSummary): string {
+  const mode = resolveJudgeMode(summary);
+  if (mode === "reference-free") return "Accuracy (reference-free judge)";
+  if (mode === "gold-answer") return "Accuracy (gold-answer judge)";
+  return summary?.["Accuracy Label"] ?? "Accuracy";
+}
+
+function formatCompletedJudgeAccuracyLabel(summary?: JudgeEvaluationSummary): string {
+  const mode = resolveJudgeMode(summary);
+  if (mode === "reference-free") return "Completed-only accuracy (reference-free judge)";
+  if (mode === "gold-answer") return "Completed-only accuracy (gold-answer judge)";
+  return "Completed-only accuracy";
+}
+
+function resolveGitCommitProvenance(): { gitCommit?: string; gitCommitShort?: string } {
+  const full = spawnSync("git", ["rev-parse", "HEAD"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  if (full.status !== 0) {
+    return {};
+  }
+  const gitCommit = full.stdout.trim();
+  if (!gitCommit) {
+    return {};
+  }
+
+  const short = spawnSync("git", ["rev-parse", "--short=6", "HEAD"], {
+    cwd: process.cwd(),
+    encoding: "utf8",
+  });
+  const gitCommitShort = short.status === 0 ? short.stdout.trim() : gitCommit.slice(0, 6);
+  return {
+    gitCommit,
+    gitCommitShort: gitCommitShort || gitCommit.slice(0, 6),
+  };
+}
+
 function printHelpAndExit(): never {
   console.log(`Usage: npx tsx src/report_run_markdown.ts --runDir runs/<run> [options]
 
@@ -251,6 +296,10 @@ export function buildReport(args: Args): {
   const evalSummary = evalSummaryPath
     ? (JSON.parse(readFileSync(evalSummaryPath, "utf8")) as JudgeEvaluationSummary)
     : undefined;
+  const judgeMode = resolveJudgeMode(evalSummary);
+  const judgeAccuracyLabel = formatJudgeAccuracyLabel(evalSummary);
+  const completedJudgeAccuracyLabel = formatCompletedJudgeAccuracyLabel(evalSummary);
+  const reportGitProvenance = resolveGitCommitProvenance();
 
   const runFiles = getRunFiles(benchmarkResultDir);
   const rankings = readRunDir(benchmarkResultDir);
@@ -272,7 +321,12 @@ export function buildReport(args: Args): {
     cutoffs,
     internalMetricSemantics,
   );
-  const primaryCoverage = computeCoverageSummary(runFiles, benchmarkResultDir, primaryQrelsPath);
+  const primaryCoverage = computeCoverageSummary(
+    runFiles,
+    benchmarkResultDir,
+    primaryQrelsPath,
+    benchmarkId,
+  );
   const primaryRetrievalSummary = maybeLoadMatchingRetrievalEvalSummary({
     benchmarkId,
     sourcePath: benchmarkResultDir,
@@ -286,6 +340,7 @@ export function buildReport(args: Args): {
     runFiles,
     benchmarkResultDir,
     primaryQrelsPath,
+    benchmarkId,
   );
   const primaryPrefixMetricRows = buildPrefixMetricRows(
     rankings,
@@ -298,6 +353,7 @@ export function buildReport(args: Args): {
     runFiles,
     benchmarkResultDir,
     primaryQrelsPath,
+    benchmarkId,
   );
   const toolCallRows = buildToolCallRows(runFiles, benchmarkResultDir);
 
@@ -308,13 +364,13 @@ export function buildReport(args: Args): {
       ? evaluateRankings(secondaryQrels, rankings, queryIds, cutoffs, internalMetricSemantics)
       : undefined;
   const secondaryCoverage = secondaryQrelsPath
-    ? computeCoverageSummary(runFiles, benchmarkResultDir, secondaryQrelsPath)
+    ? computeCoverageSummary(runFiles, benchmarkResultDir, secondaryQrelsPath, benchmarkId)
     : undefined;
   const secondaryPrefixMetricRows = secondaryQrels
     ? buildPrefixMetricRows(rankings, secondaryQrels, cutoffs, metricSpecs, internalMetricSemantics)
     : undefined;
   const secondaryHitDepthSummary = secondaryQrelsPath
-    ? computeHitDepthSummary(runFiles, benchmarkResultDir, secondaryQrelsPath)
+    ? computeHitDepthSummary(runFiles, benchmarkResultDir, secondaryQrelsPath, benchmarkId)
     : undefined;
 
   let elapsedSeconds = 0;
@@ -566,7 +622,10 @@ export function buildReport(args: Args): {
   lines.push(`Benchmark result dir: \`${benchmarkResultDir}\``);
   lines.push(`Processed queries: ${runFiles.length}`);
   if (manifest?.snapshot.git_commit_short) {
-    lines.push(`Code commit: \`${manifest.snapshot.git_commit_short}\``);
+    lines.push(`Run commit: \`${manifest.snapshot.git_commit_short}\``);
+  }
+  if (reportGitProvenance.gitCommitShort) {
+    lines.push(`Report commit: \`${reportGitProvenance.gitCommitShort}\``);
   }
   lines.push(
     `Status counts: ${[...statusCounts.entries()]
@@ -589,12 +648,20 @@ export function buildReport(args: Args): {
       .join(", ")}.`,
   );
   if (manifest?.snapshot.git_commit_short) {
-    lines.push(`- Code commit: \`${manifest.snapshot.git_commit_short}\`.`);
+    lines.push(`- Run commit: \`${manifest.snapshot.git_commit_short}\`.`);
+  }
+  if (reportGitProvenance.gitCommitShort) {
+    lines.push(`- Report commit: \`${reportGitProvenance.gitCommitShort}\`.`);
   }
   if (evalSummary) {
     lines.push(
-      `- Judge accuracy is ${formatPercent(evalSummary["Accuracy (%)"])} overall and ${formatPercent(evalSummary["Completed-Only Accuracy (%)"])} on completed queries.`,
+      `- ${judgeAccuracyLabel} is ${formatPercent(evalSummary["Accuracy (%)"])} overall and ${completedJudgeAccuracyLabel.toLowerCase()} is ${formatPercent(evalSummary["Completed-Only Accuracy (%)"])}.`,
     );
+    if (judgeMode === "reference-free") {
+      lines.push(
+        "- This accuracy is based on a reference-free LLM judge and is not benchmark gold-answer accuracy.",
+      );
+    }
   }
   lines.push(
     `- Agent-set full-sequence coverage on ${qrelsLabel(primaryQrelsPath)} qrels is ${formatPercentFromRate(primaryCoverage.macroRecall)} macro and ${formatPercentFromRate(primaryCoverage.microRecall)} micro.`,
@@ -652,8 +719,10 @@ export function buildReport(args: Args): {
           ["Total queries", runSetup.totalQueries ?? String(runFiles.length)],
           ["Timeout seconds", runSetup.timeoutSeconds ?? "n/a"],
           ["Index path", runSetup.indexPath ?? "n/a"],
-          ["Git commit", manifest?.snapshot.git_commit_short ?? "n/a"],
-          ["Git commit (full)", manifest?.snapshot.git_commit ?? "n/a"],
+          ["Run commit", manifest?.snapshot.git_commit_short ?? "n/a"],
+          ["Run commit (full)", manifest?.snapshot.git_commit ?? "n/a"],
+          ["Report commit", reportGitProvenance.gitCommitShort ?? "n/a"],
+          ["Report commit (full)", reportGitProvenance.gitCommit ?? "n/a"],
           ["BM25 k1", runSetup.bm25K1 ?? "n/a"],
           ["BM25 b", runSetup.bm25B ?? "n/a"],
           ["BM25 threads", runSetup.bm25Threads ?? "n/a"],
@@ -668,12 +737,24 @@ export function buildReport(args: Args): {
   if (evalSummary) {
     lines.push("## Judge evaluation");
     lines.push("");
+    if (judgeMode === "reference-free") {
+      lines.push(
+        "This run used a reference-free judge. Reported accuracy is produced without benchmark gold answers and should be interpreted as judge-estimated correctness.",
+      );
+      lines.push("");
+    } else if (judgeMode === "gold-answer") {
+      lines.push(
+        "This run used a gold-answer judge. Reported accuracy is judged against benchmark-provided reference answers.",
+      );
+      lines.push("");
+    }
     lines.push(
       markdownTable(
         ["Metric", "Value"],
         [
-          ["Accuracy", formatPercent(evalSummary["Accuracy (%)"])],
-          ["Completed-only accuracy", formatPercent(evalSummary["Completed-Only Accuracy (%)"])],
+          ["Judge mode", judgeMode ?? "n/a"],
+          [judgeAccuracyLabel, formatPercent(evalSummary["Accuracy (%)"])],
+          [completedJudgeAccuracyLabel, formatPercent(evalSummary["Completed-Only Accuracy (%)"])],
           ["Completed queries", String(evalSummary["Completed Queries"] ?? "n/a")],
           [
             "Timeout/incomplete queries",
@@ -695,6 +776,10 @@ export function buildReport(args: Args): {
         ],
       ),
     );
+    if (evalSummary["Accuracy Semantics"]) {
+      lines.push("");
+      lines.push(evalSummary["Accuracy Semantics"]);
+    }
     lines.push("");
   }
 

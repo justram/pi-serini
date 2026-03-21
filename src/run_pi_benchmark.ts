@@ -71,6 +71,22 @@ type RunningRecallState = {
   statusCounts: Record<string, number>;
 };
 
+type PersistedRunSetup = {
+  slice?: string;
+  model?: string;
+  queryFile?: string;
+  qrelsFile?: string;
+  shardCount?: string;
+  totalQueries?: string;
+  timeoutSeconds?: string;
+  indexPath?: string;
+  bm25K1?: string;
+  bm25B?: string;
+  bm25Threads?: string;
+  maxShardAttempts?: string;
+  shardRetryMode?: string;
+};
+
 type RunPiOptions = {
   piBinary: string;
   model: string;
@@ -835,6 +851,40 @@ function appendBenchmarkProgressEvent(event: BenchmarkProgressEvent): void {
   appendFileSync(path, `${JSON.stringify(event)}\n`, "utf8");
 }
 
+function resolveEnvValue(name: string, fallback?: string): string | undefined {
+  const value = process.env[name]?.trim();
+  if (value) {
+    return value;
+  }
+  return fallback;
+}
+
+function buildPersistedRunSetup(args: {
+  querySetId: string;
+  model: string;
+  queryPath: string;
+  qrelsPath: string;
+  totalQueries: number;
+  timeoutSeconds: number;
+  indexPath: string;
+}): PersistedRunSetup {
+  return {
+    slice: args.querySetId,
+    model: args.model,
+    queryFile: args.queryPath,
+    qrelsFile: args.qrelsPath,
+    shardCount: resolveEnvValue("SHARD_COUNT"),
+    totalQueries: String(args.totalQueries),
+    timeoutSeconds: String(args.timeoutSeconds),
+    indexPath: args.indexPath,
+    bm25K1: resolveEnvValue("PI_BM25_K1", "0.9"),
+    bm25B: resolveEnvValue("PI_BM25_B", "0.4"),
+    bm25Threads: resolveEnvValue("PI_BM25_THREADS", "1"),
+    maxShardAttempts: resolveEnvValue("MAX_SHARD_ATTEMPTS"),
+    shardRetryMode: resolveEnvValue("SHARD_RETRY_MODE"),
+  };
+}
+
 function resolveGitCommitProvenance(): { gitCommit?: string; gitCommitShort?: string } {
   const full = spawnSync("git", ["rev-parse", "HEAD"], {
     cwd: process.cwd(),
@@ -903,6 +953,23 @@ async function main() {
   if (args.limit > 0) {
     queries = queries.slice(0, args.limit);
   }
+  writeFileSync(
+    resolve(args.outputDir, "run_setup.json"),
+    `${JSON.stringify(
+      buildPersistedRunSetup({
+        querySetId: args.querySetId,
+        model: args.model,
+        queryPath: args.queryPath,
+        qrelsPath: args.qrelsPath,
+        totalQueries: queries.length,
+        timeoutSeconds: args.timeoutSeconds,
+        indexPath: args.indexPath,
+      }),
+      null,
+      2,
+    )}\n`,
+    "utf8",
+  );
 
   console.log(`Processing ${queries.length} queries into ${args.outputDir}`);
   appendBenchmarkProgressEvent({

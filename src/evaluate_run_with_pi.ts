@@ -15,8 +15,10 @@ import { homedir } from "node:os";
 import { createJudgePrompt } from "./judge_prompt";
 import { parseJudgeResponse, type JudgeResult } from "./judge_parse";
 import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "./benchmarks/registry";
+import type { BenchmarkJudgeEvalMode } from "./benchmarks/types";
 import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
 import { resolveJudgeEvalOutputDir } from "./output_layout";
+import { loadJudgeEvalRelevantDocids } from "./judge_eval_qrels";
 
 type PiEvent = { type: string; [key: string]: unknown };
 
@@ -56,6 +58,7 @@ type EvaluationRecord = {
   question?: string;
   response: string;
   correct_answer: string;
+  judge_mode: BenchmarkJudgeEvalMode;
   is_completed: boolean;
   judge_prompt: string | null;
   judge_response: string | null;
@@ -89,6 +92,7 @@ type Args = {
   evalDir: string;
   groundTruthPath: string;
   qrelEvidencePath: string;
+  judgeMode?: BenchmarkJudgeEvalMode;
   model: string;
   thinking: string;
   piBin: string;
@@ -112,6 +116,7 @@ function parseArgs(argv: string[]): Args {
     evalDir: "./evals/pi_judge",
     groundTruthPath: "",
     qrelEvidencePath: "",
+    judgeMode: undefined,
     model: "openai-codex/gpt-5.3-codex",
     thinking: "low",
     piBin: "pi",
@@ -153,6 +158,16 @@ function parseArgs(argv: string[]): Args {
       case "--qrel_evidence":
         if (!next) throw new Error(`${arg} requires a value`);
         args.qrelEvidencePath = next;
+        index += 1;
+        break;
+      case "--judgeMode":
+      case "--judge_mode":
+      case "--judge-mode":
+        if (!next) throw new Error(`${arg} requires a value`);
+        if (next !== "gold-answer" && next !== "reference-free") {
+          throw new Error(`Unsupported judge mode: ${next}`);
+        }
+        args.judgeMode = next;
         index += 1;
         break;
       case "--model":
@@ -205,13 +220,23 @@ function parseArgs(argv: string[]): Args {
     args.qrelEvidencePath ||= manifest.snapshot.qrels_path;
   }
   const benchmarkConfig = resolveBenchmarkConfig({ benchmarkId: args.benchmarkId });
-  if (!manifest) {
+  args.judgeMode =
+    args.judgeMode ?? benchmarkConfig.benchmark.judgeEvaluation?.defaultMode ?? "gold-answer";
+  const supportedJudgeModes = benchmarkConfig.benchmark.judgeEvaluation?.supportedModes ?? [
+    benchmarkConfig.groundTruthPath ? "gold-answer" : "reference-free",
+  ];
+  if (!supportedJudgeModes.includes(args.judgeMode)) {
+    throw new Error(
+      `Judge mode ${args.judgeMode} is not supported for benchmark ${args.benchmarkId}. Supported modes: ${supportedJudgeModes.join(", ")}`,
+    );
+  }
+  if (!manifest && args.judgeMode === "gold-answer") {
     args.groundTruthPath ||= benchmarkConfig.groundTruthPath ?? "";
   }
   args.qrelEvidencePath ||= benchmarkConfig.qrelsPath;
-  if (!args.groundTruthPath) {
+  if (args.judgeMode === "gold-answer" && !args.groundTruthPath) {
     throw new Error(
-      `Judge evaluation is not configured by default for benchmark ${args.benchmarkId}. Pass --groundTruth <path> to opt in explicitly.`,
+      `Judge evaluation in gold-answer mode is not configured by default for benchmark ${args.benchmarkId}. Pass --groundTruth <path> to opt in explicitly or use --judge-mode reference-free.`,
     );
   }
   if (!Number.isFinite(args.timeoutSeconds) || args.timeoutSeconds <= 0) {
@@ -230,8 +255,9 @@ Options:
   --benchmark                      Benchmark manifest id (default: ${getDefaultBenchmarkId()})
   --inputDir, --input_dir          Directory containing run JSON files
   --evalDir, --eval_dir            Root directory for evaluation outputs (default: ./evals/pi_judge)
-  --groundTruth, --ground_truth    Ground truth JSONL path (default: benchmark ground truth when available)
+  --groundTruth, --ground_truth    Ground truth JSONL path (required in gold-answer mode unless benchmark defaults it)
   --qrelEvidence, --qrel_evidence  Qrel evidence path (default: benchmark primary qrels)
+  --judgeMode, --judge-mode        Judge mode: gold-answer or reference-free
   --model                          Judge model (default: openai-codex/gpt-5.3-codex)
   --thinking                       Pi thinking level (default: low)
   --pi, --piBin, --pi_bin          Pi binary (default: pi)
@@ -292,30 +318,45 @@ async function loadGroundTruth(jsonlPath: string): Promise<Map<string, GroundTru
   return map;
 }
 
-function loadQrelData(qrelPath: string): Map<string, string[]> {
-  const qrels = new Map<string, string[]>();
-  if (!existsSync(qrelPath)) {
-    return qrels;
+function loadQueryTexts(queryPath: string): Map<string, string> {
+  const map = new Map<string, string>();
+  if (!existsSync(queryPath)) {
+    return map;
   }
-  const text = readFileSync(qrelPath, "utf8");
+  const text = readFileSync(queryPath, "utf8");
   for (const line of text.split(/\r?\n/)) {
     if (!line.trim()) continue;
-    const parts = line.trim().split(/\s+/);
-    if (parts.length !== 4) {
-      throw new Error(`Expected 4 columns in qrel line: ${line}`);
-    }
-    const queryId = parts[0];
-    const docId = parts[2];
-    const current = qrels.get(queryId) ?? [];
-    current.push(docId);
-    qrels.set(queryId, current);
+    const [queryId, ...rest] = line.split("\t");
+    if (!queryId || rest.length === 0) continue;
+    map.set(queryId, rest.join("\t").trim());
   }
-  return qrels;
+  return map;
+}
+
+function resolveQuestionText(options: {
+  runData: RunResultRecord;
+  queryId: string;
+  queryTexts: Map<string, string>;
+  groundTruth?: GroundTruthEntry;
+}): string {
+  if (options.groundTruth?.question) {
+    return options.groundTruth.question;
+  }
+  const metadataQuery = options.runData.metadata?.query;
+  if (typeof metadataQuery === "string" && metadataQuery.trim()) {
+    return metadataQuery.trim();
+  }
+  return options.queryTexts.get(options.queryId) ?? "";
 }
 
 function getRunJsonPaths(inputDir: string, limit: number): string[] {
   const paths = readdirSync(inputDir)
-    .filter((entry) => entry.endsWith(".json"))
+    .filter(
+      (entry) =>
+        entry.endsWith(".json") &&
+        entry !== "benchmark_manifest_snapshot.json" &&
+        entry !== "evaluation_summary.json",
+    )
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
     .map((entry) => resolve(inputDir, entry));
   return limit > 0 ? paths.slice(0, limit) : paths;
@@ -704,6 +745,7 @@ function round(value: number | null, digits = 2): number | null {
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  const judgeMode = args.judgeMode ?? "gold-answer";
   const requestedInputDir = resolve(args.inputDir);
   const inputDir = resolveBenchmarkResultDir(requestedInputDir);
   const evalOutputDir = mirrorDirectoryStructure(requestedInputDir, args.evalDir, args.benchmarkId);
@@ -718,7 +760,7 @@ async function main() {
   if (!existsSync(inputDir)) {
     throw new Error(`Input directory does not exist: ${inputDir}`);
   }
-  if (!existsSync(args.groundTruthPath)) {
+  if (judgeMode === "gold-answer" && !existsSync(args.groundTruthPath)) {
     throw new Error(`Ground truth file does not exist: ${args.groundTruthPath}`);
   }
 
@@ -730,10 +772,18 @@ async function main() {
   console.log(`Using isolated PI_CODING_AGENT_DIR=${isolatedAgentDir}`);
   console.log(`Using judge model=${args.model}`);
   console.log(`Using judge thinking=${args.thinking}`);
+  console.log(`Using judgeMode=${judgeMode}`);
   console.log(`Using timeoutSeconds=${args.timeoutSeconds}`);
 
-  const groundTruth = await loadGroundTruth(args.groundTruthPath);
-  const qrelEvidence = loadQrelData(args.qrelEvidencePath);
+  const benchmarkConfig = resolveBenchmarkConfig({ benchmarkId: args.benchmarkId });
+  const manifest = detectBenchmarkManifestSnapshot(requestedInputDir);
+  const queryPath = manifest?.snapshot.query_path ?? benchmarkConfig.queryPath;
+  const groundTruth =
+    judgeMode === "gold-answer" ? await loadGroundTruth(args.groundTruthPath) : undefined;
+  const queryTexts = loadQueryTexts(queryPath);
+  const qrelEvidence = loadJudgeEvalRelevantDocids(args.qrelEvidencePath, {
+    benchmarkId: args.benchmarkId,
+  });
   const jsonPaths = getRunJsonPaths(inputDir, args.limit);
   if (jsonPaths.length === 0) {
     console.log(`No JSON files found in ${inputDir}`);
@@ -762,16 +812,28 @@ async function main() {
 
     const runData = JSON.parse(readFileSync(jsonPath, "utf8")) as RunResultRecord;
     const queryId = String(runData.query_id ?? "");
-    if (!queryId || !groundTruth.has(queryId)) {
+    const gt = groundTruth?.get(queryId);
+    if (!queryId || (judgeMode === "gold-answer" && !gt)) {
       console.log(
         `[${index + 1}/${jsonPaths.length}] Skipping ${jsonPath}; missing ground truth for query_id=${queryId}`,
       );
       continue;
     }
-    const gt = groundTruth.get(queryId)!;
     const runModel = typeof runData.metadata?.model === "string" ? runData.metadata.model : null;
     if (detectedRunModel === null && runModel) {
       detectedRunModel = runModel;
+    }
+    const question = resolveQuestionText({
+      runData,
+      queryId,
+      queryTexts,
+      groundTruth: gt,
+    });
+    if (!question) {
+      console.log(
+        `[${index + 1}/${jsonPaths.length}] Skipping ${jsonPath}; missing question text for query_id=${queryId}`,
+      );
+      continue;
     }
     const isCompleted = runData.status === "completed";
     const response = getFinalResponse(runData);
@@ -792,7 +854,8 @@ async function main() {
       json_path: jsonPath,
       query_id: queryId,
       response,
-      correct_answer: gt.answer,
+      correct_answer: gt?.answer ?? "",
+      judge_mode: judgeMode,
       is_completed: isCompleted,
       tool_call_counts: runData.tool_call_counts ?? {},
       retrieval: {
@@ -814,7 +877,7 @@ async function main() {
         judge_response: null,
         judge_result: {
           extracted_final_answer: null,
-          correct_answer: gt.answer,
+          correct_answer: gt?.answer ?? "",
           reasoning: "",
           correct: null,
           confidence: null,
@@ -822,7 +885,7 @@ async function main() {
           error: "Response incomplete or unavailable for judging.",
         },
         citations: null,
-        question: gt.question,
+        question,
       };
       writeFileSync(evalPath, `${JSON.stringify(result, null, 2)}\n`, "utf8");
       allResults.push(result);
@@ -833,9 +896,10 @@ async function main() {
     }
 
     const judgePrompt = createJudgePrompt({
-      question: gt.question,
+      mode: judgeMode,
+      question,
       response,
-      correctAnswer: gt.answer,
+      correctAnswer: gt?.answer,
     });
     console.log(`[${index + 1}/${jsonPaths.length}] Judging query ${queryId}`);
     const phase = await runPiJudge({
@@ -850,20 +914,20 @@ async function main() {
     const judgeResult = phase.timedOut
       ? {
           extracted_final_answer: null,
-          correct_answer: gt.answer,
+          correct_answer: gt?.answer ?? "",
           reasoning: "",
           correct: null,
           confidence: null,
           parse_error: true,
           error: `Judge timed out after ${args.timeoutSeconds}s.`,
         }
-      : parseJudgeResponse(judgeResponseText);
+      : parseJudgeResponse(judgeResponseText, { mode: judgeMode });
     const citations = extractCitationsFromResponse(response);
     const citationMetrics = computeCitationMetrics(citations, positives);
     const judgeUsage = summarizeJudgeUsage(phase.events);
     const result: EvaluationRecord = {
       ...baseRecord,
-      question: gt.question,
+      question,
       judge_prompt: judgePrompt,
       judge_response: judgeResponseText || null,
       judge_result: judgeResult,
@@ -1009,8 +1073,23 @@ async function main() {
     recall: round(record.retrieval.recall === null ? null : record.retrieval.recall * 100, 2),
   }));
   const totalJudgeUsage = aggregateUsage(allResults);
+  const accuracyLabel =
+    judgeMode === "reference-free"
+      ? "Accuracy (reference-free judge)"
+      : "Accuracy (gold-answer judge)";
+  const completedAccuracyLabel =
+    judgeMode === "reference-free"
+      ? "Completed-Only Accuracy (reference-free judge)"
+      : "Completed-Only Accuracy (gold-answer judge)";
+  const accuracySemantics =
+    judgeMode === "reference-free"
+      ? "Reference-free judge accuracy: the judge receives the question and the run's final answer, but no benchmark gold answer. This is an LLM-estimated correctness rate, not externally anchored gold-answer accuracy."
+      : "Gold-answer judge accuracy: the judge receives the question, the run's final answer, and a benchmark gold answer, then decides whether the final answer matches that gold answer.";
   const summary = {
     LLM: detectedRunModel ?? "change me when submitting",
+    "Judge Mode": judgeMode,
+    "Accuracy Label": accuracyLabel,
+    "Accuracy Semantics": accuracySemantics,
     "Accuracy (%)": accuracyPercent,
     "Completed-Only Accuracy (%)": completedOnlyAccuracyPercent,
     "Recall (%)": recallMacroPercent,
@@ -1035,6 +1114,7 @@ async function main() {
     "Evaluation Date": new Date().toISOString().slice(0, 10),
     per_query_metrics: perQueryMetrics,
     judge: {
+      mode: judgeMode,
       model: args.model,
       thinking: args.thinking,
       pi_bin: args.piBin,
@@ -1063,10 +1143,16 @@ async function main() {
   writeFileSync(summaryPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   const csvPath = writeDetailedCsv(allResults, evalOutputDir);
   console.log(`Processed ${total} evaluations (${skipped} skipped).`);
-  console.log(`Accuracy: ${accuracyPercent.toFixed(2)}%`);
+  console.log(`Judge mode: ${judgeMode}`);
+  console.log(`${accuracyLabel}: ${accuracyPercent.toFixed(2)}%`);
   console.log(
-    `Completed-Only Accuracy: ${typeof completedOnlyAccuracyPercent === "number" ? `${completedOnlyAccuracyPercent.toFixed(2)}%` : "N/A"}`,
+    `${completedAccuracyLabel}: ${typeof completedOnlyAccuracyPercent === "number" ? `${completedOnlyAccuracyPercent.toFixed(2)}%` : "N/A"}`,
   );
+  if (judgeMode === "reference-free") {
+    console.log(
+      "Reference-free judge semantics: this accuracy is an LLM-estimated correctness rate without benchmark gold answers.",
+    );
+  }
   console.log(`Completed Queries: ${completedResults.length}`);
   console.log(`Timeout/Incomplete Queries: ${timeoutOrIncompleteResults.length}`);
   console.log(

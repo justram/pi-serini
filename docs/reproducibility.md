@@ -87,7 +87,7 @@ A second real benchmark path is now also supported:
   - prebuilt index: `indexes/msmarco-v1-passage/`
   - baseline runs: `data/msmarco-v1-passage/source/bm25_pure.dl19.trec`, `data/msmarco-v1-passage/source/bm25_pure.dl20.trec`
   - topics/qrels provenance pinned to `castorini/anserini-tools@303096fd01ab1ee5048adc6b4a25d55761e6c860`
-  - judge evaluation intentionally left unsupported by default in the current answer-ground-truth pipeline
+  - judge evaluation now defaults to `reference-free` mode instead of requiring benchmark-provided gold answers
 
 Relevant tracked code paths:
 
@@ -208,7 +208,9 @@ The repo includes three post-run entrypoints plus BM25 tuning. Preferred entrypo
   - retrieval evaluation now writes normalized JSON summary artifacts for both backends under `evals/retrieval/<benchmark>/<source-base>.summary.json`
 - `npm run evaluate:run`
   - compatibility shim: `scripts/evaluate_run_with_pi.sh`
-  - uses `pi` as a semantic judge to score final-answer accuracy against decrypted BrowseComp-Plus ground truth
+  - supports explicit `gold-answer` and `reference-free` judge modes
+  - `gold-answer` mode scores final-answer accuracy against benchmark-provided gold answers
+  - `reference-free` mode keeps the top-line metric name `accuracy` for interpretability, but the report labels it as `Accuracy (reference-free judge)` and warns that it is judge-estimated correctness without benchmark gold answers
 - `npm run report:run`
   - compatibility shim: `scripts/report_run_markdown.sh`
   - writes a Markdown report by combining retrieval metrics, judge-eval summary data, and run metadata

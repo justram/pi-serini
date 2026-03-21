@@ -42,4 +42,8 @@ export const msmarcoV1PassageBenchmark: BenchmarkDefinition = {
       recallRelevantThreshold: 2,
     },
   },
+  judgeEvaluation: {
+    supportedModes: ["reference-free"],
+    defaultMode: "reference-free",
+  },
 };

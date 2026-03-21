@@ -620,29 +620,33 @@ test("node judge-eval entrypoint keeps explicit ground-truth and qrel-evidence o
   assert.ok(command.includes("data/custom/qrels.txt"));
 });
 
-test("node judge-eval entrypoint fails clearly for benchmarks without default ground truth", () => {
-  assert.throws(
-    () =>
-      execFileSync(
-        "node",
-        [
-          "--import",
-          "tsx",
-          "src/evaluate_run_with_pi_entry.ts",
-          "--dry-run",
-          "--benchmark",
-          "msmarco-v1-passage",
-          "--input-dir",
-          "runs/pi_bm25_msmarco-v1-passage_dl19_plain_minimal",
-        ],
-        {
-          cwd: process.cwd(),
-          env: process.env,
-          encoding: "utf8",
-        },
-      ),
-    /Judge evaluation is not configured by default for benchmark msmarco-v1-passage/,
+test("node judge-eval entrypoint defaults MSMARCO to reference-free judge mode", () => {
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/evaluate_run_with_pi_entry.ts",
+      "--dry-run",
+      "--benchmark",
+      "msmarco-v1-passage",
+      "--input-dir",
+      "runs/pi_bm25_msmarco-v1-passage_dl19_plain_minimal",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
   );
+
+  assert.match(output, /BENCHMARK=msmarco-v1-passage/);
+  assert.match(output, /JUDGE_MODE=reference-free/);
+  assert.doesNotMatch(output, /GROUND_TRUTH=/);
+  assert.doesNotMatch(output, /--groundTruth/);
+  const command = parseCommandJson(output);
+  assert.ok(command.includes("--judgeMode"));
+  assert.ok(command.includes("reference-free"));
 });
 
 test("node report entrypoint omits qrels overrides when run manifest is present", () => {

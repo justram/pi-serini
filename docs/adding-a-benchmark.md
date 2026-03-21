@@ -102,7 +102,12 @@ Decide explicitly:
 - Does ground truth exist in a compatible format?
 - Do report sections still make sense for this benchmark?
 
-A valid answer is "retrieval-only for now". If a benchmark like MSMARCO does not naturally provide answer-style ground truth for the current judge pipeline, leave `defaultGroundTruthPath` unset instead of inventing fake compatibility.
+A valid answer is "retrieval-only for now". If a benchmark does not naturally provide answer-style ground truth, you now have two explicit judge options:
+
+- `gold-answer` mode: set `defaultGroundTruthPath` and treat reported accuracy as externally anchored gold-answer accuracy
+- `reference-free` mode: leave `defaultGroundTruthPath` unset, declare reference-free judge support in the benchmark manifest, and make sure reports label the top-line metric as `Accuracy (reference-free judge)` rather than implying gold-answer supervision
+
+Do not invent fake ground-truth compatibility just to reuse the gold-answer path.
 
 If the benchmark requires semantic differences instead of just different paths, add benchmark-specific evaluation adapters deliberately rather than smuggling differences through ad hoc conditionals. The current mechanism is `BenchmarkDefinition.retrievalEvaluation`, which lets a benchmark choose an internal TypeScript backend or a `trec_eval` run-file backend. Both backends now write normalized retrieval-summary artifacts under `evals/retrieval/<benchmark>/...`.
 

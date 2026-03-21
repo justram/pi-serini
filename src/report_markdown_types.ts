@@ -4,6 +4,7 @@ export type BenchmarkRun = {
   metadata?: {
     benchmark_id?: string;
     query_set_id?: string;
+    model?: string;
   };
   query_id: string;
   status: string;
@@ -18,6 +19,9 @@ export type BenchmarkRun = {
 };
 
 export type JudgeEvaluationSummary = {
+  "Judge Mode"?: "gold-answer" | "reference-free";
+  "Accuracy Label"?: string;
+  "Accuracy Semantics"?: string;
   "Accuracy (%)"?: number;
   "Completed-Only Accuracy (%)"?: number | null;
   "Completed Queries"?: number;
@@ -35,6 +39,7 @@ export type JudgeEvaluationSummary = {
     recall?: number | null;
   }>;
   judge?: {
+    mode?: "gold-answer" | "reference-free";
     usage?: {
       cost?: {
         total?: number;

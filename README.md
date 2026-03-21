@@ -261,7 +261,7 @@ Asset provenance is pinned in setup defaults:
 
 Supported query sets are now `dl19` and `dl20`, with `dl19` as the default because it contains only 43 queries and is much safer for routine agent-side validation. `dl20` remains available as a larger 200-query benchmark.
 
-This benchmark is retrieval-first in the current repo model. Retrieval evaluation, summarize, and report generation work naturally. Judge evaluation is intentionally not configured by default because this repo's current judge pipeline expects answer-style ground truth JSONL, which MSMARCO passage ranking does not natively provide.
+This benchmark is retrieval-first in the current repo model. Retrieval evaluation, summarize, and report generation work naturally. Judge evaluation now defaults to `reference-free` mode for MSMARCO: the judge sees the question and the run's final answer, but no benchmark gold answer. Reports still expose the top-line metric as `accuracy` for interpretability, but they label it explicitly as `Accuracy (reference-free judge)` and warn that it is judge-estimated correctness rather than gold-answer benchmark accuracy.
 
 ## Tiny benchmark demo setup
 
@@ -566,6 +566,26 @@ Run judge-based evaluation:
 ```bash
 INPUT_DIR=runs/pi_bm25_q9_plain_minimal_excerpt_gpt54mini \
 MODEL=openai-codex/gpt-5.3-codex \
+npm run evaluate:run
+```
+
+Judge evaluation supports two explicit modes:
+
+- `gold-answer`
+  - judge sees the question, the final answer, and a benchmark gold answer
+  - reports label the metric as `Accuracy (gold-answer judge)`
+- `reference-free`
+  - judge sees the question and the final answer, but no benchmark gold answer
+  - reports label the metric as `Accuracy (reference-free judge)`
+  - this remains an `accuracy` metric for interpretability, but it is judge-estimated correctness rather than externally anchored gold-answer accuracy
+
+Example reference-free invocation:
+
+```bash
+BENCHMARK=msmarco-v1-passage \
+INPUT_DIR=runs/pi_agent_msmarco_dl19_full_live_medium \
+MODEL=openai-codex/gpt-5.3-codex \
+JUDGE_MODE=reference-free \
 npm run evaluate:run
 ```
 
