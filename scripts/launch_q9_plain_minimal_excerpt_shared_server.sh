@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SLICE=q9 bash scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_shared_server.sh "$@"
+BENCHMARK="${BENCHMARK:-browsecomp-plus}" \
+QUERY_SET="${QUERY_SET:-q9}" \
+LOG_DIR="${LOG_DIR:-runs/shared-bm25-q9}" \
+bash scripts/launch_benchmark_query_set_shared.sh "$@"
