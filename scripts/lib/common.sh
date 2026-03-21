@@ -92,6 +92,9 @@ pi_serini_default_query_set() {
     browsecomp-plus)
       printf '%s' "${QUERY_SET:-q9}"
       ;;
+    benchmark-template)
+      printf '%s' "${QUERY_SET:-dev}"
+      ;;
     *)
       printf '%s' "${QUERY_SET:-default}"
       ;;
@@ -105,19 +108,6 @@ pi_serini_default_index_name() {
       ;;
     *)
       printf '%s' "${INDEX_NAME:-$(pi_serini_default_dataset)-bm25}"
-      ;;
-  esac
-}
-
-pi_serini_browsecomp_plus_query_file_for_slice() {
-  local slice="$1"
-  case "$slice" in
-    q9|q100|q300|qfull)
-      printf '%s' "data/browsecomp-plus/queries/$slice.tsv"
-      ;;
-    *)
-      printf 'Unsupported BrowseComp-Plus slice: %s\n' "$slice" >&2
-      return 1
       ;;
   esac
 }
@@ -145,13 +135,33 @@ pi_serini_default_query_file() {
 pi_serini_default_qrels_file() {
   local dataset
   dataset="$(pi_serini_default_dataset)"
-  printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_evidence.txt}"
+  case "$(pi_serini_default_benchmark)" in
+    browsecomp-plus)
+      printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_evidence.txt}"
+      ;;
+    benchmark-template)
+      printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_primary.txt}"
+      ;;
+    *)
+      printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_evidence.txt}"
+      ;;
+  esac
 }
 
 pi_serini_default_secondary_qrels_file() {
   local dataset
   dataset="$(pi_serini_default_dataset)"
-  printf '%s' "${SECONDARY_QRELS_FILE:-data/$dataset/qrels/qrel_gold.txt}"
+  case "$(pi_serini_default_benchmark)" in
+    browsecomp-plus)
+      printf '%s' "${SECONDARY_QRELS_FILE:-data/$dataset/qrels/qrel_gold.txt}"
+      ;;
+    benchmark-template)
+      printf '%s' "${SECONDARY_QRELS_FILE:-data/$dataset/qrels/qrel_secondary.txt}"
+      ;;
+    *)
+      printf '%s' "${SECONDARY_QRELS_FILE:-data/$dataset/qrels/qrel_gold.txt}"
+      ;;
+  esac
 }
 
 pi_serini_default_ground_truth_file() {

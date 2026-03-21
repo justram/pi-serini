@@ -7,6 +7,8 @@ pi_serini_setup_java
 pi_serini_print_java_env
 
 SLICE="${SLICE:-q100}"
+BENCHMARK="${BENCHMARK:-browsecomp-plus}"
+QUERY_SET="${QUERY_SET:-$SLICE}"
 SHARD_COUNT="${SHARD_COUNT:-4}"
 MODEL="${MODEL:-openai-codex/gpt-5.4-mini}"
 TIMEOUT_SECONDS="${TIMEOUT_SECONDS:-300}"
@@ -19,9 +21,9 @@ AUTO_SUMMARIZE_ON_MERGE="${AUTO_SUMMARIZE_ON_MERGE:-1}"
 AUTO_EVALUATE_ON_MERGE="${AUTO_EVALUATE_ON_MERGE:-0}"
 EVALUATE_FORCE="${EVALUATE_FORCE:-0}"
 EVALUATE_LIMIT="${EVALUATE_LIMIT:-0}"
-QUERY_FILE="${QUERY_FILE:-$(pi_serini_browsecomp_plus_query_file_for_slice "$SLICE")}"
-QRELS_FILE="$(pi_serini_default_qrels_file)"
-PI_BM25_INDEX_PATH="$(pi_serini_default_index_path)"
+QUERY_FILE="${QUERY_FILE:-$(BENCHMARK="$BENCHMARK" QUERY_SET="$QUERY_SET" pi_serini_default_query_file)}"
+QRELS_FILE="$(BENCHMARK="$BENCHMARK" pi_serini_default_qrels_file)"
+PI_BM25_INDEX_PATH="$(BENCHMARK="$BENCHMARK" pi_serini_default_index_path)"
 PI_BM25_K1="${PI_BM25_K1:-0.9}"
 PI_BM25_B="${PI_BM25_B:-0.4}"
 PI_BM25_THREADS="${PI_BM25_THREADS:-1}"
@@ -185,6 +187,8 @@ run_shard_once() {
   (
     PI_BM25_RPC_HOST="$HOST" \
     PI_BM25_RPC_PORT="$PORT" \
+    BENCHMARK="$BENCHMARK" \
+    QUERY_SET="$QUERY_SET" \
     QUERY_FILE="$shard_query_file" \
     OUTPUT_DIR="$shard_output_dir" \
     TIMEOUT_SECONDS="$TIMEOUT_SECONDS" \
@@ -304,7 +308,7 @@ uv run --no-project python3 scripts/merge_benchmark_run_shards.py \
 
 if [[ "$AUTO_SUMMARIZE_ON_MERGE" == "1" ]]; then
   echo "Summarizing merged run $OUTPUT_ROOT" | tee -a "$LOG_DIR/run.log"
-  RUN_DIR="$OUTPUT_ROOT" QRELS_FILE="$QRELS_FILE" \
+  BENCHMARK="$BENCHMARK" RUN_DIR="$OUTPUT_ROOT" QRELS_FILE="$QRELS_FILE" \
     bash scripts/summarize_run.sh | tee "$LOG_DIR/summarize.log"
 fi
 
@@ -313,7 +317,7 @@ if [[ "$AUTO_EVALUATE_ON_MERGE" == "1" ]]; then
     echo "Skipping AUTO_EVALUATE_ON_MERGE because one or more shard workers failed." | tee -a "$LOG_DIR/run.log"
   else
     echo "Evaluating merged run $OUTPUT_ROOT" | tee -a "$LOG_DIR/run.log"
-    INPUT_DIR="$OUTPUT_ROOT" QREL_EVIDENCE="$QRELS_FILE" MODEL="$MODEL" THINKING="$THINKING" \
+    BENCHMARK="$BENCHMARK" INPUT_DIR="$OUTPUT_ROOT" QREL_EVIDENCE="$QRELS_FILE" MODEL="$MODEL" THINKING="$THINKING" \
       PI_BIN="$PI_BIN" FORCE="$EVALUATE_FORCE" LIMIT="$EVALUATE_LIMIT" \
       bash scripts/evaluate_run_with_pi.sh | tee "$LOG_DIR/evaluate.log"
   fi
