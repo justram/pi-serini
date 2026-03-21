@@ -3,9 +3,11 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "setup:benchmark": "bash scripts/setup_benchmark.sh",
     "setup:browsecomp-plus": "bash scripts/setup_browsecomp_plus.sh",
     "setup:ground-truth:browsecomp-plus": "bash scripts/setup_ground_truth_browsecomp_plus.sh",
     "sample:browsecomp-plus:slices": "bash scripts/generate_browsecomp_plus_query_slices.sh",
+    "sample:benchmark:query-slices": "bash scripts/setup_benchmark.sh --step query-slices",
     "format": "oxfmt .",
     "format:check": "oxfmt --check .",
     "lint": "oxlint --type-aware --tsconfig tsconfig.json .",

@@ -3,11 +3,12 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
+source "$ROOT/scripts/lib/common.sh"
 
-DATASET="${DATASET:-browsecomp-plus}"
+BENCHMARK="$(pi_serini_default_benchmark)"
 RUN_DIR="${RUN_DIR:-}"
-QRELS_FILE="${QRELS_FILE:-data/$DATASET/qrels/qrel_evidence.txt}"
-DEFAULT_SECONDARY_QRELS_FILE="data/$DATASET/qrels/qrel_gold.txt"
+QRELS_FILE="$(pi_serini_default_qrels_file)"
+DEFAULT_SECONDARY_QRELS_FILE="$(pi_serini_default_secondary_qrels_file)"
 SECONDARY_QRELS_FILE_SET="${SECONDARY_QRELS_FILE+1}"
 SECONDARY_QRELS_FILE="${SECONDARY_QRELS_FILE:-}"
 EVAL_SUMMARY="${EVAL_SUMMARY:-}"
@@ -31,6 +32,7 @@ fi
 
 CMD=(
   npx tsx src/report_run_markdown.ts
+  --benchmark "$BENCHMARK"
   --runDir "$RUN_DIR"
   --qrels "$QRELS_FILE"
   --recallCutoffs "$RECALL_CUTOFFS"

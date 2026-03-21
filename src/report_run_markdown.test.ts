@@ -73,6 +73,7 @@ test("buildReport formats judged incorrect query recall as a percent, not a rate
   writeFileSync(evalSummaryPath, JSON.stringify(evalSummary, null, 2), "utf8");
 
   const args: Args = {
+    benchmarkId: "browsecomp-plus",
     runDir,
     qrelsPath,
     secondaryQrelsPath: undefined,

@@ -1,6 +1,10 @@
 import type { EvaluationResult } from "./retrieval_metrics";
 
 export type BenchmarkRun = {
+  metadata?: {
+    benchmark_id?: string;
+    query_set_id?: string;
+  };
   query_id: string;
   status: string;
   retrieved_docids?: string[];
@@ -90,6 +94,7 @@ export type HitDepthSummary = {
 };
 
 export type Args = {
+  benchmarkId: string;
   runDir: string;
   qrelsPath: string;
   secondaryQrelsPath?: string;
