@@ -540,6 +540,10 @@ It also writes a normalized JSON summary artifact under:
 
 - `evals/retrieval/msmarco-v1-passage/<run-file-base>.summary.json`
 
+More generally, retrieval evaluation now writes normalized summary artifacts for both backends under:
+
+- `evals/retrieval/<benchmark>/<source-base>.summary.json`
+
 Generate a Markdown report that combines judge metrics, full-sequence coverage, prefix-of-agent-set metrics, run statistics, and launcher-recorded run setup:
 
 ```bash

@@ -197,12 +197,10 @@ function main(): void {
     }
   }
 
-  const retrievalSummaryPath = useTrecEvalBackend
-    ? resolveRetrievalEvalSummaryPath({
-        benchmarkId: benchmarkConfig.benchmark.id,
-        runFilePath: runFile ?? "",
-      })
-    : undefined;
+  const retrievalSummaryPath = resolveRetrievalEvalSummaryPath({
+    benchmarkId: benchmarkConfig.benchmark.id,
+    sourcePath: runFile ?? runDir ?? "",
+  });
 
   const command = useTrecEvalBackend
     ? [
@@ -239,6 +237,7 @@ function main(): void {
       ];
 
   if (!useTrecEvalBackend) {
+    command.push("--summary-path", retrievalSummaryPath);
     if (!benchmarkResolution.manifestPresent || qrelsWasSet) {
       command.push("--qrels", qrelsPath);
     }

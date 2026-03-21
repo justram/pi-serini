@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 
@@ -10,6 +10,7 @@ import {
   validateTrecEvalInputs,
 } from "./trec_eval_runner";
 import { resolveRetrievalEvalSummaryPath } from "./output_layout";
+import { writeRetrievalEvalSummary } from "./retrieval_eval_summary";
 
 type Args = {
   benchmarkId: string;
@@ -126,7 +127,7 @@ function main(): void {
     args.summaryPath ??
       resolveRetrievalEvalSummaryPath({
         benchmarkId: benchmarkConfig.benchmark.id,
-        runFilePath: args.runFilePath,
+        sourcePath: args.runFilePath,
       }),
   );
   const metrics = [];
@@ -156,22 +157,16 @@ function main(): void {
   }
 
   mkdirSync(dirname(summaryPath), { recursive: true });
-  writeFileSync(
-    summaryPath,
-    JSON.stringify(
-      {
-        benchmarkId: benchmarkConfig.benchmark.id,
-        querySetId: benchmarkConfig.querySetId,
-        qrelsPath: resolve(benchmarkConfig.qrelsPath),
-        runFilePath: resolve(args.runFilePath),
-        anseriniJarPath: resolve(args.anseriniJarPath),
-        metrics,
-      },
-      null,
-      2,
-    ) + "\n",
-    "utf8",
-  );
+  writeRetrievalEvalSummary(summaryPath, {
+    benchmarkId: benchmarkConfig.benchmark.id,
+    querySetId: benchmarkConfig.querySetId,
+    backend: "trec_eval",
+    sourceType: "run-file",
+    sourcePath: resolve(args.runFilePath),
+    qrelsPath: resolve(benchmarkConfig.qrelsPath),
+    queryCount: undefined,
+    metrics,
+  });
   console.log(`SUMMARY_PATH=${summaryPath}`);
 }
 

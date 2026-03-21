@@ -1,4 +1,5 @@
-import { basename, resolve } from "node:path";
+import { basename, dirname, resolve } from "node:path";
+import { mkdirSync } from "node:fs";
 import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "./benchmarks/registry";
 import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
 import {
@@ -13,6 +14,7 @@ import {
   resolveBenchmarkResultDir,
   writeRunFile,
 } from "./retrieval_metrics";
+import { writeRetrievalEvalSummary } from "./retrieval_eval_summary";
 
 type Args = {
   benchmarkId: string;
@@ -23,6 +25,7 @@ type Args = {
   runDir?: string;
   queryTsv?: string;
   writeRunFile?: string;
+  summaryPath?: string;
   recallCutoffs: number[];
   ndcgCutoffs: number[];
   mrrCutoffs: number[];
@@ -93,6 +96,12 @@ function parseArgs(argv: string[]): Args {
         args.writeRunFile = next;
         index += 1;
         break;
+      case "--summaryPath":
+      case "--summary-path":
+        if (!next) throw new Error(`${arg} requires a value`);
+        args.summaryPath = next;
+        index += 1;
+        break;
       case "--recallCutoffs":
       case "--recall-cutoffs":
         if (!next) throw new Error(`${arg} requires a value`);
@@ -158,6 +167,7 @@ Options:
   --runDir, --run-dir            Directory containing per-query JSON outputs with retrieved_docids; sharded run roots auto-resolve to merged/
   --queries, --queryTsv          Optional TSV file to restrict evaluation to listed query ids
   --writeRunFile, --write-run-file  Optional path to write rankings in TREC run format
+  --summaryPath, --summary-path  Optional JSON summary output path
   --recallCutoffs                Comma-separated recall cutoffs (default: 100,1000)
   --ndcgCutoffs                  Comma-separated nDCG cutoffs (default: 10)
   --mrrCutoffs                   Comma-separated MRR cutoffs (default: 10)
@@ -212,8 +222,57 @@ function main() {
     queryIds,
     cutoffs,
   );
+  const summaryMetrics = [
+    { metric: "macro_recall_all", scope: "all", value: primaryResult.macroRecallAll },
+    { metric: "micro_recall_all", scope: "all", value: primaryResult.microRecallAll },
+    ...args.recallCutoffs.flatMap((cutoff) => [
+      {
+        metric: `macro_recall_${cutoff}`,
+        scope: "all",
+        value: primaryResult.macroRecallByCutoff.get(cutoff) ?? 0,
+      },
+      {
+        metric: `micro_recall_${cutoff}`,
+        scope: "all",
+        value: primaryResult.microRecallByCutoff.get(cutoff) ?? 0,
+      },
+      {
+        metric: `recall_${cutoff}`,
+        scope: "all",
+        value: primaryResult.macroRecallByCutoff.get(cutoff) ?? 0,
+      },
+    ]),
+    ...args.ndcgCutoffs.map((cutoff) => ({
+      metric: `ndcg_cut_${cutoff}`,
+      scope: "all",
+      value: primaryResult.ndcgByCutoff.get(cutoff) ?? 0,
+    })),
+    ...args.mrrCutoffs.map((cutoff) => ({
+      metric: `recip_rank_${cutoff}`,
+      scope: "all",
+      value: primaryResult.mrrByCutoff.get(cutoff) ?? 0,
+    })),
+    { metric: "map", scope: "all", value: primaryResult.map },
+  ];
   for (const line of formatEvaluationOutput(primaryResult, sourcePath, args.qrelsPath, cutoffs)) {
     console.log(line);
+  }
+
+  if (args.summaryPath) {
+    mkdirSync(dirname(resolve(args.summaryPath)), { recursive: true });
+    writeRetrievalEvalSummary(resolve(args.summaryPath), {
+      benchmarkId: args.benchmarkId,
+      querySetId:
+        args.querySetId ?? resolveBenchmarkConfig({ benchmarkId: args.benchmarkId }).querySetId,
+      backend: "internal",
+      sourceType: args.runFile ? "run-file" : "run-dir",
+      sourcePath,
+      qrelsPath: resolve(args.qrelsPath),
+      secondaryQrelsPath: args.secondaryQrelsPath ? resolve(args.secondaryQrelsPath) : undefined,
+      queryCount: primaryResult.queryCount,
+      metrics: summaryMetrics,
+    });
+    console.log(`SUMMARY_PATH=${resolve(args.summaryPath)}`);
   }
 
   if (args.secondaryQrelsPath) {

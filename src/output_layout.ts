@@ -1,5 +1,6 @@
-import { basename, extname, resolve } from "node:path";
+import { basename, resolve } from "node:path";
 import { resolveRunRoot } from "./benchmarks/run_manifest";
+import { buildRetrievalEvalSummaryPath } from "./retrieval_eval_summary";
 
 function getPathParts(path: string): string[] {
   return resolve(path)
@@ -31,12 +32,14 @@ export function resolveJudgeEvalOutputDir(options: {
 
 export function resolveRetrievalEvalSummaryPath(options: {
   benchmarkId: string;
-  runFilePath: string;
+  sourcePath: string;
   evalRoot?: string;
 }): string {
-  const evalRoot = resolve(options.evalRoot ?? "evals/retrieval");
-  const runFileBase = basename(options.runFilePath, extname(options.runFilePath));
-  return resolve(evalRoot, options.benchmarkId, `${runFileBase}.summary.json`);
+  return buildRetrievalEvalSummaryPath({
+    benchmarkId: options.benchmarkId,
+    sourcePath: options.sourcePath,
+    evalRoot: options.evalRoot,
+  });
 }
 
 export function getJudgeEvalSummaryCandidates(options: {

@@ -522,9 +522,15 @@ test("node retrieval entrypoint omits qrels overrides when run manifest is prese
 
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  assert.match(
+    output,
+    /RETRIEVAL_SUMMARY_PATH=.*evals\/retrieval\/benchmark-template\/retrieval-run-[^/]+\.summary\.json/,
+  );
   assert.doesNotMatch(output, /QRELS_FILE=/);
   assert.doesNotMatch(output, /--qrels/);
   assert.doesNotMatch(output, /--secondaryQrels/);
+  const command = parseCommandJson(output);
+  assert.ok(command.includes("--summary-path"));
 });
 
 test("node retrieval entrypoint keeps explicit qrels overrides above manifest defaults", () => {

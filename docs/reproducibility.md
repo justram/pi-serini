@@ -205,7 +205,7 @@ The repo includes three post-run entrypoints plus BM25 tuning. Preferred entrypo
   - compatibility shim: `scripts/evaluate_retrieval.sh`
   - evaluates retrieval metrics against the primary qrels set and, by default, also prints a second block for gold qrels
   - for benchmarks configured with `trec_eval` run-file semantics, such as `msmarco-v1-passage`, run-file evaluation uses `java -cp <anserini-fatjar> trec_eval ...` instead of the repo's internal TypeScript metric implementation
-  - the trec_eval backend also writes a normalized JSON summary artifact under `evals/retrieval/<benchmark>/<run-file-base>.summary.json`
+  - retrieval evaluation now writes normalized JSON summary artifacts for both backends under `evals/retrieval/<benchmark>/<source-base>.summary.json`
 - `npm run evaluate:run`
   - compatibility shim: `scripts/evaluate_run_with_pi.sh`
   - uses `pi` as a semantic judge to score final-answer accuracy against decrypted BrowseComp-Plus ground truth

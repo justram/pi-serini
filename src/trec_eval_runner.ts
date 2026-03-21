@@ -2,26 +2,17 @@ import { existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 import type { BenchmarkTrecEvalMetricDefinition } from "./benchmarks/types";
+import type { RetrievalEvalMetricSummary, RetrievalEvalSummary } from "./retrieval_eval_summary";
 
 export type TrecEvalCommandSpec = {
   metricId: string;
   command: string[];
 };
 
-export type TrecEvalMetricResult = {
-  metric: string;
-  scope: string;
-  value: number;
-  stdout: string;
-};
+export type TrecEvalMetricResult = RetrievalEvalMetricSummary;
 
-export type TrecEvalSummary = {
-  benchmarkId: string;
-  querySetId: string;
-  qrelsPath: string;
-  runFilePath: string;
+export type TrecEvalSummary = RetrievalEvalSummary & {
   anseriniJarPath: string;
-  metrics: TrecEvalMetricResult[];
 };
 
 export function resolveAnseriniJarPath(env: NodeJS.ProcessEnv = process.env): string {

@@ -104,7 +104,7 @@ Decide explicitly:
 
 A valid answer is "retrieval-only for now". If a benchmark like MSMARCO does not naturally provide answer-style ground truth for the current judge pipeline, leave `defaultGroundTruthPath` unset instead of inventing fake compatibility.
 
-If the benchmark requires semantic differences instead of just different paths, add benchmark-specific evaluation adapters deliberately rather than smuggling differences through ad hoc conditionals. The current mechanism is `BenchmarkDefinition.retrievalEvaluation`, which lets a benchmark choose an internal TypeScript backend or a `trec_eval` run-file backend.
+If the benchmark requires semantic differences instead of just different paths, add benchmark-specific evaluation adapters deliberately rather than smuggling differences through ad hoc conditionals. The current mechanism is `BenchmarkDefinition.retrievalEvaluation`, which lets a benchmark choose an internal TypeScript backend or a `trec_eval` run-file backend. Both backends now write normalized retrieval-summary artifacts under `evals/retrieval/<benchmark>/...`.
 
 ## 5. Decide managed presets
 
