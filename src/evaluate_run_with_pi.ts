@@ -355,7 +355,8 @@ function getRunJsonPaths(inputDir: string, limit: number): string[] {
       (entry) =>
         entry.endsWith(".json") &&
         entry !== "benchmark_manifest_snapshot.json" &&
-        entry !== "evaluation_summary.json",
+        entry !== "evaluation_summary.json" &&
+        entry !== "run_setup.json",
     )
     .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
     .map((entry) => resolve(inputDir, entry));

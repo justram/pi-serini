@@ -649,6 +649,75 @@ test("node judge-eval entrypoint defaults MSMARCO to reference-free judge mode",
   assert.ok(command.includes("reference-free"));
 });
 
+test("judge eval ignores run_setup.json during per-query discovery", () => {
+  const root = mkdtempSync(join(tmpdir(), "judge-eval-run-"));
+  const queryPath = join(root, "queries.tsv");
+  const qrelsPath = join(root, "qrels.txt");
+  const groundTruthPath = join(root, "ground_truth.jsonl");
+
+  writeFileSync(queryPath, "1\tWhat is the answer?\n", "utf8");
+  writeFileSync(qrelsPath, "1 0 d1 1\n", "utf8");
+  writeFileSync(
+    groundTruthPath,
+    `${JSON.stringify({ query_id: "1", question: "What is the answer?", answer: "42" })}\n`,
+    "utf8",
+  );
+  writeFileSync(
+    join(root, "benchmark_manifest_snapshot.json"),
+    JSON.stringify(
+      {
+        benchmark_id: "benchmark-template",
+        benchmark_display_name: "Benchmark Template",
+        dataset_id: "benchmark-template",
+        query_set_id: "dev",
+        prompt_variant: "plain_minimal",
+        query_path: queryPath,
+        qrels_path: qrelsPath,
+        secondary_qrels_path: qrelsPath,
+        ground_truth_path: groundTruthPath,
+        index_path: "indexes/benchmark-template-bm25",
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  writeFileSync(
+    join(root, "1.json"),
+    JSON.stringify(
+      {
+        query_id: "1",
+        status: "timeout",
+        retrieved_docids: ["d1"],
+        result: [],
+        tool_call_counts: { search: 1 },
+        stats: { elapsed_seconds: 1 },
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  writeFileSync(
+    join(root, "run_setup.json"),
+    JSON.stringify({ slice: "dev", model: "openai-codex/gpt-5.4-mini" }, null, 2),
+    "utf8",
+  );
+
+  const output = execFileSync(
+    "node",
+    ["--import", "tsx", "src/evaluate_run_with_pi.ts", "--inputDir", root, "--benchmark", "benchmark-template"],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /Processed 1 evaluations \(0 skipped\)\./);
+  assert.doesNotMatch(output, /run_setup\.json/);
+});
+
 test("node report entrypoint omits qrels overrides when run manifest is present", () => {
   const runRoot = writeManifestRunFixture("report-run");
 
