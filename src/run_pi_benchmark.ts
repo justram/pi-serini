@@ -12,6 +12,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import { homedir } from "node:os";
 
 import { attachJsonlLineReader } from "./pi-search/lib/jsonl";
+import { startBm25ServerTcp } from "./bm25_server_process";
 import { formatBenchmarkQueryPrompt, type BenchmarkPromptVariant } from "./prompt";
 import {
   createBenchmarkManifestSnapshot,
@@ -82,16 +83,6 @@ type RunPiOptions = {
   extraEnv?: Record<string, string>;
 };
 
-type Bm25RpcReadyMessage = {
-  type?: string;
-  transport?: string;
-  host?: string;
-  port?: number;
-  timing_ms?: {
-    init?: number;
-  };
-};
-
 type Bm25RpcConnection = {
   env: Record<string, string>;
   endpoint: {
@@ -116,195 +107,6 @@ type BenchmarkProgressEvent = {
 
 const DEFAULT_BENCHMARK_ID = getDefaultBenchmarkId();
 const DEFAULT_INDEX_PATH = resolveBenchmarkConfig({ benchmarkId: DEFAULT_BENCHMARK_ID }).indexPath;
-
-function getBm25TuningArgs(): string[] {
-  const args: string[] = [];
-  const k1 = process.env.PI_BM25_K1?.trim();
-  const b = process.env.PI_BM25_B?.trim();
-  const threads = process.env.PI_BM25_THREADS?.trim();
-  if (k1) {
-    args.push("--k1", k1);
-  }
-  if (b) {
-    args.push("--b", b);
-  }
-  if (threads) {
-    args.push("--threads", threads);
-  }
-  return args;
-}
-
-class SharedBm25RpcDaemon {
-  private readonly cwd: string;
-  private readonly server: string;
-  private readonly indexPath: string;
-  private child?: ChildProcess;
-  private stopReadingStdout?: () => void;
-  private stderr = "";
-  private endpoint?: { host: string; port: number; initMs?: number };
-
-  constructor(cwd: string) {
-    this.cwd = cwd;
-    this.server = join(cwd, "scripts", "bm25_server.sh");
-    this.indexPath = resolve(cwd, process.env.PI_BM25_INDEX_PATH ?? DEFAULT_INDEX_PATH);
-  }
-
-  async start(): Promise<void> {
-    if (this.child) {
-      throw new Error("Shared BM25 RPC daemon already started.");
-    }
-
-    const child = spawn(
-      this.server,
-      [
-        "--index-path",
-        this.indexPath,
-        "--transport",
-        "tcp",
-        "--host",
-        "127.0.0.1",
-        "--port",
-        "0",
-        ...getBm25TuningArgs(),
-      ],
-      {
-        cwd: this.cwd,
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-    if (!child.stdout || !child.stderr) {
-      throw new Error("Failed to start BM25 RPC daemon with piped stdio.");
-    }
-    this.child = child;
-    this.stderr = "";
-
-    child.stderr.on("data", (chunk) => {
-      this.stderr += chunk.toString();
-    });
-
-    await new Promise<void>((resolvePromise, reject) => {
-      let settled = false;
-      const startupTimeout = setTimeout(() => {
-        finish(
-          new Error(
-            `Timed out waiting for BM25 RPC daemon readiness.\n${this.stderr.trim()}`.trim(),
-          ),
-        );
-      }, 60_000);
-
-      const finish = (error?: Error) => {
-        if (settled) return;
-        settled = true;
-        clearTimeout(startupTimeout);
-        stopReadingStdout?.();
-        child.removeAllListeners();
-        child.stderr.removeAllListeners("data");
-        if (error) {
-          this.stopSync();
-          reject(error);
-          return;
-        }
-        resolvePromise();
-      };
-
-      const handleReadyLine = (line: string, source: "line" | "trailing") => {
-        const trimmed = line.trim();
-        if (!trimmed || settled) return;
-        let ready: Bm25RpcReadyMessage;
-        try {
-          ready = JSON.parse(trimmed) as Bm25RpcReadyMessage;
-        } catch (error) {
-          finish(
-            new Error(
-              source === "trailing"
-                ? `BM25 RPC daemon stdout ended with an invalid trailing JSON line: ${trimmed}\n${String(error)}`
-                : `Failed to parse BM25 RPC daemon readiness line: ${trimmed}\n${String(error)}`,
-            ),
-          );
-          return;
-        }
-        if (
-          ready.type !== "server_ready" ||
-          ready.transport !== "tcp" ||
-          typeof ready.host !== "string" ||
-          typeof ready.port !== "number"
-        ) {
-          finish(new Error(`Unexpected BM25 RPC daemon readiness payload: ${trimmed}`));
-          return;
-        }
-        this.endpoint = { host: ready.host, port: ready.port, initMs: ready.timing_ms?.init };
-        this.stopReadingStdout = stopReadingStdout;
-        finish();
-      };
-
-      const stopReadingStdout = attachJsonlLineReader(
-        child.stdout,
-        (line) => {
-          handleReadyLine(line, "line");
-        },
-        {
-          onTrailingLine: (line) => {
-            handleReadyLine(line, "trailing");
-          },
-        },
-      );
-
-      child.on("error", (error) => {
-        finish(error instanceof Error ? error : new Error(String(error)));
-      });
-      child.on("close", (code, signal) => {
-        finish(
-          new Error(
-            `BM25 RPC daemon exited before readiness (code=${code ?? "null"}, signal=${signal ?? "null"}).\n${this.stderr.trim()}`.trim(),
-          ),
-        );
-      });
-    });
-  }
-
-  getEnv(): Record<string, string> {
-    if (!this.endpoint) {
-      throw new Error("Shared BM25 RPC daemon is not ready.");
-    }
-    return {
-      PI_BM25_RPC_HOST: this.endpoint.host,
-      PI_BM25_RPC_PORT: String(this.endpoint.port),
-    };
-  }
-
-  getEndpoint() {
-    return this.endpoint;
-  }
-
-  async stop(): Promise<void> {
-    const child = this.child;
-    if (!child) return;
-    await new Promise<void>((resolvePromise) => {
-      const timeout = setTimeout(() => {
-        if (!child.killed) {
-          child.kill("SIGKILL");
-        }
-        resolvePromise();
-      }, 5_000);
-      child.once("close", () => {
-        clearTimeout(timeout);
-        resolvePromise();
-      });
-      child.kill("SIGTERM");
-    });
-    this.stopSync();
-  }
-
-  private stopSync() {
-    this.stopReadingStdout?.();
-    this.stopReadingStdout = undefined;
-    if (this.child && !this.child.killed) {
-      this.child.kill("SIGTERM");
-    }
-    this.child = undefined;
-    this.endpoint = undefined;
-  }
-}
 
 function getExternalBm25RpcConnection(): Bm25RpcConnection | null {
   const host = process.env.PI_BM25_RPC_HOST?.trim();
@@ -339,19 +141,24 @@ async function getBm25RpcConnection(cwd: string): Promise<Bm25RpcConnection> {
     return external;
   }
 
-  const daemon = new SharedBm25RpcDaemon(cwd);
-  await daemon.start();
-  const env = daemon.getEnv();
-  const endpoint = daemon.getEndpoint();
-  if (!endpoint) {
-    await daemon.stop();
-    throw new Error("Shared BM25 RPC daemon started without a ready endpoint.");
-  }
+  const logPath = resolve(cwd, ".cache", "bm25_server.log");
+  const server = await startBm25ServerTcp({
+    cwd,
+    indexPath: resolve(cwd, process.env.PI_BM25_INDEX_PATH ?? DEFAULT_INDEX_PATH),
+    host: "127.0.0.1",
+    port: 0,
+    logPath,
+    env: process.env,
+    readinessTimeoutMs: 60_000,
+  });
   return {
-    env,
-    endpoint,
+    env: {
+      PI_BM25_RPC_HOST: server.endpoint.host,
+      PI_BM25_RPC_PORT: String(server.endpoint.port),
+    },
+    endpoint: server.endpoint,
     stop: async () => {
-      await daemon.stop();
+      server.stop();
     },
   };
 }

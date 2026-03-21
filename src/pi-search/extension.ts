@@ -10,9 +10,10 @@ import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
-import { spawn, type ChildProcessWithoutNullStreams } from "node:child_process";
+import { type ChildProcessWithoutNullStreams } from "node:child_process";
 import { connect } from "node:net";
 import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "../benchmarks/registry";
+import { startBm25ServerStdio } from "../bm25_server_process";
 import { attachJsonlLineReader, serializeJsonLine } from "./lib/jsonl";
 
 const SEARCH_QUERY_MODE = "plain";
@@ -201,26 +202,8 @@ export function resolveDefaultIndexPath(env: NodeJS.ProcessEnv = process.env): s
 
 function getHelperPaths(cwd: string, env: NodeJS.ProcessEnv = process.env) {
   return {
-    server: join(cwd, "scripts", "bm25_server.sh"),
     indexPath: resolve(cwd, env.PI_BM25_INDEX_PATH ?? resolveDefaultIndexPath(env)),
   };
-}
-
-function getBm25TuningArgs(): string[] {
-  const args: string[] = [];
-  const k1 = process.env.PI_BM25_K1?.trim();
-  const b = process.env.PI_BM25_B?.trim();
-  const threads = process.env.PI_BM25_THREADS?.trim();
-  if (k1) {
-    args.push("--k1", k1);
-  }
-  if (b) {
-    args.push("--b", b);
-  }
-  if (threads) {
-    args.push("--threads", threads);
-  }
-  return args;
 }
 
 type HelperResponse = {
@@ -267,7 +250,6 @@ function getSubmitNowDelayMs(): number | null {
 
 class PersistentBm25Helper {
   private readonly cwd: string;
-  private readonly server: string;
   private readonly indexPath: string;
   private child?: ChildProcessWithoutNullStreams;
   private stopReadingStdout?: () => void;
@@ -278,7 +260,6 @@ class PersistentBm25Helper {
   constructor(cwd: string) {
     const paths = getHelperPaths(cwd);
     this.cwd = cwd;
-    this.server = paths.server;
     this.indexPath = paths.indexPath;
   }
 
@@ -342,10 +323,12 @@ class PersistentBm25Helper {
   }
 
   private async start(): Promise<void> {
-    const child = spawn(this.server, ["--index-path", this.indexPath, ...getBm25TuningArgs()], {
+    const started = startBm25ServerStdio({
       cwd: this.cwd,
-      stdio: ["pipe", "pipe", "pipe"],
+      indexPath: this.indexPath,
+      env: process.env,
     });
+    const child = started.child;
     let stderr = "";
 
     child.stderr.on("data", (chunk) => {
