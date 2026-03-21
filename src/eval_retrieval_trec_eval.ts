@@ -2,7 +2,11 @@ import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 
-import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "./benchmarks/registry";
+import {
+  getDefaultBenchmarkId,
+  resolveBenchmarkConfig,
+  resolveInternalRetrievalMetricSemantics,
+} from "./benchmarks/registry";
 import {
   buildTrecEvalCommands,
   parseTrecEvalMetricOutput,
@@ -123,6 +127,8 @@ function main(): void {
     metrics: retrievalEvaluation.trecEvalMetrics,
   });
 
+  const metricSemantics = resolveInternalRetrievalMetricSemantics(benchmarkConfig.benchmark.id);
+
   const summaryPath = resolve(
     args.summaryPath ??
       resolveRetrievalEvalSummaryPath({
@@ -165,6 +171,11 @@ function main(): void {
     sourcePath: resolve(args.runFilePath),
     qrelsPath: resolve(benchmarkConfig.qrelsPath),
     queryCount: undefined,
+    metricSemantics: {
+      ndcgGainMode: metricSemantics.ndcgGainMode,
+      recallRelevantThreshold: metricSemantics.recallRelevantThreshold,
+      binaryRelevantThreshold: metricSemantics.binaryRelevantThreshold,
+    },
     metrics,
   });
   console.log(`SUMMARY_PATH=${summaryPath}`);

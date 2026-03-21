@@ -31,6 +31,11 @@ test("writeRetrievalEvalSummary and loadRetrievalEvalSummary round-trip unified 
     sourcePath: "/tmp/run",
     qrelsPath: "/tmp/qrels.txt",
     queryCount: 2,
+    metricSemantics: {
+      ndcgGainMode: "exponential" as const,
+      recallRelevantThreshold: 1,
+      binaryRelevantThreshold: 1,
+    },
     metrics: [
       { metric: "ndcg_cut_10", scope: "all", value: 0.5 },
       { metric: "recall_1000", scope: "all", value: 0.75 },

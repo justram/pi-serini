@@ -542,6 +542,29 @@ export function buildReport(args: Args): {
   lines.push("- Prefix-of-agent-set metrics use the first `k` docs of that same final sequence.");
   lines.push("- These are not per-call retrieval metrics and not classical fused rankings.");
   lines.push("");
+  lines.push("## Retrieval metric semantics");
+  lines.push("");
+  lines.push(
+    markdownTable(
+      ["Setting", "Value"],
+      [
+        ["nDCG gain mode", internalMetricSemantics.ndcgGainMode],
+        [
+          "Recall relevance threshold",
+          `qrel >= ${internalMetricSemantics.recallRelevantThreshold}`,
+        ],
+        [
+          "Binary relevance threshold (MRR / MAP)",
+          `qrel >= ${internalMetricSemantics.binaryRelevantThreshold}`,
+        ],
+      ],
+    ),
+  );
+  lines.push("");
+  lines.push(
+    "These settings define how the reported retrieval metrics should be interpreted for this benchmark. In particular, `ndcg_cut_*` depends on the gain mode, and `recall_*` depends on the recall relevance threshold.",
+  );
+  lines.push("");
 
   if (runSetup) {
     lines.push("## Run setup");

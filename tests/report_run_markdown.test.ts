@@ -76,6 +76,9 @@ test("buildReport loads qrels defaults from benchmark manifest snapshots", () =>
   });
 
   assert.match(report.markdown, /manifest-qrels\.txt qrels is 100\.00% macro and 100\.00% micro/);
+  assert.match(report.markdown, /## Retrieval metric semantics/);
+  assert.match(report.markdown, /\| nDCG gain mode \| exponential \|/);
+  assert.match(report.markdown, /\| Recall relevance threshold \| qrel >= 1 \|/);
   assert.doesNotMatch(report.markdown, /\| gold \|/);
 });
 
@@ -143,4 +146,56 @@ test("buildReport formats judged incorrect query recall as a percent, not a rate
   assert.match(report.markdown, /## Judged incorrect queries/);
   assert.match(report.markdown, /\| 1265 \| 25\.00% \|/);
   assert.doesNotMatch(report.markdown, /\| 1265 \| 2500\.00% \|/);
+});
+
+test("buildReport surfaces benchmark-specific retrieval semantics for MSMARCO-style runs", () => {
+  const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
+  const runDir = join(root, "run");
+  const mergedDir = join(runDir, "merged");
+  mkdirSync(mergedDir, { recursive: true });
+
+  writeFileSync(
+    join(runDir, "benchmark_manifest_snapshot.json"),
+    JSON.stringify(
+      {
+        benchmark_id: "msmarco-v1-passage",
+        benchmark_display_name: "MS MARCO v1 Passage",
+        dataset_id: "msmarco-v1-passage",
+        query_set_id: "dl19",
+        prompt_variant: "plain_minimal",
+        query_path: join(root, "queries.tsv"),
+        qrels_path: join(root, "qrels.txt"),
+        index_path: "indexes/msmarco-v1-passage",
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  writeFileSync(join(root, "queries.tsv"), "1\tquery\n", "utf8");
+  writeFileSync(join(root, "qrels.txt"), "1 0 d1 2\n1 0 d2 1\n", "utf8");
+  writeFileSync(
+    join(mergedDir, "1.json"),
+    JSON.stringify(
+      { query_id: "1", status: "completed", retrieved_docids: ["d1"], stats: {} },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  const report = buildReport({
+    benchmarkId: "msmarco-v1-passage",
+    runDir,
+    qrelsPath: "",
+    secondaryQrelsPath: undefined,
+    recallCutoffs: [1000],
+    ndcgCutoffs: [10],
+    mrrCutoffs: [10],
+  });
+
+  assert.match(report.markdown, /## Retrieval metric semantics/);
+  assert.match(report.markdown, /\| nDCG gain mode \| linear \|/);
+  assert.match(report.markdown, /\| Recall relevance threshold \| qrel >= 2 \|/);
+  assert.match(report.markdown, /\| Binary relevance threshold \(MRR \/ MAP\) \| qrel >= 1 \|/);
 });

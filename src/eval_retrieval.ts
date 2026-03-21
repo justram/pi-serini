@@ -276,6 +276,11 @@ function main() {
       qrelsPath: resolve(args.qrelsPath),
       secondaryQrelsPath: args.secondaryQrelsPath ? resolve(args.secondaryQrelsPath) : undefined,
       queryCount: primaryResult.queryCount,
+      metricSemantics: {
+        ndcgGainMode: internalMetricSemantics.ndcgGainMode,
+        recallRelevantThreshold: internalMetricSemantics.recallRelevantThreshold,
+        binaryRelevantThreshold: internalMetricSemantics.binaryRelevantThreshold,
+      },
       metrics: summaryMetrics,
     });
     console.log(`SUMMARY_PATH=${resolve(args.summaryPath)}`);
