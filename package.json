@@ -15,7 +15,7 @@
     "test": "node --import tsx --test src/**/*.test.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck",
     "prek": "bash scripts/check_no_sensitive_tracking.sh --staged",
-    "run:benchmark:query-set": "bash scripts/run_benchmark_query_set.sh",
+    "run:benchmark:query-set": "npx tsx src/run_benchmark_query_set.ts",
     "run:benchmark:query-set:shared": "bash scripts/launch_benchmark_query_set_shared.sh",
     "run:benchmark:query-set:sharded": "bash scripts/launch_benchmark_query_set_sharded_shared.sh",
     "run:benchmark:shared": "bash scripts/launch_shared_bm25_benchmark.sh",
