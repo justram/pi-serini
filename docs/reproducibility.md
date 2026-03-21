@@ -81,8 +81,8 @@ Only code and setup logic are intended to stay tracked. By default, `data/`, `in
 A second real benchmark path is now also supported:
 
 - `msmarco-v1-passage`
-  - query set: `data/msmarco-v1-passage/queries/dev.tsv`
-  - qrels: `data/msmarco-v1-passage/qrels/qrels.dev.txt`
+  - query set: `data/msmarco-v1-passage/queries/dev-subset.tsv`
+  - qrels: `data/msmarco-v1-passage/qrels/qrels.dev-subset.txt`
   - prebuilt index: `indexes/msmarco-v1-passage/`
   - baseline run: `data/msmarco-v1-passage/source/bm25_pure.trec`
   - topics/qrels provenance pinned to `castorini/anserini-tools@303096fd01ab1ee5048adc6b4a25d55761e6c860`

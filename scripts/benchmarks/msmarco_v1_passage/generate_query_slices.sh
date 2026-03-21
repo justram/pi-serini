@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 DATASET_ROOT="$ROOT/data/msmarco-v1-passage"
 SOURCE_QUERIES="$DATASET_ROOT/source/topics.dev-subset.tsv"
 QUERY_DIR="$DATASET_ROOT/queries"
-DEV_QUERIES="$QUERY_DIR/dev.tsv"
+DEV_SUBSET_QUERIES="$QUERY_DIR/dev-subset.tsv"
 
 log() {
   printf '[setup:msmarco-v1-passage:query-slices] %s\n' "$*"
@@ -18,8 +18,8 @@ main() {
   fi
 
   mkdir -p "$QUERY_DIR"
-  cp "$SOURCE_QUERIES" "$DEV_QUERIES"
-  log "Wrote dev query set to $DEV_QUERIES"
+  cp "$SOURCE_QUERIES" "$DEV_SUBSET_QUERIES"
+  log "Wrote dev-subset query set to $DEV_SUBSET_QUERIES"
 }
 
 main "$@"

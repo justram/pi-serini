@@ -18,7 +18,7 @@ ANSERINI_THREADS="${ANSERINI_THREADS:-1}"
 TOPICS_URL="${MSMARCO_V1_PASSAGE_TOPICS_URL:-https://raw.githubusercontent.com/castorini/anserini-tools/303096fd01ab1ee5048adc6b4a25d55761e6c860/topics-and-qrels/topics.msmarco-passage.dev-subset.txt}"
 QRELS_URL="${MSMARCO_V1_PASSAGE_QRELS_URL:-https://raw.githubusercontent.com/castorini/anserini-tools/303096fd01ab1ee5048adc6b4a25d55761e6c860/topics-and-qrels/qrels.msmarco-passage.dev-subset.txt}"
 SOURCE_QUERIES="$SOURCE_DIR/topics.dev-subset.tsv"
-QRELS_FILE="$QRELS_DIR/qrels.dev.txt"
+QRELS_FILE="$QRELS_DIR/qrels.dev-subset.txt"
 BASELINE_RUN="$SOURCE_DIR/bm25_pure.trec"
 
 log() {
@@ -133,7 +133,7 @@ main() {
   log 'Prepared local outputs:'
   log "- $SOURCE_QUERIES"
   log "- $QRELS_FILE"
-  log "- $DATASET_ROOT/queries/dev.tsv"
+  log "- $DATASET_ROOT/queries/dev-subset.tsv"
   log "- $BASELINE_RUN"
   log "- $INDEX_DIR"
   log "- $INDEX_ARCHIVE"

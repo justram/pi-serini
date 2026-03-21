@@ -243,8 +243,8 @@ npm run setup:msmarco-v1-passage
 This prepares local, ignored assets under:
 
 - `data/msmarco-v1-passage/source/topics.dev-subset.tsv`
-- `data/msmarco-v1-passage/qrels/qrels.dev.txt`
-- `data/msmarco-v1-passage/queries/dev.tsv`
+- `data/msmarco-v1-passage/qrels/qrels.dev-subset.txt`
+- `data/msmarco-v1-passage/queries/dev-subset.tsv`
 - `data/msmarco-v1-passage/source/bm25_pure.trec`
 - `indexes/msmarco-v1-passage/`
 - `vendor/downloads/lucene-inverted.msmarco-v1-passage.20221004.252b5e.tar.gz`
@@ -288,7 +288,7 @@ Preferred low-friction launch entrypoints are benchmark-aware rather than Browse
 ```bash
 cd ~/Projects/ir-research/pi-serini
 BENCHMARK=msmarco-v1-passage \
-QUERY_SET=dev \
+QUERY_SET=dev-subset \
 MODEL=openai-codex/gpt-5.4-mini \
 npm run run:benchmark:query-set
 ```

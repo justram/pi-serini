@@ -270,11 +270,11 @@ test("node low-level benchmark entrypoint resolves MSMARCO retrieval defaults", 
   );
 
   assert.match(output, /BENCHMARK=msmarco-v1-passage/);
-  assert.match(output, /QUERY_SET=dev/);
-  assert.match(output, /QUERY_FILE=data\/msmarco-v1-passage\/queries\/dev.tsv/);
-  assert.match(output, /QRELS_FILE=data\/msmarco-v1-passage\/qrels\/qrels.dev.txt/);
+  assert.match(output, /QUERY_SET=dev-subset/);
+  assert.match(output, /QUERY_FILE=data\/msmarco-v1-passage\/queries\/dev-subset.tsv/);
+  assert.match(output, /QRELS_FILE=data\/msmarco-v1-passage\/qrels\/qrels.dev-subset.txt/);
   assert.match(output, /INDEX_PATH=indexes\/msmarco-v1-passage/);
-  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_msmarco-v1-passage_dev_plain_minimal/);
+  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_msmarco-v1-passage_dev-subset_plain_minimal/);
 });
 
 test("generic benchmark query-set runner resolves manifest-aligned defaults", () => {
@@ -583,7 +583,7 @@ test("node judge-eval entrypoint fails clearly for benchmarks without default gr
           "--benchmark",
           "msmarco-v1-passage",
           "--input-dir",
-          "runs/pi_bm25_msmarco-v1-passage_dev_plain_minimal",
+          "runs/pi_bm25_msmarco-v1-passage_dev-subset_plain_minimal",
         ],
         {
           cwd: process.cwd(),

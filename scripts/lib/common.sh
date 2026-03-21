@@ -92,8 +92,11 @@ pi_serini_default_query_set() {
     browsecomp-plus)
       printf '%s' "${QUERY_SET:-q9}"
       ;;
-    benchmark-template|msmarco-v1-passage)
+    benchmark-template)
       printf '%s' "${QUERY_SET:-dev}"
+      ;;
+    msmarco-v1-passage)
+      printf '%s' "${QUERY_SET:-dev-subset}"
       ;;
     *)
       printf '%s' "${QUERY_SET:-default}"
@@ -146,7 +149,7 @@ pi_serini_default_qrels_file() {
       printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_primary.txt}"
       ;;
     msmarco-v1-passage)
-      printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrels.dev.txt}"
+      printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrels.dev-subset.txt}"
       ;;
     *)
       printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_evidence.txt}"
