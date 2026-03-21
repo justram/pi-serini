@@ -153,7 +153,10 @@ function renderTemplate(template: string, values: Record<string, string>): strin
   return template.replace(/\{([A-Za-z0-9_]+)\}/g, (_match, key: string) => values[key] ?? "");
 }
 
-export function resolveBenchmarkSetupStep(benchmarkId: string, step: BenchmarkSetupStep): {
+export function resolveBenchmarkSetupStep(
+  benchmarkId: string,
+  step: BenchmarkSetupStep,
+): {
   benchmark: BenchmarkDefinition;
   step: BenchmarkSetupStep;
   scriptPath: string;
@@ -175,6 +178,7 @@ export function renderManagedPresetPaths(options: {
 }): {
   benchmark: BenchmarkDefinition;
   preset: BenchmarkManagedPresetDefinition;
+  querySetId: string;
   outputDir: string;
   logDir: string;
   launcherScript: string;
@@ -197,6 +201,7 @@ export function renderManagedPresetPaths(options: {
   return {
     benchmark,
     preset,
+    querySetId: preset.querySetId,
     outputDir,
     logDir: resolve(options.rootDir, logDirRelative),
     launcherScript: resolve(options.rootDir, preset.launcherScript),

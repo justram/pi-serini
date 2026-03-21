@@ -58,3 +58,58 @@ test("loadBenchSnapshot surfaces benchmark and query-set ids from run manifest s
   assert.equal(snapshot.runs[0]?.benchmarkId, "benchmark-template");
   assert.equal(snapshot.runs[0]?.querySetId, "dev");
 });
+
+test("loadBenchSnapshot derives managed-run progress totals from benchmark metadata instead of preset name heuristics", () => {
+  const root = mkdtempSync(join(tmpdir(), "bench-monitor-managed-"));
+  const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
+  const stateDir = join(root, "runs", "_bench", "state");
+  const queryDir = join(root, "data", "benchmark-template", "queries");
+  mkdirSync(runDir, { recursive: true });
+  mkdirSync(stateDir, { recursive: true });
+  mkdirSync(queryDir, { recursive: true });
+  writeFileSync(join(queryDir, "dev.tsv"), "1\tq1\n2\tq2\n", "utf8");
+  writeFileSync(
+    join(stateDir, "managed.json"),
+    JSON.stringify(
+      {
+        id: "managed",
+        preset: "benchmark-template/dev_shared",
+        benchmarkId: "benchmark-template",
+        querySetId: "dev",
+        rootDir: root,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        model: "openai-codex/gpt-5.4-mini",
+        thinking: "medium",
+        timeoutSeconds: 300,
+        port: 50500,
+        outputDir: runDir,
+        logDir: join(root, "runs", "shared-bm25-benchmark-template-dev"),
+        launcherScript: "scripts/launch_benchmark_query_set_shared.sh",
+        launcherEnv: undefined,
+        launcherStdoutPath: join(
+          root,
+          "runs",
+          "shared-bm25-benchmark-template-dev",
+          "launcher.stdout.log",
+        ),
+        launcherStderrPath: join(
+          root,
+          "runs",
+          "shared-bm25-benchmark-template-dev",
+          "launcher.stderr.log",
+        ),
+        status: "dead",
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  const snapshot = loadBenchSnapshot({ rootDir: root });
+  assert.equal(snapshot.runs.length, 1);
+  assert.equal(snapshot.runs[0]?.benchmarkId, "benchmark-template");
+  assert.equal(snapshot.runs[0]?.querySetId, "dev");
+  assert.equal(snapshot.runs[0]?.progressTotal, 2);
+});

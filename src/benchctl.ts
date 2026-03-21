@@ -239,7 +239,8 @@ function printManaged(args: Args): void {
     const resolvedPreset = resolveManagedPreset(state.preset);
     console.log(`${state.id}`);
     console.log(`  preset: ${state.preset}`);
-    console.log(`  benchmark: ${resolvedPreset.benchmark.id}`);
+    console.log(`  benchmark: ${state.benchmarkId ?? resolvedPreset.benchmark.id}`);
+    console.log(`  query set: ${state.querySetId ?? resolvedPreset.preset.querySetId}`);
     console.log(`  model:  ${state.model}`);
     console.log(`  status: ${state.status}`);
     console.log(`  pid:    ${state.pid ?? "n/a"}`);
@@ -289,7 +290,8 @@ async function main(): Promise<void> {
     console.log(`Launched managed run: ${state.id}`);
     console.log(`  pid:      ${state.pid ?? "n/a"}`);
     console.log(`  preset:   ${state.preset}`);
-    console.log(`  benchmark:${resolvedPreset.benchmark.id}`);
+    console.log(`  benchmark:${state.benchmarkId ?? resolvedPreset.benchmark.id}`);
+    console.log(`  query set:${state.querySetId ?? resolvedPreset.preset.querySetId}`);
     console.log(`  status:   ${state.status}`);
     console.log(`  model:    ${state.model}`);
     console.log(`  output:   ${state.outputDir}`);
@@ -307,7 +309,8 @@ async function main(): Promise<void> {
     const resolvedPreset = resolveManagedPreset(state.preset);
     console.log(`Relaunched managed run as: ${state.id}`);
     console.log(`  status:   ${state.status}`);
-    console.log(`  benchmark:${resolvedPreset.benchmark.id}`);
+    console.log(`  benchmark:${state.benchmarkId ?? resolvedPreset.benchmark.id}`);
+    console.log(`  query set:${state.querySetId ?? resolvedPreset.preset.querySetId}`);
     console.log(`  model:    ${state.model}`);
     console.log(`  output:   ${state.outputDir}`);
     console.log(`  log:      ${state.logDir}`);

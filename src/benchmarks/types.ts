@@ -2,6 +2,7 @@ import type { BenchmarkPromptVariant } from "../prompt";
 
 export type BenchmarkManagedPresetDefinition = {
   id: string;
+  querySetId: string;
   launcherScript: string;
   outputDirTemplate: string;
   logDirTemplate: string;

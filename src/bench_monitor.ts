@@ -3,6 +3,7 @@ import { join, resolve } from "node:path";
 import { execFileSync } from "node:child_process";
 
 import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "./benchmarks/registry";
+import type { BenchmarkManifestSnapshot } from "./benchmarks/types";
 import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
 import { getJudgeEvalSummaryCandidates } from "./output_layout";
 import {
@@ -605,6 +606,34 @@ function collectShardSnapshots(runDir: string, shardLogs: ShardLogSummary[]): Be
     });
 }
 
+function resolveExpectedRunQueryCount(options: {
+  rootDir: string;
+  runDir: string;
+  logInfo?: LogDirInfo;
+  manifestSnapshot?: BenchmarkManifestSnapshot;
+  managedState?: ManagedRunState;
+}): number | undefined {
+  const queryPathFromLog = options.logInfo?.queryFile;
+  if (queryPathFromLog) {
+    return countNonEmptyLines(resolve(queryPathFromLog));
+  }
+
+  const queryPathFromManifest = options.manifestSnapshot?.query_path;
+  if (queryPathFromManifest) {
+    return countNonEmptyLines(resolve(options.rootDir, queryPathFromManifest));
+  }
+
+  if (options.managedState?.benchmarkId && options.managedState.querySetId) {
+    const resolved = resolveBenchmarkConfig({
+      benchmarkId: options.managedState.benchmarkId,
+      querySetId: options.managedState.querySetId,
+    });
+    return countNonEmptyLines(resolve(options.rootDir, resolved.queryPath));
+  }
+
+  return undefined;
+}
+
 function readEvaluationSummary(runDir: string): EvaluationSummary | null {
   const benchmarkId =
     detectBenchmarkManifestSnapshot(runDir)?.snapshot.benchmark_id ?? getDefaultBenchmarkId();
@@ -621,6 +650,7 @@ function readEvaluationSummary(runDir: string): EvaluationSummary | null {
 }
 
 function loadRunSnapshot(
+  rootDir: string,
   runDir: string,
   qrels: Map<string, Set<string>>,
   secondaryQrels: Map<string, Set<string>> | undefined,
@@ -630,8 +660,9 @@ function loadRunSnapshot(
   managedState?: ManagedRunState,
 ): BenchRunSnapshot {
   const manifestSnapshot = detectBenchmarkManifestSnapshot(runDir)?.snapshot;
-  const benchmarkId = manifestSnapshot?.benchmark_id ?? getDefaultBenchmarkId();
-  const querySetId = manifestSnapshot?.query_set_id;
+  const benchmarkId =
+    manifestSnapshot?.benchmark_id ?? managedState?.benchmarkId ?? getDefaultBenchmarkId();
+  const querySetId = manifestSnapshot?.query_set_id ?? managedState?.querySetId;
   const files = collectResultJsonPaths(runDir);
   const shards = collectShardSnapshots(runDir, logInfo?.shardLogs ?? []);
   const activeShardCount = shards.filter((shard) => shard.status === "running").length;
@@ -690,13 +721,13 @@ function loadRunSnapshot(
   const progressTotal =
     logInfo?.totalQueries ??
     progressTotalFromEvents ??
-    (managedState?.preset === "q9_shared"
-      ? 9
-      : managedState?.preset === "q100_sharded"
-        ? 100
-        : managedState?.preset === "q300_sharded"
-          ? 300
-          : undefined);
+    resolveExpectedRunQueryCount({
+      rootDir,
+      runDir,
+      logInfo,
+      manifestSnapshot,
+      managedState,
+    });
   const agentSetMacroRecall =
     progressCompleted > 0
       ? primaryRecallTotals.agentSetMacroRecallSum / progressCompleted
@@ -812,11 +843,8 @@ function loadRunSnapshot(
   const configuredShardCount = managedState?.launcherEnv?.SHARD_COUNT
     ? Number.parseInt(managedState.launcherEnv.SHARD_COUNT, 10)
     : undefined;
-  const isConfiguredSharded =
-    managedState?.preset === "q100_sharded" ||
-    managedState?.preset === "q300_sharded" ||
-    managedState?.preset === "qfull_sharded";
-  const isSharded = shards.length > 0 || isConfiguredSharded;
+  const isSharded =
+    shards.length > 0 || (configuredShardCount !== undefined && configuredShardCount > 1);
   const shardCount = shards.length > 0 ? shards.length : (configuredShardCount ?? 0);
 
   return {
@@ -967,6 +995,7 @@ export function loadBenchSnapshot(options?: {
     })
     .map((runDir) =>
       loadRunSnapshot(
+        rootDir,
         runDir,
         qrels,
         secondaryQrels,

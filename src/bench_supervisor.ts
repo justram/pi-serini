@@ -25,6 +25,8 @@ export type ManagedRunPreset =
 export type ManagedRunState = {
   id: string;
   preset: ManagedRunPreset;
+  benchmarkId: string;
+  querySetId: string;
   rootDir: string;
   createdAt: number;
   updatedAt: number;
@@ -138,6 +140,8 @@ function getPresetDefaults(
   runStamp: string,
   shardCount?: number,
 ): {
+  benchmarkId: string;
+  querySetId: string;
   launcherScript: string;
   outputDir: string;
   logDir: string;
@@ -151,6 +155,8 @@ function getPresetDefaults(
     shardCount,
   });
   return {
+    benchmarkId: rendered.benchmark.id,
+    querySetId: rendered.querySetId,
     launcherScript: rendered.launcherScript,
     outputDir: rendered.outputDir,
     logDir: rendered.logDir,
@@ -334,6 +340,8 @@ export async function launchManagedRun(options: LaunchManagedRunOptions): Promis
   const state: ManagedRunState = {
     id: runId,
     preset: options.preset,
+    benchmarkId: presetDefaults.benchmarkId,
+    querySetId: presetDefaults.querySetId,
     rootDir,
     createdAt,
     updatedAt: createdAt,
@@ -356,6 +364,8 @@ export async function launchManagedRun(options: LaunchManagedRunOptions): Promis
     type: "run_registered",
     payload: {
       preset: state.preset,
+      benchmarkId: state.benchmarkId,
+      querySetId: state.querySetId,
       model: state.model,
       outputDir: state.outputDir,
       logDir: state.logDir,

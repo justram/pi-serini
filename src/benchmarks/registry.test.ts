@@ -34,6 +34,7 @@ test("renderManagedPresetPaths preserves legacy BrowseComp sharded naming", () =
     shardCount: 8,
   });
   assert.equal(rendered.benchmark.id, "browsecomp-plus");
+  assert.equal(rendered.querySetId, "q300");
   assert.equal(
     rendered.outputDir,
     "/tmp/pi-serini/runs/pi_bm25_q300_plain_minimal_excerpt_gpt54mini_shared8_20260321_120000",
