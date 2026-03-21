@@ -13,12 +13,15 @@ A reusable & reproducible `pi` search agent workspace
 
 </div>
 
-The repo is intentionally narrow in prompting and benchmark defaults today (`plain_minimal + plain_excerpt`), but the retrieval agent and BM25 server are now structured so they can be reused with any compatible prebuilt Anserini/Lucene index by changing data and index paths.
+The repo is still intentionally narrow in prompting today (`plain_minimal + plain_excerpt`), but benchmark selection, query-set defaults, setup dispatch, evaluation defaults, and report generation are now driven by a typed benchmark registry instead of one-off BrowseComp-Plus-only shell defaults. BrowseComp-Plus remains the default benchmark for reproducibility, while the active operator-facing control plane is now Node.js/TypeScript.
+
+The retrieval agent and BM25 server can be reused with any compatible prebuilt Anserini/Lucene index by changing benchmark metadata or overriding paths explicitly.
 
 ## Layout
 
-- `src/` — TypeScript benchmark runner, prompt, evaluation, and summarization
-- `scripts/` — launchers, setup scripts, and BM25 server bootstrap
+- `src/` — TypeScript benchmark runner, registry, setup dispatch, launch orchestration, evaluation, and reporting
+- `src/benchmarks/` — typed benchmark definitions, registry helpers, and run-manifest snapshot loading
+- `scripts/` — compatibility wrappers plus subprocess-level setup/BM25-server scripts
 - `src/pi-search/extension.ts` — benchmark-only search extension
 - `src/pi-search/lib/` — helper utilities for the benchmark search extension
 - `jvm/` — JVM BM25 RPC server source
@@ -29,7 +32,26 @@ The repo is intentionally narrow in prompting and benchmark defaults today (`pla
 - `evals/` — judge-evaluation outputs
 - `notes/` — repo notes
 
-Current packaged defaults:
+## Benchmark manifests and defaults
+
+Benchmark-specific defaults now live in the registry under `src/benchmarks/`.
+Each benchmark definition includes:
+
+- benchmark id and aliases
+- display name and dataset id
+- default query set and query-set-to-file mapping
+- default qrels, secondary qrels, ground-truth, and index paths
+- managed preset metadata
+- benchmark setup-step scripts
+
+Currently registered benchmarks:
+
+- `browsecomp-plus`
+- `benchmark-template`
+
+BrowseComp-Plus remains the default benchmark when the operator does not pass `--benchmark`.
+
+Current packaged default benchmark:
 
 - dataset: `browsecomp-plus`
 - default query slice: `data/browsecomp-plus/queries/q9.tsv`
@@ -37,6 +59,12 @@ Current packaged defaults:
 - evidence qrels: `data/browsecomp-plus/qrels/qrel_evidence.txt`
 - gold qrels: `data/browsecomp-plus/qrels/qrel_gold.txt`
 - index: `indexes/browsecomp-plus-bm25-tevatron/`
+
+Every run now snapshots its resolved benchmark condition into:
+
+- `<run>/benchmark_manifest_snapshot.json`
+
+That snapshot is the reproducibility anchor for downstream summarize/eval/report tooling. When it exists, downstream tools prefer it over repo defaults unless the operator passes explicit overrides.
 
 ## Requirements
 
@@ -60,6 +88,21 @@ Java resolution behavior:
 - `JVM_PATH` is auto-populated when the JDK exposes a standard `libjvm.dylib` or `libjvm.so` path.
 
 If Java is installed in a non-standard location, set `JAVA_HOME` explicitly before running setup or benchmark scripts.
+
+## Preferred entrypoints
+
+Preferred operator-facing commands are now the Node-first package scripts:
+
+- `npm run setup:benchmark`
+- `npm run run:benchmark:query-set`
+- `npm run run:benchmark:query-set:shared`
+- `npm run run:benchmark:query-set:sharded`
+- `npm run summarize:run`
+- `npm run evaluate:retrieval`
+- `npm run evaluate:run`
+- `npm run report:run`
+
+Legacy shell scripts under `scripts/` still work, but they are compatibility shims and no longer the preferred control plane.
 
 ## One-command BrowseComp-Plus asset setup
 
@@ -152,6 +195,21 @@ Current definitions:
 
 ## Main BrowseComp-Plus q9 command
 
+Preferred Node-first command:
+
+```bash
+cd ~/Projects/ir-research/pi-serini
+BENCHMARK=browsecomp-plus \
+QUERY_SET=q9 \
+MODEL=openai-codex/gpt-5.3-codex \
+OUTPUT_DIR=runs/pi_bm25_q9_plain_minimal_excerpt_gpt53codex \
+LOG_DIR=runs/shared-bm25-q9-gpt53codex \
+PI_BM25_RPC_PORT=50455 \
+npm run run:benchmark:query-set:shared
+```
+
+Equivalent legacy compatibility command:
+
 ```bash
 cd ~/Projects/ir-research/pi-serini
 MODEL=openai-codex/gpt-5.3-codex \
@@ -172,35 +230,53 @@ PI_BM25_RPC_PORT=50456 \
 bash scripts/launch_q9_plain_minimal_excerpt_shared_server.sh
 ```
 
-## Reusing the retrieval agent with another prebuilt index
+## Generic benchmark/query-set launch surface
 
-You can point the same retrieval agent at a different dataset and index layout by overriding paths.
-
-Example:
+Preferred low-friction launch entrypoints are benchmark-aware rather than BrowseComp-only:
 
 ```bash
 cd ~/Projects/ir-research/pi-serini
-QUERY_FILE=data/my-dataset/queries/dev.tsv \
-QRELS_FILE=data/my-dataset/qrels/qrel_evidence.txt \
-PI_BM25_INDEX_PATH=indexes/my-dataset-bm25-v1 \
-OUTPUT_DIR=runs/my_dataset_dev_gpt54mini \
+BENCHMARK=benchmark-template \
+QUERY_SET=dev \
 MODEL=openai-codex/gpt-5.4-mini \
-bash scripts/run_benchmark.sh
+npm run run:benchmark:query-set
 ```
 
-Shared-daemon mode works the same way with the generic launcher:
+Shared-daemon mode:
 
 ```bash
 cd ~/Projects/ir-research/pi-serini
-QUERY_FILE=data/my-dataset/queries/dev.tsv \
-QRELS_FILE=data/my-dataset/qrels/qrel_evidence.txt \
-PI_BM25_INDEX_PATH=indexes/my-dataset-bm25-v1 \
-OUTPUT_DIR=runs/my_dataset_dev_gpt54mini \
-LOG_DIR=runs/shared-my-dataset-dev-gpt54mini \
+BENCHMARK=benchmark-template \
+QUERY_SET=dev \
+MODEL=openai-codex/gpt-5.4-mini \
 PI_BM25_RPC_PORT=50460 \
-MODEL=openai-codex/gpt-5.4-mini \
-bash scripts/launch_shared_bm25_benchmark.sh
+npm run run:benchmark:query-set:shared
 ```
+
+Sharded shared-daemon mode:
+
+```bash
+cd ~/Projects/ir-research/pi-serini
+BENCHMARK=benchmark-template \
+QUERY_SET=dev \
+SHARD_COUNT=4 \
+MODEL=openai-codex/gpt-5.4-mini \
+npm run run:benchmark:query-set:sharded
+```
+
+You can still override individual inputs explicitly when you want to reuse the retrieval agent with another dataset or prebuilt index layout:
+
+```bash
+cd ~/Projects/ir-research/pi-serini
+QUERY_FILE=data/my-dataset/queries/dev.tsv \
+QRELS_FILE=data/my-dataset/qrels/qrel_evidence.txt \
+PI_BM25_INDEX_PATH=indexes/my-dataset-bm25-v1 \
+OUTPUT_DIR=runs/my_dataset_dev_gpt54mini \
+MODEL=openai-codex/gpt-5.4-mini \
+npm run run:benchmark:query-set
+```
+
+Explicit operator overrides still win over registry defaults and run-manifest inference.
 
 You can also run any generated BrowseComp-Plus slice with the generic slice wrapper:
 
@@ -267,7 +343,7 @@ Sharded runs write:
 
 under one run root such as `runs/pi_bm25_q100_plain_minimal_excerpt_gpt54mini_shared4_<timestamp>/`.
 
-Both `scripts/summarize_run.sh` and `scripts/evaluate_run_with_pi.sh` now accept either the run root or the inner `merged/` directory; they auto-resolve `merged/` when present.
+Both the preferred Node-first entrypoints and the legacy compatibility shims accept either the run root or the inner `merged/` directory; they auto-resolve `merged/` when present.
 
 The q9 launcher remains as a thin preset wrapper around the generic slice/shared launchers.
 
@@ -361,6 +437,18 @@ Important clarifications:
 - they are not evaluating a fused ranking assembled after the run
 
 ## Evaluation and summarization
+
+Downstream tools now follow this precedence order:
+
+1. explicit operator override flags or environment variables
+2. `<run>/benchmark_manifest_snapshot.json` when present
+3. benchmark registry defaults
+
+Judge-eval outputs are now written under a benchmark-aware layout:
+
+- `evals/pi_judge/<benchmark>/<run-relative-path>/...`
+
+Older flat `evals/pi_judge/<run>/...` paths are still autodetected for compatibility.
 
 Summarize a finished run:
 
@@ -587,16 +675,25 @@ PI_BM25_DUMP_PROMPTS=1 bash scripts/launch_q9_plain_minimal_excerpt_shared_serve
 
 Each run directory contains:
 
+- `benchmark_manifest_snapshot.json` — resolved benchmark condition frozen into the run artifact
 - `<query_id>.json` — normalized result
 - `raw-events/<query_id>.jsonl` — raw pi event stream
 - `stderr/<query_id>.log` — per-query stderr
 - `prompt-dumps/` — only when `PI_BM25_DUMP_PROMPTS=1`
+
+Typical benchmark-aware artifact layout now looks like:
+
+- `runs/<run>/...`
+- `runs/<run>/merged/...` for merged sharded artifacts
+- `evals/pi_judge/<benchmark>/<run>/...` for judge-eval outputs
+- `runs/shared-bm25-<benchmark>-<query-set>/...` for generic shared-daemon logs unless a compatibility wrapper preserves a legacy name
 
 ## Notes
 
 - Use fresh directories under `runs/`
 - Keep experiment writeups in `notes/`
 - See `docs/reproducibility.md` for implementation details
+- See `docs/adding-a-benchmark.md` for the benchmark-registration workflow
 
 ## Contact
 Jheng-Hong (Matt) YANG: jhyang@stencilzeit.com
