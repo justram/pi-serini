@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { launchManagedRun, relaunchManagedRun } from "./bench_supervisor";
+import { launchManagedRun, relaunchManagedRun } from "../src/bench_supervisor";
 
 test("launchManagedRun preserves legacy BrowseComp q9 managed preset naming and metadata", async () => {
   const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-q9-"));

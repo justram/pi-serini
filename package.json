@@ -12,7 +12,7 @@
     "format:check": "oxfmt --check .",
     "lint": "oxlint --type-aware --tsconfig tsconfig.json .",
     "typecheck": "tsc --noEmit",
-    "test": "node --import tsx --test src/**/*.test.ts",
+    "test": "node --import tsx --test tests/*.test.ts tests/**/*.test.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck",
     "prek": "bash scripts/check_no_sensitive_tracking.sh --staged",
     "run:benchmark:query-set": "npx tsx src/run_benchmark_query_set.ts",

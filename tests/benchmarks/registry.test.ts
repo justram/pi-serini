@@ -10,7 +10,7 @@ import {
   resolveBenchmarkConfig,
   resolveBenchmarkSetupStep,
   resolveManagedPreset,
-} from "./registry";
+} from "../../src/benchmarks/registry";
 
 test("resolveBenchmarkConfig normalizes BrowseComp aliases and query sets", () => {
   const resolved = resolveBenchmarkConfig({ benchmarkId: "browsecomp_plus", querySetId: "q100" });

@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { loadBenchSnapshot } from "./bench_monitor";
+import { loadBenchSnapshot } from "../src/bench_monitor";
 
 test("loadBenchSnapshot surfaces benchmark and query-set ids from run manifest snapshots", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-"));

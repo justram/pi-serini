@@ -3,9 +3,9 @@ import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
-import { buildReport } from "./report_run_markdown";
-import { detectEvalSummaryPath } from "./report_markdown_data";
-import type { Args, JudgeEvaluationSummary } from "./report_markdown_types";
+import { buildReport } from "../src/report_run_markdown";
+import { detectEvalSummaryPath } from "../src/report_markdown_data";
+import type { Args, JudgeEvaluationSummary } from "../src/report_markdown_types";
 
 test("detectEvalSummaryPath finds namespaced sharded judge summaries under evals/pi_judge/<benchmark>/<run>/merged", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));

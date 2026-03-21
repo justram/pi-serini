@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildBm25ServerTcpArgs } from "./bm25_server_process";
+import { buildBm25ServerTcpArgs } from "../src/bm25_server_process";
 
 test("buildBm25ServerTcpArgs uses default tuning values when env is unset", () => {
   const args = buildBm25ServerTcpArgs("indexes/demo", "127.0.0.1", 50455, {});
