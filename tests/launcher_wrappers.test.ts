@@ -62,7 +62,7 @@ test("run_benchmark_query_set help lists supported benchmarks and benchmark-scop
     },
   );
 
-  assert.match(output, /supported: browsecomp-plus, benchmark-template/);
+  assert.match(output, /supported: browsecomp-plus, msmarco-v1-passage, benchmark-template/);
   assert.match(output, /Explicit override; wins over benchmark defaults/);
 });
 
@@ -77,7 +77,7 @@ test("setup_benchmark_entry help lists supported benchmarks", () => {
     },
   );
 
-  assert.match(output, /supported: browsecomp-plus, benchmark-template/);
+  assert.match(output, /supported: browsecomp-plus, msmarco-v1-passage, benchmark-template/);
 });
 
 test("bench_tui help describes benchmark-aware qrels defaults instead of a BrowseComp-only path literal", () => {
@@ -180,6 +180,31 @@ test("node setup entrypoint resolves benchmark setup scripts from the registry",
   );
 });
 
+test("node setup entrypoint resolves MSMARCO setup scripts from the registry", () => {
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/setup_benchmark_entry.ts",
+      "--dry-run",
+      "--benchmark",
+      "msmarco-v1-passage",
+      "--step",
+      "setup",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /BENCHMARK=msmarco-v1-passage/);
+  assert.match(output, /STEP=setup/);
+  assert.match(output, /SCRIPT_PATH=scripts\/benchmarks\/msmarco_v1_passage\/setup\.sh/);
+});
+
 test("legacy BrowseComp setup wrapper remains a compatibility shim", () => {
   const output = runScript("scripts/setup_ground_truth_browsecomp_plus.sh");
 
@@ -224,6 +249,32 @@ test("legacy low-level benchmark shell wrapper remains a compatibility shim", ()
   assert.match(output, /QUERY_FILE=data\/benchmark-template\/queries\/dev.tsv/);
   assert.match(output, /QRELS_FILE=data\/benchmark-template\/qrels\/qrel_primary.txt/);
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
+});
+
+test("node low-level benchmark entrypoint resolves MSMARCO retrieval defaults", () => {
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/run_benchmark_entry.ts",
+      "--dry-run",
+      "--benchmark",
+      "msmarco-v1-passage",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /BENCHMARK=msmarco-v1-passage/);
+  assert.match(output, /QUERY_SET=dev/);
+  assert.match(output, /QUERY_FILE=data\/msmarco-v1-passage\/queries\/dev.tsv/);
+  assert.match(output, /QRELS_FILE=data\/msmarco-v1-passage\/qrels\/qrels.dev.txt/);
+  assert.match(output, /INDEX_PATH=indexes\/msmarco-v1-passage/);
+  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_msmarco-v1-passage_dev_plain_minimal/);
 });
 
 test("generic benchmark query-set runner resolves manifest-aligned defaults", () => {
@@ -517,6 +568,31 @@ test("node judge-eval entrypoint keeps explicit ground-truth and qrel-evidence o
   assert.ok(command.includes("data/custom/ground_truth.jsonl"));
   assert.ok(command.includes("--qrelEvidence"));
   assert.ok(command.includes("data/custom/qrels.txt"));
+});
+
+test("node judge-eval entrypoint fails clearly for benchmarks without default ground truth", () => {
+  assert.throws(
+    () =>
+      execFileSync(
+        "node",
+        [
+          "--import",
+          "tsx",
+          "src/evaluate_run_with_pi_entry.ts",
+          "--dry-run",
+          "--benchmark",
+          "msmarco-v1-passage",
+          "--input-dir",
+          "runs/pi_bm25_msmarco-v1-passage_dev_plain_minimal",
+        ],
+        {
+          cwd: process.cwd(),
+          env: process.env,
+          encoding: "utf8",
+        },
+      ),
+    /Judge evaluation is not configured by default for benchmark msmarco-v1-passage/,
+  );
 });
 
 test("node report entrypoint omits qrels overrides when run manifest is present", () => {

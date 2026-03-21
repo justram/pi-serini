@@ -95,6 +95,8 @@ Decide explicitly:
 - Does ground truth exist in a compatible format?
 - Do report sections still make sense for this benchmark?
 
+A valid answer is "retrieval-only for now". If a benchmark like MSMARCO does not naturally provide answer-style ground truth for the current judge pipeline, leave `defaultGroundTruthPath` unset instead of inventing fake compatibility.
+
 If the benchmark requires semantic differences instead of just different paths, add benchmark-specific evaluation adapters deliberately rather than smuggling differences through ad hoc conditionals.
 
 ## 5. Decide managed presets

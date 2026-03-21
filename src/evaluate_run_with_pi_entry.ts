@@ -110,7 +110,7 @@ Options:
   --benchmark <id>
   --input-dir <dir>
   --eval-dir <dir>
-  --ground-truth <path>
+  --ground-truth <path>  Required for benchmarks without a configured default judge ground truth
   --qrel-evidence <path>
   --model <model>
   --thinking <level>
@@ -138,7 +138,14 @@ function main(): void {
   const qrelEvidenceWasSet = args.qrelEvidencePath !== undefined || hasEnv("QREL_EVIDENCE");
   const groundTruthPath =
     args.groundTruthPath ?? readEnv("GROUND_TRUTH") ?? benchmarkConfig.groundTruthPath ?? "";
-  const qrelEvidencePath = args.qrelEvidencePath ?? readEnv("QREL_EVIDENCE") ?? benchmarkConfig.qrelsPath;
+  const qrelEvidencePath =
+    args.qrelEvidencePath ?? readEnv("QREL_EVIDENCE") ?? benchmarkConfig.qrelsPath;
+
+  if (!benchmarkResolution.manifestPresent && !groundTruthWasSet && !groundTruthPath) {
+    throw new Error(
+      `Judge evaluation is not configured by default for benchmark ${benchmarkResolution.benchmarkId}. Pass --groundTruth <path> to opt in explicitly.`,
+    );
+  }
 
   const command = [
     "npx",
@@ -157,10 +164,15 @@ function main(): void {
     "--pi",
     args.piBin ?? readEnv("PI_BIN") ?? "pi",
     "--timeoutSeconds",
-    String(args.timeoutSeconds ?? (readEnv("TIMEOUT_SECONDS") ? parseInteger(readEnv("TIMEOUT_SECONDS") as string, "TIMEOUT_SECONDS") : 180)),
+    String(
+      args.timeoutSeconds ??
+        (readEnv("TIMEOUT_SECONDS")
+          ? parseInteger(readEnv("TIMEOUT_SECONDS") as string, "TIMEOUT_SECONDS")
+          : 180),
+    ),
   ];
 
-  if (!benchmarkResolution.manifestPresent || groundTruthWasSet) {
+  if ((!benchmarkResolution.manifestPresent || groundTruthWasSet) && groundTruthPath) {
     command.push("--groundTruth", groundTruthPath);
   }
   if (!benchmarkResolution.manifestPresent || qrelEvidenceWasSet) {
@@ -169,7 +181,8 @@ function main(): void {
   if (args.force ?? readEnv("FORCE") === "1") {
     command.push("--force");
   }
-  const limit = args.limit ?? (readEnv("LIMIT") ? parseInteger(readEnv("LIMIT") as string, "LIMIT") : 0);
+  const limit =
+    args.limit ?? (readEnv("LIMIT") ? parseInteger(readEnv("LIMIT") as string, "LIMIT") : 0);
   if (limit !== 0) {
     command.push("--limit", String(limit));
   }
@@ -178,8 +191,12 @@ function main(): void {
     BENCHMARK: benchmarkResolution.benchmarkId,
     INPUT_DIR: inputDir,
     USE_RUN_MANIFEST_DEFAULTS: benchmarkResolution.manifestPresent,
-    GROUND_TRUTH: !benchmarkResolution.manifestPresent || groundTruthWasSet ? groundTruthPath : undefined,
-    QREL_EVIDENCE: !benchmarkResolution.manifestPresent || qrelEvidenceWasSet ? qrelEvidencePath : undefined,
+    GROUND_TRUTH:
+      (!benchmarkResolution.manifestPresent || groundTruthWasSet) && groundTruthPath
+        ? groundTruthPath
+        : undefined,
+    QREL_EVIDENCE:
+      !benchmarkResolution.manifestPresent || qrelEvidenceWasSet ? qrelEvidencePath : undefined,
   });
   printCommandJson(command);
 

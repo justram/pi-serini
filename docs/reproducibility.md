@@ -15,10 +15,11 @@ This repo is now benchmark-manifest-driven, but it is still opinionated around o
 
 ## Asset bootstrap
 
-The repo includes a dedicated bootstrap path:
+The repo includes dedicated benchmark bootstrap paths:
 
 ```bash
 npm run setup:browsecomp-plus
+npm run setup:msmarco-v1-passage
 ```
 
 By default it prepares four distinct asset classes:
@@ -76,6 +77,16 @@ The following assets are prepared locally so benchmark execution no longer depen
 - `vendor/anserini/anserini-1.6.0-fatjar.jar`
 
 Only code and setup logic are intended to stay tracked. By default, `data/`, `indexes/`, and `vendor/` keep only `.gitkeep` in git, while downloaded assets remain local and reproducible.
+
+A second real benchmark path is now also supported:
+
+- `msmarco-v1-passage`
+  - query set: `data/msmarco-v1-passage/queries/dev.tsv`
+  - qrels: `data/msmarco-v1-passage/qrels/qrels.dev.txt`
+  - prebuilt index: `indexes/msmarco-v1-passage/`
+  - baseline run: `data/msmarco-v1-passage/source/bm25_pure.trec`
+  - topics/qrels provenance pinned to `castorini/anserini-tools@303096fd01ab1ee5048adc6b4a25d55761e6c860`
+  - judge evaluation intentionally left unsupported by default in the current answer-ground-truth pipeline
 
 Relevant tracked code paths:
 

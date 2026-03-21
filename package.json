@@ -5,6 +5,7 @@
   "scripts": {
     "setup:benchmark": "npx tsx src/setup_benchmark_entry.ts",
     "setup:browsecomp-plus": "npx tsx src/setup_benchmark_entry.ts --benchmark browsecomp-plus --step setup",
+    "setup:msmarco-v1-passage": "npx tsx src/setup_benchmark_entry.ts --benchmark msmarco-v1-passage --step setup",
     "setup:ground-truth:browsecomp-plus": "npx tsx src/setup_benchmark_entry.ts --benchmark browsecomp-plus --step ground-truth",
     "sample:browsecomp-plus:slices": "npx tsx src/setup_benchmark_entry.ts --benchmark browsecomp-plus --step query-slices",
     "sample:benchmark:query-slices": "npx tsx src/setup_benchmark_entry.ts --step query-slices",

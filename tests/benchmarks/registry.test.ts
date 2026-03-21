@@ -66,15 +66,24 @@ test("resolveManagedPreset accepts explicit benchmark-qualified preset names", (
   assert.equal(resolved.preset.id, "qfull_sharded");
 });
 
-test("registry includes a second runnable tiny benchmark", () => {
+test("registry includes runnable local and external second benchmarks", () => {
   const benchmarkIds = listBenchmarks().map((benchmark) => benchmark.id);
-  assert.deepEqual(benchmarkIds, ["browsecomp-plus", "benchmark-template"]);
-  const resolved = resolveBenchmarkConfig({
+  assert.deepEqual(benchmarkIds, ["browsecomp-plus", "msmarco-v1-passage", "benchmark-template"]);
+
+  const templateResolved = resolveBenchmarkConfig({
     benchmarkId: "benchmark-template",
     querySetId: "test",
   });
-  assert.equal(resolved.queryPath, "data/benchmark-template/queries/test.tsv");
-  assert.equal(resolved.qrelsPath, "data/benchmark-template/qrels/qrel_primary.txt");
+  assert.equal(templateResolved.queryPath, "data/benchmark-template/queries/test.tsv");
+  assert.equal(templateResolved.qrelsPath, "data/benchmark-template/qrels/qrel_primary.txt");
+
+  const msmarcoResolved = resolveBenchmarkConfig({ benchmarkId: "msmarco-v1-passage" });
+  assert.equal(msmarcoResolved.querySetId, "dev");
+  assert.equal(msmarcoResolved.queryPath, "data/msmarco-v1-passage/queries/dev.tsv");
+  assert.equal(msmarcoResolved.qrelsPath, "data/msmarco-v1-passage/qrels/qrels.dev.txt");
+  assert.equal(msmarcoResolved.secondaryQrelsPath, undefined);
+  assert.equal(msmarcoResolved.groundTruthPath, undefined);
+  assert.equal(msmarcoResolved.indexPath, "indexes/msmarco-v1-passage");
 });
 
 test("registry resolves benchmark setup scripts", () => {
@@ -86,4 +95,7 @@ test("registry resolves benchmark setup scripts", () => {
     templateGroundTruth.scriptPath,
     "scripts/benchmarks/benchmark_template/setup_ground_truth.sh",
   );
+
+  const msmarcoSetup = resolveBenchmarkSetupStep("msmarco-v1-passage", "setup");
+  assert.equal(msmarcoSetup.scriptPath, "scripts/benchmarks/msmarco_v1_passage/setup.sh");
 });

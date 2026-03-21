@@ -92,7 +92,7 @@ pi_serini_default_query_set() {
     browsecomp-plus)
       printf '%s' "${QUERY_SET:-q9}"
       ;;
-    benchmark-template)
+    benchmark-template|msmarco-v1-passage)
       printf '%s' "${QUERY_SET:-dev}"
       ;;
     *)
@@ -105,6 +105,9 @@ pi_serini_default_index_name() {
   case "$(pi_serini_default_benchmark)" in
     browsecomp-plus)
       printf '%s' "${INDEX_NAME:-browsecomp-plus-bm25-tevatron}"
+      ;;
+    msmarco-v1-passage)
+      printf '%s' "${INDEX_NAME:-msmarco-v1-passage}"
       ;;
     *)
       printf '%s' "${INDEX_NAME:-$(pi_serini_default_dataset)-bm25}"
@@ -142,6 +145,9 @@ pi_serini_default_qrels_file() {
     benchmark-template)
       printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_primary.txt}"
       ;;
+    msmarco-v1-passage)
+      printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrels.dev.txt}"
+      ;;
     *)
       printf '%s' "${QRELS_FILE:-data/$dataset/qrels/qrel_evidence.txt}"
       ;;
@@ -158,6 +164,9 @@ pi_serini_default_secondary_qrels_file() {
     benchmark-template)
       printf '%s' "${SECONDARY_QRELS_FILE:-data/$dataset/qrels/qrel_secondary.txt}"
       ;;
+    msmarco-v1-passage)
+      printf '%s' "${SECONDARY_QRELS_FILE:-}"
+      ;;
     *)
       printf '%s' "${SECONDARY_QRELS_FILE:-data/$dataset/qrels/qrel_gold.txt}"
       ;;
@@ -170,6 +179,9 @@ pi_serini_default_ground_truth_file() {
   case "$(pi_serini_default_benchmark)" in
     browsecomp-plus)
       printf '%s' "${GROUND_TRUTH:-data/$dataset/ground-truth/browsecomp_plus_decrypted.jsonl}"
+      ;;
+    msmarco-v1-passage)
+      printf '%s' "${GROUND_TRUTH:-}"
       ;;
     *)
       printf '%s' "${GROUND_TRUTH:-data/$dataset/ground-truth/ground_truth.jsonl}"

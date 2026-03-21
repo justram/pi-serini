@@ -1,5 +1,6 @@
 import { resolve } from "node:path";
 import { browsecompPlusBenchmark } from "./browsecomp_plus";
+import { msmarcoV1PassageBenchmark } from "./msmarco_v1_passage";
 import { templateBenchmark } from "./template_benchmark";
 import type {
   BenchmarkDefinition,
@@ -9,7 +10,11 @@ import type {
   ResolvedBenchmarkConfig,
 } from "./types";
 
-const BENCHMARKS: BenchmarkDefinition[] = [browsecompPlusBenchmark, templateBenchmark];
+const BENCHMARKS: BenchmarkDefinition[] = [
+  browsecompPlusBenchmark,
+  msmarcoV1PassageBenchmark,
+  templateBenchmark,
+];
 
 function normalizeBenchmarkId(value: string): string {
   return value

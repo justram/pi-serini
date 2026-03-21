@@ -209,6 +209,11 @@ function parseArgs(argv: string[]): Args {
     args.groundTruthPath ||= benchmarkConfig.groundTruthPath ?? "";
   }
   args.qrelEvidencePath ||= benchmarkConfig.qrelsPath;
+  if (!args.groundTruthPath) {
+    throw new Error(
+      `Judge evaluation is not configured by default for benchmark ${args.benchmarkId}. Pass --groundTruth <path> to opt in explicitly.`,
+    );
+  }
   if (!Number.isFinite(args.timeoutSeconds) || args.timeoutSeconds <= 0) {
     throw new Error(`Invalid timeoutSeconds=${args.timeoutSeconds}`);
   }
@@ -225,7 +230,7 @@ Options:
   --benchmark                      Benchmark manifest id (default: ${getDefaultBenchmarkId()})
   --inputDir, --input_dir          Directory containing run JSON files
   --evalDir, --eval_dir            Root directory for evaluation outputs (default: ./evals/pi_judge)
-  --groundTruth, --ground_truth    Ground truth JSONL path (default: benchmark ground truth)
+  --groundTruth, --ground_truth    Ground truth JSONL path (default: benchmark ground truth when available)
   --qrelEvidence, --qrel_evidence  Qrel evidence path (default: benchmark primary qrels)
   --model                          Judge model (default: openai-codex/gpt-5.3-codex)
   --thinking                       Pi thinking level (default: low)
