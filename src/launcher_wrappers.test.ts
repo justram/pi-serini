@@ -45,6 +45,12 @@ function writeManifestRunFixture(name: string): string {
   return root;
 }
 
+function parseCommandJson(output: string): string[] {
+  const match = output.match(/^COMMAND_JSON=(.+)$/m);
+  assert.ok(match, "Expected COMMAND_JSON in dry-run output");
+  return JSON.parse(match[1]) as string[];
+}
+
 test("run_benchmark_query_set help lists supported benchmarks and benchmark-scoped override semantics", () => {
   const output = execFileSync(
     "node",
@@ -426,6 +432,39 @@ test("node retrieval entrypoint omits qrels overrides when run manifest is prese
   assert.doesNotMatch(output, /--secondaryQrels/);
 });
 
+test("node retrieval entrypoint keeps explicit qrels overrides above manifest defaults", () => {
+  const runRoot = writeManifestRunFixture("retrieval-run-explicit");
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/evaluate_retrieval_entry.ts",
+      "--dry-run",
+      "--run-dir",
+      runRoot,
+      "--qrels",
+      "data/custom/qrels.txt",
+      "--secondary-qrels",
+      "data/custom/qrels_secondary.txt",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  assert.match(output, /QRELS_FILE=data\/custom\/qrels.txt/);
+  assert.match(output, /SECONDARY_QRELS_FILE=data\/custom\/qrels_secondary.txt/);
+  const command = parseCommandJson(output);
+  assert.ok(command.includes("--qrels"));
+  assert.ok(command.includes("data/custom/qrels.txt"));
+  assert.ok(command.includes("--secondaryQrels"));
+  assert.ok(command.includes("data/custom/qrels_secondary.txt"));
+});
+
 test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", () => {
   const runRoot = writeManifestRunFixture("judge-run");
 
@@ -447,6 +486,39 @@ test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", 
   assert.doesNotMatch(output, /--qrelEvidence/);
 });
 
+test("node judge-eval entrypoint keeps explicit ground-truth and qrel-evidence overrides above manifest defaults", () => {
+  const runRoot = writeManifestRunFixture("judge-run-explicit");
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/evaluate_run_with_pi_entry.ts",
+      "--dry-run",
+      "--input-dir",
+      runRoot,
+      "--ground-truth",
+      "data/custom/ground_truth.jsonl",
+      "--qrel-evidence",
+      "data/custom/qrels.txt",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  assert.match(output, /GROUND_TRUTH=data\/custom\/ground_truth.jsonl/);
+  assert.match(output, /QREL_EVIDENCE=data\/custom\/qrels.txt/);
+  const command = parseCommandJson(output);
+  assert.ok(command.includes("--groundTruth"));
+  assert.ok(command.includes("data/custom/ground_truth.jsonl"));
+  assert.ok(command.includes("--qrelEvidence"));
+  assert.ok(command.includes("data/custom/qrels.txt"));
+});
+
 test("node report entrypoint omits qrels overrides when run manifest is present", () => {
   const runRoot = writeManifestRunFixture("report-run");
 
@@ -465,4 +537,81 @@ test("node report entrypoint omits qrels overrides when run manifest is present"
   assert.doesNotMatch(output, /QRELS_FILE=/);
   assert.doesNotMatch(output, /--qrels/);
   assert.doesNotMatch(output, /--secondaryQrels/);
+});
+
+test("node summarize and report entrypoints keep explicit overrides above manifest defaults", () => {
+  const summarizeRunRoot = writeManifestRunFixture("summarize-run-explicit");
+  mkdirSync(join(summarizeRunRoot, "merged"), { recursive: true });
+  writeFileSync(join(summarizeRunRoot, "merged", "evaluation_summary.json"), "{}\n");
+  const summarizeOutput = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/summarize_run_entry.ts",
+      "--dry-run",
+      "--run-dir",
+      summarizeRunRoot,
+      "--qrels",
+      "data/custom/qrels.txt",
+      "--secondary-qrels",
+      "data/custom/qrels_secondary.txt",
+      "--eval-summary",
+      "evals/custom/evaluation_summary.json",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+  assert.match(summarizeOutput, /QRELS_FILE=data\/custom\/qrels.txt/);
+  assert.match(summarizeOutput, /SECONDARY_QRELS_FILE=data\/custom\/qrels_secondary.txt/);
+  assert.match(summarizeOutput, /EVAL_SUMMARY=evals\/custom\/evaluation_summary.json/);
+  const summarizeCommand = parseCommandJson(summarizeOutput);
+  assert.ok(summarizeCommand.includes("--qrels"));
+  assert.ok(summarizeCommand.includes("data/custom/qrels.txt"));
+  assert.ok(summarizeCommand.includes("--secondaryQrels"));
+  assert.ok(summarizeCommand.includes("data/custom/qrels_secondary.txt"));
+  assert.ok(summarizeCommand.includes("--evalSummary"));
+  assert.ok(summarizeCommand.includes("evals/custom/evaluation_summary.json"));
+
+  const reportRunRoot = writeManifestRunFixture("report-run-explicit");
+  const reportOutput = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/report_run_markdown_entry.ts",
+      "--dry-run",
+      "--run-dir",
+      reportRunRoot,
+      "--qrels",
+      "data/custom/qrels.txt",
+      "--secondary-qrels",
+      "data/custom/qrels_secondary.txt",
+      "--eval-summary",
+      "evals/custom/evaluation_summary.json",
+      "--output-path",
+      "reports/custom.md",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+  assert.match(reportOutput, /QRELS_FILE=data\/custom\/qrels.txt/);
+  assert.match(reportOutput, /SECONDARY_QRELS_FILE=data\/custom\/qrels_secondary.txt/);
+  assert.match(reportOutput, /EVAL_SUMMARY=evals\/custom\/evaluation_summary.json/);
+  assert.match(reportOutput, /OUTPUT_PATH=reports\/custom.md/);
+  const reportCommand = parseCommandJson(reportOutput);
+  assert.ok(reportCommand.includes("--qrels"));
+  assert.ok(reportCommand.includes("data/custom/qrels.txt"));
+  assert.ok(reportCommand.includes("--secondaryQrels"));
+  assert.ok(reportCommand.includes("data/custom/qrels_secondary.txt"));
+  assert.ok(reportCommand.includes("--evalSummary"));
+  assert.ok(reportCommand.includes("evals/custom/evaluation_summary.json"));
+  assert.ok(reportCommand.includes("--output"));
+  assert.ok(reportCommand.includes("reports/custom.md"));
 });
