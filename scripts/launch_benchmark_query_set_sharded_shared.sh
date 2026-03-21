@@ -41,6 +41,20 @@ CONTROL_DIR="$OUTPUT_ROOT/_control"
 RETRY_REQUEST_PATH="$CONTROL_DIR/shard_retry_request.json"
 RETRY_APPROVAL_PATH="$CONTROL_DIR/shard_retry_approval.json"
 
+if [[ "${PI_SERINI_DRY_RUN:-0}" == "1" ]]; then
+  printf 'BENCHMARK=%s\n' "$BENCHMARK"
+  printf 'QUERY_SET=%s\n' "$QUERY_SET"
+  printf 'PROMPT_VARIANT=%s\n' "$PROMPT_VARIANT"
+  printf 'MODEL=%s\n' "$MODEL"
+  printf 'QUERY_FILE=%s\n' "$QUERY_FILE"
+  printf 'QRELS_FILE=%s\n' "$QRELS_FILE"
+  printf 'OUTPUT_ROOT=%s\n' "$OUTPUT_ROOT"
+  printf 'LOG_DIR=%s\n' "$LOG_DIR"
+  printf 'INDEX_PATH=%s\n' "$PI_BM25_INDEX_PATH"
+  printf 'SHARD_COUNT=%s\n' "$SHARD_COUNT"
+  exit 0
+fi
+
 mkdir -p "$LOG_DIR" "$CONTROL_DIR"
 
 for path in "$SHARD_QUERY_DIR" "$SHARD_OUTPUT_ROOT" "$MERGED_OUTPUT_DIR"; do

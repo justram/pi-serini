@@ -13,6 +13,14 @@ printf 'BENCHMARK=%s\n' "$BENCHMARK"
 printf 'QUERY_SET=%s\n' "$QUERY_SET"
 printf 'LOG_DIR=%s\n' "$LOG_DIR"
 
+if [[ "${PI_SERINI_DRY_RUN:-0}" == "1" ]]; then
+  if [[ -n "${OUTPUT_DIR:-}" ]]; then
+    printf 'OUTPUT_DIR=%s\n' "$OUTPUT_DIR"
+  fi
+  printf 'RUN_SCRIPT=%s\n' "$RUN_SCRIPT"
+  exit 0
+fi
+
 BENCHMARK="$BENCHMARK" \
 QUERY_SET="$QUERY_SET" \
 LOG_DIR="$LOG_DIR" \

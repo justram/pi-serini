@@ -27,6 +27,10 @@ printf 'OUTPUT_DIR=%s\n' "$OUTPUT_DIR"
 printf 'TIMEOUT_SECONDS=%s\n' "$TIMEOUT_SECONDS"
 printf 'INDEX_PATH=%s\n' "$PI_BM25_INDEX_PATH"
 
+if [[ "${PI_SERINI_DRY_RUN:-0}" == "1" ]]; then
+  exit 0
+fi
+
 BENCHMARK="$BENCHMARK" \
 QUERY_SET="$QUERY_SET" \
 MODEL="$MODEL" \
