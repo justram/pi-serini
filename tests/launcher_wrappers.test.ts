@@ -121,7 +121,7 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
   });
   assert.match(help, /summary of runs with benchmark ids/);
   assert.match(help, /default benchmark browsecomp-plus/);
-  assert.match(help, /benchmarks\s+List registered benchmarks, query sets, setup steps, and judge modes/);
+  assert.match(help, /benchmarks\s+List registered benchmarks, query sets, compare defaults, and eval modes/);
 
   const benchmarks = execFileSync(
     "node",
@@ -134,8 +134,13 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
   );
   assert.match(benchmarks, /browsecomp-plus — BrowseComp-Plus/);
   assert.match(benchmarks, /query sets: q9, q100, q300, qfull/);
+  assert.match(benchmarks, /compare query set: qfull/);
+  assert.match(benchmarks, /retrieval backends: run-file=internal, run-dir=internal/);
   assert.match(benchmarks, /msmarco-v1-passage — MS MARCO v1 Passage/);
+  assert.match(benchmarks, /compare query set: dl20/);
+  assert.match(benchmarks, /compare baseline: data\/msmarco-v1-passage\/source\/bm25_pure\.dl20\.trec/);
   assert.match(benchmarks, /judge modes: reference-free/);
+  assert.match(benchmarks, /default judge mode: reference-free/);
   assert.match(benchmarks, /benchmark-template — Benchmark Template Tiny Demo/);
   assert.match(benchmarks, /managed presets: none/);
 

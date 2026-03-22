@@ -46,28 +46,41 @@ export type BenchmarkCatalogEntry = {
   id: string;
   displayName: string;
   defaultQuerySetId: string;
+  defaultCompareQuerySetId?: string;
   querySetIds: string[];
   defaultQrelsPath: string;
   defaultIndexPath: string;
+  defaultCompareBaselineRunPath?: string;
+  runFileRetrievalBackend: BenchmarkDefinition["retrievalEvaluation"]["runFileBackend"];
+  runDirRetrievalBackend: BenchmarkDefinition["retrievalEvaluation"]["runDirBackend"];
   setupSteps: BenchmarkSetupStep[];
   managedPresetNames: string[];
   judgeModes: BenchmarkJudgeEvalMode[];
+  defaultJudgeMode?: BenchmarkJudgeEvalMode;
 };
 
 export function listBenchmarkCatalog(): BenchmarkCatalogEntry[] {
-  return BENCHMARKS.map((benchmark) => ({
-    id: benchmark.id,
-    displayName: benchmark.displayName,
-    defaultQuerySetId: benchmark.defaultQuerySetId,
-    querySetIds: Object.keys(benchmark.querySets),
-    defaultQrelsPath: benchmark.defaultQrelsPath,
-    defaultIndexPath: benchmark.defaultIndexPath,
-    setupSteps: BENCHMARK_SETUP_STEPS.filter(
-      (step) => benchmark.setup.steps[step] !== undefined,
-    ) as BenchmarkSetupStep[],
-    managedPresetNames: Object.keys(benchmark.managedPresets),
-    judgeModes: benchmark.judgeEvaluation?.supportedModes ?? [],
-  }));
+  return BENCHMARKS.map((benchmark) => {
+    const compareConfig = resolveBenchmarkCompareConfig({ benchmarkId: benchmark.id });
+    return {
+      id: benchmark.id,
+      displayName: benchmark.displayName,
+      defaultQuerySetId: benchmark.defaultQuerySetId,
+      defaultCompareQuerySetId: benchmark.defaultCompareQuerySetId,
+      querySetIds: Object.keys(benchmark.querySets),
+      defaultQrelsPath: benchmark.defaultQrelsPath,
+      defaultIndexPath: benchmark.defaultIndexPath,
+      defaultCompareBaselineRunPath: compareConfig.baselineRunPath,
+      runFileRetrievalBackend: benchmark.retrievalEvaluation.runFileBackend,
+      runDirRetrievalBackend: benchmark.retrievalEvaluation.runDirBackend,
+      setupSteps: BENCHMARK_SETUP_STEPS.filter(
+        (step) => benchmark.setup.steps[step] !== undefined,
+      ) as BenchmarkSetupStep[],
+      managedPresetNames: Object.keys(benchmark.managedPresets),
+      judgeModes: benchmark.judgeEvaluation?.supportedModes ?? [],
+      defaultJudgeMode: benchmark.judgeEvaluation?.defaultMode,
+    };
+  });
 }
 
 export function getDefaultBenchmarkId(): string {

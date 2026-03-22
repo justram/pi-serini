@@ -39,7 +39,7 @@ function printHelpAndExit(): never {
 Commands:
   status          Print a concise textual summary of runs with benchmark ids
   managed         Print supervisor-managed runs and PIDs
-  benchmarks      List registered benchmarks, query sets, setup steps, and judge modes
+  benchmarks      List registered benchmarks, query sets, compare defaults, and eval modes
   tui             Open the live terminal dashboard with benchmark-aware run details
   run             Launch a supervisor-managed benchmark run
   relaunch        Relaunch a managed run config as a fresh run
@@ -265,11 +265,15 @@ function printBenchmarkCatalog(): void {
   for (const entry of catalog) {
     console.log(`${entry.id} — ${entry.displayName}`);
     console.log(`  default query set: ${entry.defaultQuerySetId}`);
+    console.log(`  compare query set: ${entry.defaultCompareQuerySetId ?? "none"}`);
     console.log(`  query sets: ${entry.querySetIds.join(", ")}`);
     console.log(`  setup steps: ${entry.setupSteps.join(", ") || "none"}`);
+    console.log(`  retrieval backends: run-file=${entry.runFileRetrievalBackend}, run-dir=${entry.runDirRetrievalBackend}`);
     console.log(`  judge modes: ${entry.judgeModes.join(", ") || "none"}`);
+    console.log(`  default judge mode: ${entry.defaultJudgeMode ?? "none"}`);
     console.log(`  managed presets: ${entry.managedPresetNames.join(", ") || "none"}`);
     console.log(`  default qrels: ${entry.defaultQrelsPath}`);
+    console.log(`  compare baseline: ${entry.defaultCompareBaselineRunPath ?? "none"}`);
     console.log(`  default index: ${entry.defaultIndexPath}`);
     console.log("");
   }
