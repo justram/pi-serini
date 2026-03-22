@@ -553,13 +553,15 @@ test("node shared benchmark entrypoint resolves benchmark-aware shared defaults"
     ],
     {
       cwd: process.cwd(),
-      env: process.env,
+      env: { ...process.env, PI_BM25_THREADS: "7" },
       encoding: "utf8",
     },
   );
 
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=dev/);
+  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
+  assert.match(output, /BM25_THREADS=7/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_benchmark-template_dev_plain_minimal/);
   assert.match(output, /LOG_DIR=runs\/shared-bm25-benchmark-template-dev/);
   assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/run_benchmark_query_set.ts/);
@@ -570,11 +572,14 @@ test("legacy BrowseComp shared wrapper preserves legacy output naming", () => {
     "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_shared_server.sh",
     {
       SLICE: "q9",
+      PI_BM25_THREADS: "7",
     },
   );
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
   assert.match(output, /QUERY_SET=q9/);
+  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
+  assert.match(output, /BM25_THREADS=7/);
   assert.match(output, /LOG_DIR=runs\/shared-bm25-q9/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
@@ -588,7 +593,7 @@ test("legacy q9 shared wrapper preserves historical q9 shared naming", () => {
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
-test("node sharded benchmark entrypoint resolves benchmark-aware output naming", () => {
+test("node sharded benchmark entrypoint resolves benchmark-aware output naming and forwards critical launch defaults", () => {
   const output = execFileSync(
     "node",
     [
@@ -603,7 +608,7 @@ test("node sharded benchmark entrypoint resolves benchmark-aware output naming",
     ],
     {
       cwd: process.cwd(),
-      env: process.env,
+      env: { ...process.env, PI_BM25_THREADS: "7" },
       encoding: "utf8",
     },
   );
@@ -611,11 +616,38 @@ test("node sharded benchmark entrypoint resolves benchmark-aware output naming",
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=dev/);
   assert.match(output, /QRELS_FILE=data\/benchmark-template\/qrels\/qrel_primary.txt/);
+  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   assert.match(output, /SHARD_COUNT=3/);
+  assert.match(output, /BM25_THREADS=7/);
   assert.match(
     output,
     /OUTPUT_ROOT=runs\/pi_bm25_benchmark-template_dev_plain_minimal_gpt54mini_shared3_\d{8}_\d{6}/,
+  );
+});
+
+test("shared benchmark entrypoint fails fast when the extension path does not exist", () => {
+  assert.throws(
+    () =>
+      execFileSync(
+        "node",
+        [
+          "--import",
+          "tsx",
+          "src/orchestration/launch_benchmark_query_set_shared.ts",
+          "--dry-run",
+          "--benchmark",
+          "benchmark-template",
+          "--extension",
+          "src/pi-search/does-not-exist.ts",
+        ],
+        {
+          cwd: process.cwd(),
+          env: process.env,
+          encoding: "utf8",
+        },
+      ),
+    /Extension path not found: src\/pi-search\/does-not-exist\.ts/,
   );
 });
 
@@ -623,13 +655,16 @@ test("generic sharded launcher resolves benchmark-aware output naming", () => {
   const output = runScript("scripts/launch_benchmark_query_set_sharded_shared.sh", {
     BENCHMARK: "benchmark-template",
     SHARD_COUNT: "3",
+    PI_BM25_THREADS: "7",
   });
 
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=dev/);
   assert.match(output, /QRELS_FILE=data\/benchmark-template\/qrels\/qrel_primary.txt/);
+  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   assert.match(output, /SHARD_COUNT=3/);
+  assert.match(output, /BM25_THREADS=7/);
   assert.match(
     output,
     /OUTPUT_ROOT=runs\/pi_bm25_benchmark-template_dev_plain_minimal_gpt54mini_shared3_\d{8}_\d{6}/,

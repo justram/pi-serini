@@ -373,10 +373,12 @@ function printShardedLaunchPlan(plan: ShardedLaunchPlan): void {
   console.log(`MODEL=${plan.model}`);
   console.log(`QUERY_FILE=${plan.queryPath}`);
   console.log(`QRELS_FILE=${plan.qrelsPath}`);
+  console.log(`EXTENSION=${plan.extensionPath}`);
   console.log(`OUTPUT_ROOT=${plan.outputRoot}`);
   console.log(`LOG_DIR=${plan.logDir}`);
   console.log(`INDEX_PATH=${plan.indexPath}`);
   console.log(`SHARD_COUNT=${plan.shardCount}`);
+  console.log(`BM25_THREADS=${process.env.PI_BM25_THREADS?.trim() || "1"}`);
 }
 
 function ensureFileExists(path: string, label: string): void {
@@ -718,13 +720,15 @@ async function runEvaluate(plan: ShardedLaunchPlan): Promise<void> {
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const plan = resolveShardedLaunchPlan(args);
+  ensureFileExists(plan.queryPath, "Query file");
+  ensureFileExists(plan.qrelsPath, "Qrels file");
+  ensureFileExists(plan.extensionPath, "Extension path");
   printShardedLaunchPlan(plan);
 
   if (args.dryRun || readEnv("PI_SERINI_DRY_RUN") === "1") {
     return;
   }
 
-  ensureFileExists(plan.queryPath, "Query file");
   ensureEmptyDirectory(plan.shardQueryDir);
   ensureEmptyDirectory(plan.shardOutputRoot);
   ensureEmptyDirectory(plan.mergedOutputDir);

@@ -1,4 +1,4 @@
-import { createWriteStream } from "node:fs";
+import { createWriteStream, existsSync } from "node:fs";
 import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process";
 import net from "node:net";
 import { fileURLToPath } from "node:url";
@@ -20,6 +20,10 @@ type Args = {
   logDir?: string;
   host?: string;
   port?: number;
+  extensionPath?: string;
+  queryPath?: string;
+  qrelsPath?: string;
+  indexPath?: string;
   dryRun: boolean;
 };
 
@@ -63,6 +67,29 @@ function parseArgs(argv: string[]): Args {
         args.host = next;
         index += 1;
         break;
+      case "--extension":
+        if (!next) throw new Error(`${arg} requires a value`);
+        args.extensionPath = next;
+        index += 1;
+        break;
+      case "--query":
+      case "--queryFile":
+      case "--query-file":
+        if (!next) throw new Error(`${arg} requires a value`);
+        args.queryPath = next;
+        index += 1;
+        break;
+      case "--qrels":
+        if (!next) throw new Error(`${arg} requires a value`);
+        args.qrelsPath = next;
+        index += 1;
+        break;
+      case "--indexPath":
+      case "--index-path":
+        if (!next) throw new Error(`${arg} requires a value`);
+        args.indexPath = next;
+        index += 1;
+        break;
       case "--port":
         if (!next) throw new Error(`${arg} requires a value`);
         args.port = parseInteger(next, "port");
@@ -95,6 +122,10 @@ Options:
   --log-dir <dir>                Override shared log directory; otherwise a benchmark-aware default is used
   --host <host>
   --port <port>
+  --extension <path>
+  --query-file <path>            Explicit override; wins over benchmark defaults
+  --qrels <path>                 Explicit override; wins over benchmark defaults
+  --index-path <path>            Explicit override; wins over benchmark defaults
   --dry-run
 `);
 }
@@ -103,6 +134,10 @@ function resolveSharedLaunchPlan(args: Args): SharedLaunchPlan {
   const benchmarkPlan = resolveBenchmarkQuerySetLaunchPlan({
     benchmarkId: args.benchmarkId,
     querySetId: args.querySetId,
+    extensionPath: args.extensionPath,
+    queryPath: args.queryPath,
+    qrelsPath: args.qrelsPath,
+    indexPath: args.indexPath,
   });
   const host = args.host ?? readEnv("PI_BM25_RPC_HOST") ?? "127.0.0.1";
   const port =
@@ -126,11 +161,19 @@ function resolveSharedLaunchPlan(args: Args): SharedLaunchPlan {
   };
 }
 
+function ensureFileExists(path: string, label: string): void {
+  if (!existsSync(resolve(REPO_ROOT, path))) {
+    throw new Error(`${label} not found: ${path}`);
+  }
+}
+
 function printSharedLaunchPlan(plan: SharedLaunchPlan): void {
   printBenchmarkQuerySetLaunchPlan(plan);
+  console.log(`EXTENSION=${plan.extensionPath}`);
   console.log(`LOG_DIR=${plan.logDir}`);
   console.log(`HOST=${plan.host}`);
   console.log(`PORT=${plan.port}`);
+  console.log(`BM25_THREADS=${process.env.PI_BM25_THREADS?.trim() || "1"}`);
   console.log(`RUN_ENTRYPOINT=src/orchestration/run_benchmark_query_set.ts`);
 }
 
@@ -225,6 +268,9 @@ async function runBenchmark(plan: SharedLaunchPlan): Promise<void> {
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
   const plan = resolveSharedLaunchPlan(args);
+  ensureFileExists(plan.queryPath, "Query file");
+  ensureFileExists(plan.qrelsPath, "Qrels file");
+  ensureFileExists(plan.extensionPath, "Extension path");
   printSharedLaunchPlan(plan);
 
   if (args.dryRun || readEnv("PI_SERINI_DRY_RUN") === "1") {
