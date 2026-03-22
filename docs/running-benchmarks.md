@@ -27,6 +27,13 @@ In the current source layout:
 
 Legacy shell scripts under `scripts/` remain available as compatibility shims, especially for historical BrowseComp-Plus workflows.
 
+There are two intentional subprocess boundaries in the current architecture:
+
+- benchmark-specific setup implementations under `scripts/benchmarks/<benchmark>/...`
+- the thin JVM bootstrap script `scripts/bm25_server.sh`
+
+That split is deliberate. Setup internals are dataset-specific bootstrap work, while BM25 launch semantics such as tuning args, transport selection, readiness parsing, and endpoint discovery are owned in typed TypeScript under `src/bm25/`.
+
 ## Supported benchmarks
 
 Currently registered benchmarks:
@@ -92,6 +99,8 @@ npm run setup:benchmark -- --benchmark benchmark-template
 
 This generates a small fully local benchmark path for end-to-end validation without external dataset downloads.
 
+Setup dispatch is Node-first through `src/orchestration/setup_benchmark_entry.ts`, but the benchmark-specific implementation still runs through the benchmark's own setup script. That keeps the operator surface standardized without pretending that asset bootstrap is generic when it is not.
+
 ## Launching runs
 
 ### Generic single-process run
@@ -114,6 +123,8 @@ MODEL=openai-codex/gpt-5.4-mini \
 PI_BM25_RPC_PORT=50455 \
 npm run run:benchmark:query-set:shared
 ```
+
+The active orchestration layer starts BM25 through typed helpers in `src/bm25/bm25_server_process.ts`. Those helpers still invoke `scripts/bm25_server.sh`, but only as a thin JVM/bootstrap boundary. Shell no longer owns BM25 orchestration semantics.
 
 ### Sharded shared-daemon run
 

@@ -102,6 +102,8 @@ Then point `setup.steps` at those scripts from the benchmark definition.
 Why this boundary exists:
 setup internals are often dataset-specific, but setup dispatch should still be standardized.
 
+The current architectural decision is to keep benchmark setup implementations as benchmark-scoped subprocess boundaries unless a benchmark's setup becomes simple enough to be genuinely generic. In other words, `src/orchestration/setup_benchmark_entry.ts` owns the operator-facing control plane, while `scripts/benchmarks/<your_benchmark>/...` owns the benchmark-specific bootstrap details.
+
 ## 4. Decide evaluation semantics
 
 The generic retrieval/report pipeline assumes path defaults can come from the benchmark manifest, but not every benchmark necessarily has the same semantics.
@@ -235,4 +237,6 @@ The intended steady state is:
 - active Node-first entrypoints live under `src/orchestration/`
 - compatibility-only TypeScript entrypoints live under `src/legacy/`
 - shared runtime helpers live under `src/runtime/`
+- benchmark setup scripts remain benchmark-scoped subprocess implementations unless they become genuinely generic enough to migrate cleanly
+- the BM25 JVM helper remains callable through `scripts/bm25_server.sh`, but BM25 launch semantics are owned in typed TypeScript under `src/bm25/`
 - shell is a compatibility or subprocess boundary, not the control plane

@@ -141,7 +141,7 @@ Preferred operator-facing commands are the Node-first package scripts:
 - `npm run report:run`
 - `npm run bench:tui`
 
-Legacy shell scripts under `scripts/` still work, but they are compatibility shims rather than the preferred control plane.
+Legacy shell scripts under `scripts/` still work, but they are compatibility shims rather than the preferred control plane. The two intentional shell-level implementation boundaries that remain are benchmark-scoped setup scripts and the thin BM25 JVM bootstrap script used by the typed BM25 launch helpers.
 
 ## Repo layout
 
@@ -155,7 +155,7 @@ Legacy shell scripts under `scripts/` still work, but they are compatibility shi
 - `src/report/` — Markdown report generation and report-data helpers
 - `src/bm25/` — BM25 subprocess startup and local transport helpers
 - `src/pi-search/` — `pi` search extension and helpers
-- `scripts/` — compatibility wrappers and subprocess-level setup/BM25 scripts
+- `scripts/` — compatibility wrappers plus benchmark-scoped setup implementations and the thin BM25 JVM bootstrap script
 - `jvm/` — JVM BM25 RPC server
 - `data/<dataset>/...` — benchmark-scoped local dataset assets
 - `indexes/<index-name>/` — benchmark-scoped local Lucene indexes

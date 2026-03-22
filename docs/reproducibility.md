@@ -39,6 +39,8 @@ By default, setup prepares benchmark-scoped local assets such as:
 - the Anserini fatjar
 - benchmark-scoped baseline BM25 runs when the benchmark setup defines them
 
+Setup dispatch is standardized through `src/orchestration/setup_benchmark_entry.ts`, but the implementation for each benchmark still lives behind its own script under `scripts/benchmarks/<benchmark>/...`. That is intentional: the control plane is generic, but the bootstrap work remains benchmark-scoped and reproducibility-sensitive.
+
 An important BrowseComp-Plus nuance:
 
 - `q9`, `q100`, `q300`, and `qfull` are repo-defined slices generated locally by this repo's code
@@ -150,7 +152,7 @@ and launched by:
 
 - `scripts/bm25_server.sh`
 
-This keeps the benchmark runtime independent of `pyserini`.
+The important architectural boundary is that BM25 launch semantics are owned in typed TypeScript under `src/bm25/bm25_server_process.ts`, which decides transport mode, tuning args, readiness handling, and endpoint discovery. The shell script remains only a thin JVM/bootstrap implementation detail so the runtime stays independent of `pyserini`.
 
 ## Index and dataset reuse
 
