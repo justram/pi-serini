@@ -205,6 +205,81 @@ test("node setup entrypoint resolves MSMARCO setup scripts from the registry", (
   assert.match(output, /SCRIPT_PATH=scripts\/benchmarks\/msmarco_v1_passage\/setup\.sh/);
 });
 
+test("node setup entrypoint supports generic env-driven dispatch", () => {
+  const output = execFileSync(
+    "node",
+    ["--import", "tsx", "src/setup_benchmark_entry.ts", "--dry-run"],
+    {
+      cwd: process.cwd(),
+      env: {
+        ...process.env,
+        BENCHMARK: "benchmark-template",
+        STEP: "query-slices",
+      },
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /STEP=query-slices/);
+  assert.match(
+    output,
+    /SCRIPT_PATH=scripts\/benchmarks\/benchmark_template\/generate_query_slices\.sh/,
+  );
+});
+
+test("node setup entrypoint fails cleanly when a benchmark does not support a setup step", () => {
+  assert.throws(
+    () =>
+      execFileSync(
+        "node",
+        [
+          "--import",
+          "tsx",
+          "src/setup_benchmark_entry.ts",
+          "--dry-run",
+          "--benchmark",
+          "msmarco-v1-passage",
+          "--step",
+          "ground-truth",
+        ],
+        {
+          cwd: process.cwd(),
+          env: process.env,
+          encoding: "utf8",
+          stdio: "pipe",
+        },
+      ),
+    /Unsupported setup step ground-truth for benchmark msmarco-v1-passage/,
+  );
+});
+
+test("node setup entrypoint rejects invalid setup steps before dispatch", () => {
+  assert.throws(
+    () =>
+      execFileSync(
+        "node",
+        [
+          "--import",
+          "tsx",
+          "src/setup_benchmark_entry.ts",
+          "--dry-run",
+          "--benchmark",
+          "benchmark-template",
+          "--step",
+          "nonsense",
+        ],
+        {
+          cwd: process.cwd(),
+          env: process.env,
+          encoding: "utf8",
+          stdio: "pipe",
+        },
+      ),
+    /Unsupported step: nonsense\. Expected one of: setup, ground-truth, query-slices/,
+  );
+});
+
 test("legacy BrowseComp setup wrapper remains a compatibility shim", () => {
   const output = runScript("scripts/setup_ground_truth_browsecomp_plus.sh");
 

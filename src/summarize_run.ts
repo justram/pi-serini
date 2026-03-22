@@ -1,8 +1,12 @@
 import { existsSync, readFileSync } from "node:fs";
 import { basename, resolve } from "node:path";
-import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "./benchmarks/registry";
+import {
+  getDefaultBenchmarkId,
+  resolveBenchmarkConfig,
+  resolveInternalRetrievalMetricSemantics,
+} from "./benchmarks/registry";
 import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
-import { getRunFiles, resolveBenchmarkResultDir } from "./retrieval_metrics";
+import { getRunFiles, readQrels, type Qrels, resolveBenchmarkResultDir } from "./retrieval_metrics";
 
 type BenchmarkRun = {
   query_id: string;
@@ -140,33 +144,27 @@ Semantics:
   process.exit(0);
 }
 
-function readQrels(path: string): Map<string, Set<string>> {
-  const qrels = new Map<string, Set<string>>();
-  const text = readFileSync(path, "utf8");
-  for (const [lineIndex, rawLine] of text.split(/\r?\n/).entries()) {
-    const line = rawLine.trim();
-    if (!line) continue;
-    const parts = line.split(/\s+/);
-    if (parts.length < 4) {
-      throw new Error(`Invalid qrels line ${lineIndex + 1}: expected at least 4 columns`);
-    }
-    const [queryId, , docid, rel] = parts;
-    if (rel === "0") continue;
-    const docs = qrels.get(queryId) ?? new Set<string>();
-    docs.add(docid);
-    qrels.set(queryId, docs);
+function filterQrelsForCoverage(qrels: Qrels, benchmarkId: string): Qrels {
+  const semantics = resolveInternalRetrievalMetricSemantics(benchmarkId);
+  const recallRelevantThreshold = Math.max(1, semantics.recallRelevantThreshold ?? 1);
+  const filtered: Qrels = new Map();
+  for (const [queryId, docs] of qrels) {
+    const relevantDocs = new Map(
+      [...docs.entries()].filter(([, rel]) => rel >= recallRelevantThreshold),
+    );
+    filtered.set(queryId, relevantDocs);
   }
-  return qrels;
+  return filtered;
 }
 
 function loadRun(path: string): BenchmarkRun {
   return JSON.parse(readFileSync(path, "utf8")) as BenchmarkRun;
 }
 
-function computeRecall(retrievedDocids: string[], goldDocids: Set<string>) {
+function computeRecall(retrievedDocids: string[], goldDocids: Map<string, number>) {
   const retrieved = new Set(retrievedDocids.map(String));
   let hits = 0;
-  for (const docid of goldDocids) {
+  for (const docid of goldDocids.keys()) {
     if (retrieved.has(docid)) hits += 1;
   }
   const gold = goldDocids.size;
@@ -193,8 +191,9 @@ function computeRecallSummary(
   runFiles: string[],
   runDir: string,
   qrelsPath: string,
+  benchmarkId: string,
 ): RecallSummary {
-  const qrels = readQrels(resolve(qrelsPath));
+  const qrels = filterQrelsForCoverage(readQrels(resolve(qrelsPath)), benchmarkId);
   let macroRecallSum = 0;
   let microHits = 0;
   let microGold = 0;
@@ -202,7 +201,7 @@ function computeRecallSummary(
   for (const fileName of runFiles) {
     const run = loadRun(resolve(runDir, fileName));
     const retrievedDocids = run.retrieved_docids ?? [];
-    const goldDocids = qrels.get(String(run.query_id)) ?? new Set<string>();
+    const goldDocids = qrels.get(String(run.query_id)) ?? new Map<string, number>();
     const recall = computeRecall(retrievedDocids, goldDocids);
     macroRecallSum += recall.recall;
     microHits += recall.hits;
@@ -250,12 +249,14 @@ function main() {
     statusCounts.set(run.status, (statusCounts.get(run.status) ?? 0) + 1);
   }
 
-  const recallSummaries = [computeRecallSummary(runFiles, runDir, args.qrelsPath)];
+  const recallSummaries = [computeRecallSummary(runFiles, runDir, args.qrelsPath, args.benchmarkId)];
   if (args.secondaryQrelsPath) {
     const primaryPath = resolve(args.qrelsPath);
     const secondaryPath = resolve(args.secondaryQrelsPath);
     if (secondaryPath !== primaryPath) {
-      recallSummaries.push(computeRecallSummary(runFiles, runDir, args.secondaryQrelsPath));
+      recallSummaries.push(
+        computeRecallSummary(runFiles, runDir, args.secondaryQrelsPath, args.benchmarkId),
+      );
     }
   }
 

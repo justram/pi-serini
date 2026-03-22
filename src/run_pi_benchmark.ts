@@ -1,18 +1,17 @@
 import {
   appendFileSync,
-  copyFileSync,
   createWriteStream,
   existsSync,
   mkdirSync,
   readFileSync,
   writeFileSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { dirname, resolve } from "node:path";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
-import { homedir } from "node:os";
 
 import { attachJsonlLineReader } from "./pi-search/lib/jsonl";
 import { startBm25ServerTcp } from "./bm25_server_process";
+import { prepareIsolatedAgentDir } from "./pi_agent_dir";
 import { formatBenchmarkQueryPrompt, type BenchmarkPromptVariant } from "./prompt";
 import {
   createBenchmarkManifestSnapshot,
@@ -362,31 +361,6 @@ function collectDocidsFromToolResult(
   return parsed.results
     .filter((item) => item?.docid !== undefined)
     .map((item) => String(item.docid));
-}
-
-function resolveDefaultAgentDir(): string {
-  const envAgentDir = process.env.PI_CODING_AGENT_DIR;
-  if (envAgentDir) {
-    if (envAgentDir === "~") return homedir();
-    if (envAgentDir.startsWith("~/")) return join(homedir(), envAgentDir.slice(2));
-    return envAgentDir;
-  }
-  return join(homedir(), ".pi", "agent");
-}
-
-function prepareIsolatedAgentDir(outputDir: string): string {
-  const isolatedAgentDir = resolve(outputDir, ".pi-agent-isolated");
-  mkdirSync(isolatedAgentDir, { recursive: true });
-
-  const sourceAgentDir = resolveDefaultAgentDir();
-  for (const filename of ["auth.json", "oauth.json", "models.json"]) {
-    const sourcePath = join(sourceAgentDir, filename);
-    const targetPath = join(isolatedAgentDir, filename);
-    if (!existsSync(sourcePath) || existsSync(targetPath)) continue;
-    copyFileSync(sourcePath, targetPath);
-  }
-
-  return isolatedAgentDir;
 }
 
 function summarizeScalar(value: unknown): string | undefined {

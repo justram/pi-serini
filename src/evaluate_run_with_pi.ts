@@ -1,5 +1,4 @@
 import {
-  copyFileSync,
   createReadStream,
   existsSync,
   mkdirSync,
@@ -7,10 +6,9 @@ import {
   readdirSync,
   writeFileSync,
 } from "node:fs";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createInterface } from "node:readline";
-import { homedir } from "node:os";
 
 import { createJudgePrompt } from "./judge_prompt";
 import { parseJudgeResponse, type JudgeResult } from "./judge_parse";
@@ -19,6 +17,7 @@ import type { BenchmarkJudgeEvalMode } from "./benchmarks/types";
 import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
 import { resolveJudgeEvalOutputDir } from "./output_layout";
 import { loadJudgeEvalRelevantDocids } from "./judge_eval_qrels";
+import { prepareIsolatedAgentDir } from "./pi_agent_dir";
 
 type PiEvent = { type: string; [key: string]: unknown };
 
@@ -267,31 +266,6 @@ Options:
   --help, -h                       Show this help
 `);
   process.exit(0);
-}
-
-function resolveDefaultAgentDir(): string {
-  const envAgentDir = process.env.PI_CODING_AGENT_DIR;
-  if (envAgentDir) {
-    if (envAgentDir === "~") return homedir();
-    if (envAgentDir.startsWith("~/")) return join(homedir(), envAgentDir.slice(2));
-    return envAgentDir;
-  }
-  return join(homedir(), ".pi", "agent");
-}
-
-function prepareIsolatedAgentDir(outputDir: string): string {
-  const isolatedAgentDir = resolve(outputDir, ".pi-agent-isolated");
-  mkdirSync(isolatedAgentDir, { recursive: true });
-
-  const sourceAgentDir = resolveDefaultAgentDir();
-  for (const filename of ["auth.json", "oauth.json", "models.json"]) {
-    const sourcePath = join(sourceAgentDir, filename);
-    const targetPath = join(isolatedAgentDir, filename);
-    if (!existsSync(sourcePath) || existsSync(targetPath)) continue;
-    copyFileSync(sourcePath, targetPath);
-  }
-
-  return isolatedAgentDir;
 }
 
 function mirrorDirectoryStructure(inputDir: string, evalDir: string, benchmarkId: string): string {
