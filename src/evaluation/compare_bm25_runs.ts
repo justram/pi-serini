@@ -1,6 +1,7 @@
 import { resolve } from "node:path";
 import {
   getDefaultBenchmarkId,
+  resolveBenchmarkCompareConfig,
   resolveBenchmarkConfig,
   resolveInternalRetrievalMetricSemantics,
 } from "../benchmarks/registry";
@@ -66,6 +67,12 @@ function parseArgs(argv: string[]): Args {
         args.baselineRunPath = next;
         index += 1;
         break;
+      case "--querySet":
+      case "--query-set":
+        if (!next) throw new Error(`${arg} requires a value`);
+        args.querySetId = next;
+        index += 1;
+        break;
       case "--candidateRun":
       case "--candidate-run":
         if (!next) throw new Error(`${arg} requires a value`);
@@ -120,15 +127,16 @@ function parseArgs(argv: string[]): Args {
   }
 
   const benchmark = resolveBenchmarkConfig({ benchmarkId: args.benchmarkId });
-  const compareQuerySetId = benchmark.benchmark.defaultCompareQuerySetId;
-  const compareConfig = resolveBenchmarkConfig({
+  const compareQuerySetId = args.querySetId ?? benchmark.benchmark.defaultCompareQuerySetId;
+  const compareConfig = resolveBenchmarkCompareConfig({
     benchmarkId: benchmark.benchmark.id,
     querySetId: compareQuerySetId,
   });
-  args.baselineRunPath ||= benchmark.benchmark.defaultBaselineRunPath ?? "";
-  args.qrelsPath ||= benchmark.qrelsPath;
+  args.querySetId = compareConfig.querySetId;
+  args.baselineRunPath ||= compareConfig.baselineRunPath ?? "";
+  args.qrelsPath ||= compareConfig.qrelsPath;
   if (args.secondaryQrelsPath === undefined) {
-    args.secondaryQrelsPath = benchmark.secondaryQrelsPath;
+    args.secondaryQrelsPath = compareConfig.secondaryQrelsPath;
   }
   args.queryTsv ||= compareConfig.queryPath;
   if (resolve(args.queryTsv) === resolve(compareConfig.queryPath)) {
@@ -143,12 +151,13 @@ function printHelpAndExit(): never {
 
 Options:
   --benchmark                        Benchmark manifest id (default: ${getDefaultBenchmarkId()})
-  --baselineRun, --baseline-run      Baseline run file (default: benchmark baseline run)
+  --baselineRun, --baseline-run      Baseline run file (default: selected query-set baseline run)
   --candidateRun, --candidate-run    Candidate run file to compare against the baseline
+  --querySet, --query-set            Query set id for benchmark-scoped compare defaults
   --qrels                            Primary qrels path (default: benchmark primary qrels)
   --secondaryQrels                   Optional secondary qrels path (default: benchmark secondary qrels)
   --noSecondaryQrels                 Disable secondary qrels reporting
-  --queries, --queryTsv              Query TSV used for evaluation (default: benchmark compare query set)
+  --queries, --queryTsv              Query TSV used for evaluation (default: selected benchmark compare query set)
   --ndcgCutoff                       nDCG cutoff (default: 10)
   --recallCutoff                     recall cutoff (default: 1000)
 `);

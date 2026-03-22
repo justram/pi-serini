@@ -57,6 +57,7 @@ export type BenchmarkQuerySetDefinition = {
   secondaryQrelsPath?: string;
   groundTruthPath?: string;
   indexPath?: string;
+  compareBaselineRunPath?: string;
 };
 
 export type BenchmarkDefinition = {
@@ -88,6 +89,10 @@ export type ResolvedBenchmarkConfig = {
   secondaryQrelsPath?: string;
   groundTruthPath?: string;
   indexPath: string;
+};
+
+export type ResolvedBenchmarkCompareConfig = ResolvedBenchmarkConfig & {
+  baselineRunPath?: string;
 };
 
 export type BenchmarkManifestInputHash = {

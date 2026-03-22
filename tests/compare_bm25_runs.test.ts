@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
 import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -38,6 +39,75 @@ test("buildBuckets uses benchmark recall semantics for difficulty and gold bucke
   assert.deepEqual(trecLikeBuckets.difficulty, [{ label: "zero", queryIds: ["1"] }]);
   assert.deepEqual(trecLikeBuckets.gold, [{ label: "small", queryIds: ["1"] }]);
   assert.deepEqual(trecLikeBuckets.strata, [{ label: "zero_small", queryIds: ["1"] }]);
+});
+
+test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () => {
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/evaluation/compare_bm25_runs.ts",
+      "--help",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /--querySet, --query-set\s+Query set id for benchmark-scoped compare defaults/);
+
+  const dl19Output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/evaluation/compare_bm25_runs.ts",
+      "--benchmark",
+      "msmarco-v1-passage",
+      "--query-set",
+      "dl19",
+      "--candidateRun",
+      "data\/msmarco-v1-passage\/source\/bm25_pure.dl19.trec",
+      "--baselineRun",
+      "data\/msmarco-v1-passage\/source\/bm25_pure.dl19.trec",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(dl19Output, /Queries: .*data\/msmarco-v1-passage\/queries\/dl19.tsv/);
+  assert.match(dl19Output, /Qrels: .*data\/msmarco-v1-passage\/qrels\/qrels\.dl19-passage\.txt/);
+
+  const dl20Output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/evaluation/compare_bm25_runs.ts",
+      "--benchmark",
+      "msmarco-v1-passage",
+      "--query-set",
+      "dl20",
+      "--candidateRun",
+      "data\/msmarco-v1-passage\/source\/bm25_pure.dl20.trec",
+      "--baselineRun",
+      "data\/msmarco-v1-passage\/source\/bm25_pure.dl20.trec",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(dl20Output, /Queries: .*data\/msmarco-v1-passage\/queries\/dl20.tsv/);
+  assert.match(dl20Output, /Qrels: .*data\/msmarco-v1-passage\/qrels\/qrels\.dl20-passage\.txt/);
 });
 
 test("resolveOverallMetrics prefers matching normalized retrieval summaries", () => {

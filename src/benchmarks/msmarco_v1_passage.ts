@@ -12,10 +12,12 @@ export const msmarcoV1PassageBenchmark: BenchmarkDefinition = {
     dl19: {
       queryPath: "data/msmarco-v1-passage/queries/dl19.tsv",
       qrelsPath: "data/msmarco-v1-passage/qrels/qrels.dl19-passage.txt",
+      compareBaselineRunPath: "data/msmarco-v1-passage/source/bm25_pure.dl19.trec",
     },
     dl20: {
       queryPath: "data/msmarco-v1-passage/queries/dl20.tsv",
       qrelsPath: "data/msmarco-v1-passage/qrels/qrels.dl20-passage.txt",
+      compareBaselineRunPath: "data/msmarco-v1-passage/source/bm25_pure.dl20.trec",
     },
   },
   defaultQrelsPath: "data/msmarco-v1-passage/qrels/qrels.dl19-passage.txt",

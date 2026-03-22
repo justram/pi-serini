@@ -10,7 +10,10 @@ export const templateBenchmark: BenchmarkDefinition = {
   defaultQueryPath: "data/benchmark-template/queries/dev.tsv",
   querySets: {
     dev: "data/benchmark-template/queries/dev.tsv",
-    test: "data/benchmark-template/queries/test.tsv",
+    test: {
+      queryPath: "data/benchmark-template/queries/test.tsv",
+      compareBaselineRunPath: "data/benchmark-template/source/bm25_pure.trec",
+    },
   },
   defaultQrelsPath: "data/benchmark-template/qrels/qrel_primary.txt",
   defaultSecondaryQrelsPath: "data/benchmark-template/qrels/qrel_secondary.txt",

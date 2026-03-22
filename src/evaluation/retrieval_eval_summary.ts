@@ -117,6 +117,7 @@ export function maybeLoadMatchingRetrievalEvalSummary(options: {
     const summary = maybeLoadRetrievalEvalSummary(candidatePath);
     if (!summary) continue;
     if (summary.benchmarkId !== options.benchmarkId) continue;
+    if (!summary.sourcePath || !summary.qrelsPath) continue;
     if (resolve(summary.sourcePath) !== resolve(options.sourcePath)) continue;
     if (resolve(summary.qrelsPath) !== resolve(options.qrelsPath)) continue;
     if (options.sourceType && summary.sourceType !== options.sourceType) continue;

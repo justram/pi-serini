@@ -15,6 +15,7 @@ import {
   type BenchmarkManagedPresetDefinition,
   type BenchmarkQuerySetDefinition,
   type BenchmarkSetupStep,
+  type ResolvedBenchmarkCompareConfig,
   type ResolvedBenchmarkConfig,
 } from "./types";
 
@@ -148,6 +149,31 @@ export function resolveBenchmarkConfig(options?: {
     groundTruthPath:
       options?.groundTruthPath ?? querySet.groundTruthPath ?? benchmark.defaultGroundTruthPath,
     indexPath: options?.indexPath ?? querySet.indexPath ?? benchmark.defaultIndexPath,
+  };
+}
+
+export function resolveBenchmarkCompareConfig(options?: {
+  benchmarkId?: string;
+  querySetId?: string;
+  queryPath?: string;
+  qrelsPath?: string;
+  secondaryQrelsPath?: string;
+  groundTruthPath?: string;
+  indexPath?: string;
+  baselineRunPath?: string;
+}): ResolvedBenchmarkCompareConfig {
+  const benchmark = getBenchmarkDefinition(options?.benchmarkId);
+  const compareQuerySetId = options?.querySetId ?? benchmark.defaultCompareQuerySetId ?? benchmark.defaultQuerySetId;
+  const resolved = resolveBenchmarkConfig({
+    ...options,
+    benchmarkId: benchmark.id,
+    querySetId: compareQuerySetId,
+  });
+  const { querySet } = getBenchmarkQueryPath(resolved.benchmark.id, resolved.querySetId);
+  return {
+    ...resolved,
+    baselineRunPath:
+      options?.baselineRunPath ?? querySet.compareBaselineRunPath ?? resolved.benchmark.defaultBaselineRunPath,
   };
 }
 

@@ -10,6 +10,7 @@ import {
   getDefaultBenchmarkId,
   listBenchmarks,
   renderManagedPresetPaths,
+  resolveBenchmarkCompareConfig,
   resolveBenchmarkConfig,
   resolveBenchmarkSetupStep,
   resolveInternalRetrievalMetricSemantics,
@@ -214,6 +215,32 @@ test("resolveManagedPreset accepts explicit benchmark-qualified preset names", (
   const resolved = resolveManagedPreset("browsecomp-plus/qfull_sharded");
   assert.equal(resolved.benchmark.id, "browsecomp-plus");
   assert.equal(resolved.preset.id, "qfull_sharded");
+});
+
+test("registry resolves query-set-specific compare defaults", () => {
+  const templateCompare = resolveBenchmarkCompareConfig({
+    benchmarkId: "benchmark-template",
+    querySetId: "test",
+  });
+  assert.equal(templateCompare.querySetId, "test");
+  assert.equal(templateCompare.queryPath, "data/benchmark-template/queries/test.tsv");
+  assert.equal(templateCompare.baselineRunPath, "data/benchmark-template/source/bm25_pure.trec");
+
+  const msmarcoDl19Compare = resolveBenchmarkCompareConfig({
+    benchmarkId: "msmarco-v1-passage",
+    querySetId: "dl19",
+  });
+  assert.equal(msmarcoDl19Compare.baselineRunPath, "data/msmarco-v1-passage/source/bm25_pure.dl19.trec");
+
+  const msmarcoDl20Compare = resolveBenchmarkCompareConfig({
+    benchmarkId: "msmarco-v1-passage",
+    querySetId: "dl20",
+  });
+  assert.equal(msmarcoDl20Compare.baselineRunPath, "data/msmarco-v1-passage/source/bm25_pure.dl20.trec");
+
+  const msmarcoDefaultCompare = resolveBenchmarkCompareConfig({ benchmarkId: "msmarco-v1-passage" });
+  assert.equal(msmarcoDefaultCompare.querySetId, "dl20");
+  assert.equal(msmarcoDefaultCompare.baselineRunPath, "data/msmarco-v1-passage/source/bm25_pure.dl20.trec");
 });
 
 test("registry includes runnable local and external second benchmarks", () => {
