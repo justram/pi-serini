@@ -24,7 +24,30 @@ export const msmarcoV1PassageBenchmark: BenchmarkDefinition = {
   defaultIndexPath: "indexes/msmarco-v1-passage",
   defaultCompareQuerySetId: "dl20",
   defaultBaselineRunPath: "data/msmarco-v1-passage/source/bm25_pure.dl19.trec",
-  managedPresets: {},
+  managedPresets: {
+    dl19_shared: {
+      id: "dl19_shared",
+      querySetId: "dl19",
+      launcherScript: "scripts/launch_benchmark_query_set_shared.sh",
+      outputDirTemplate: "runs/pi_agent_msmarco_dl19_plain_minimal_{modelSlug}_{runStamp}",
+      logDirTemplate: "runs/shared-bm25-msmarco-dl19-{modelSlug}_{runStamp}",
+      launcherEnv: {
+        BENCHMARK: "msmarco-v1-passage",
+        QUERY_SET: "dl19",
+      },
+    },
+    dl20_shared: {
+      id: "dl20_shared",
+      querySetId: "dl20",
+      launcherScript: "scripts/launch_benchmark_query_set_shared.sh",
+      outputDirTemplate: "runs/pi_agent_msmarco_dl20_plain_minimal_{modelSlug}_{runStamp}",
+      logDirTemplate: "runs/shared-bm25-msmarco-dl20-{modelSlug}_{runStamp}",
+      launcherEnv: {
+        BENCHMARK: "msmarco-v1-passage",
+        QUERY_SET: "dl20",
+      },
+    },
+  },
   setup: {
     steps: {
       setup: "scripts/benchmarks/msmarco_v1_passage/setup.sh",

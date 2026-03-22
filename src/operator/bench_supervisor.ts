@@ -20,6 +20,8 @@ export type ManagedRunPreset =
   | "q100_sharded"
   | "q300_sharded"
   | "qfull_sharded"
+  | "dl19_shared"
+  | "dl20_shared"
   | `${string}/${string}`;
 
 export type ManagedRunState = {

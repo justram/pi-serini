@@ -141,6 +141,7 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
   assert.match(benchmarks, /compare baseline: data\/msmarco-v1-passage\/source\/bm25_pure\.dl20\.trec/);
   assert.match(benchmarks, /judge modes: reference-free/);
   assert.match(benchmarks, /default judge mode: reference-free/);
+  assert.match(benchmarks, /managed presets: dl19_shared, dl20_shared/);
   assert.match(benchmarks, /benchmark-template — Benchmark Template Tiny Demo/);
   assert.match(benchmarks, /managed presets: none/);
 

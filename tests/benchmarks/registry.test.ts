@@ -215,6 +215,10 @@ test("resolveManagedPreset accepts explicit benchmark-qualified preset names", (
   const resolved = resolveManagedPreset("browsecomp-plus/qfull_sharded");
   assert.equal(resolved.benchmark.id, "browsecomp-plus");
   assert.equal(resolved.preset.id, "qfull_sharded");
+
+  const msmarcoResolved = resolveManagedPreset("msmarco-v1-passage/dl20_shared");
+  assert.equal(msmarcoResolved.benchmark.id, "msmarco-v1-passage");
+  assert.equal(msmarcoResolved.preset.id, "dl20_shared");
 });
 
 test("registry resolves query-set-specific compare defaults", () => {
@@ -241,6 +245,29 @@ test("registry resolves query-set-specific compare defaults", () => {
   const msmarcoDefaultCompare = resolveBenchmarkCompareConfig({ benchmarkId: "msmarco-v1-passage" });
   assert.equal(msmarcoDefaultCompare.querySetId, "dl20");
   assert.equal(msmarcoDefaultCompare.baselineRunPath, "data/msmarco-v1-passage/source/bm25_pure.dl20.trec");
+});
+
+test("registry renders MSMARCO managed preset paths for shared runs", () => {
+  const rendered = renderManagedPresetPaths({
+    rootDir: "/tmp/pi-serini",
+    presetName: "dl19_shared",
+    modelSlug: "gpt54mini",
+    runStamp: "20260321_120000",
+  });
+  assert.equal(rendered.benchmark.id, "msmarco-v1-passage");
+  assert.equal(rendered.querySetId, "dl19");
+  assert.equal(
+    rendered.outputDir,
+    "/tmp/pi-serini/runs/pi_agent_msmarco_dl19_plain_minimal_gpt54mini_20260321_120000",
+  );
+  assert.equal(
+    rendered.logDir,
+    "/tmp/pi-serini/runs/shared-bm25-msmarco-dl19-gpt54mini_20260321_120000",
+  );
+  assert.deepEqual(rendered.launcherEnv, {
+    BENCHMARK: "msmarco-v1-passage",
+    QUERY_SET: "dl19",
+  });
 });
 
 test("registry includes runnable local and external second benchmarks", () => {
