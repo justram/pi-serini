@@ -1,14 +1,11 @@
 import { spawnSync } from "node:child_process";
 import {
   detectShellCompatibleEvalSummary,
-  hasEnv,
   printCommandJson,
   printCommandPlan,
   readEnv,
-  resolveBenchmarkIdFromRunPath,
-  resolveSecondaryQrelsForWrapper,
+  resolveWrapperQrels,
 } from "./downstream_tool_wrappers";
-import { resolveBenchmarkConfig } from "./benchmarks/registry";
 
 type Args = {
   benchmarkId?: string;
@@ -112,49 +109,38 @@ function main(): void {
   }
 
   const autoDetectMerged = args.autoDetectMerged ?? (readEnv("AUTO_DETECT_MERGED") ?? "1") === "1";
-  const benchmarkResolution = resolveBenchmarkIdFromRunPath({
+  const qrelsResolution = resolveWrapperQrels({
     benchmarkId: args.benchmarkId,
     runPath: runDir,
+    qrelsPath: args.qrelsPath,
+    secondaryQrelsPath: args.secondaryQrelsPath,
+    secondaryQrelsDisabled: args.secondaryQrelsDisabled,
   });
-  const benchmarkConfig = resolveBenchmarkConfig({ benchmarkId: benchmarkResolution.benchmarkId });
-
-  const qrelsWasSet = args.qrelsPath !== undefined || hasEnv("QRELS_FILE");
-  const qrelsPath = args.qrelsPath ?? readEnv("QRELS_FILE") ?? benchmarkConfig.qrelsPath;
-  const secondaryQrelsWasSet =
-    args.secondaryQrelsDisabled || args.secondaryQrelsPath !== undefined || hasEnv("SECONDARY_QRELS_FILE");
-  const secondaryQrelsPath = args.secondaryQrelsDisabled
-    ? undefined
-    : resolveSecondaryQrelsForWrapper({
-        benchmarkId: benchmarkResolution.benchmarkId,
-        manifestPresent: benchmarkResolution.manifestPresent,
-        explicitWasSet: secondaryQrelsWasSet,
-        explicitValue: args.secondaryQrelsPath ?? readEnv("SECONDARY_QRELS_FILE"),
-      });
   const evalSummaryPath = autoDetectMerged
     ? detectShellCompatibleEvalSummary(
         runDir,
-        benchmarkResolution.benchmarkId,
+        qrelsResolution.benchmarkId,
         args.evalSummaryPath ?? readEnv("EVAL_SUMMARY"),
       )
     : args.evalSummaryPath ?? readEnv("EVAL_SUMMARY");
 
-  const command = ["npx", "tsx", "src/summarize_run.ts", "--benchmark", benchmarkResolution.benchmarkId, "--runDir", runDir];
-  if (!benchmarkResolution.manifestPresent || qrelsWasSet) {
-    command.push("--qrels", qrelsPath);
+  const command = ["npx", "tsx", "src/summarize_run.ts", "--benchmark", qrelsResolution.benchmarkId, "--runDir", runDir];
+  if (qrelsResolution.includePrimaryQrelsOverride) {
+    command.push("--qrels", qrelsResolution.qrelsPath);
   }
-  if (secondaryQrelsPath) {
-    command.push("--secondaryQrels", secondaryQrelsPath);
+  if (qrelsResolution.secondaryQrelsPath) {
+    command.push("--secondaryQrels", qrelsResolution.secondaryQrelsPath);
   }
   if (evalSummaryPath) {
     command.push("--evalSummary", evalSummaryPath);
   }
 
   printCommandPlan({
-    BENCHMARK: benchmarkResolution.benchmarkId,
+    BENCHMARK: qrelsResolution.benchmarkId,
     RUN_DIR: runDir,
-    USE_RUN_MANIFEST_DEFAULTS: benchmarkResolution.manifestPresent,
-    QRELS_FILE: !benchmarkResolution.manifestPresent || qrelsWasSet ? qrelsPath : undefined,
-    SECONDARY_QRELS_FILE: secondaryQrelsPath,
+    USE_RUN_MANIFEST_DEFAULTS: qrelsResolution.manifestPresent,
+    QRELS_FILE: qrelsResolution.includePrimaryQrelsOverride ? qrelsResolution.qrelsPath : undefined,
+    SECONDARY_QRELS_FILE: qrelsResolution.secondaryQrelsPath,
     EVAL_SUMMARY: evalSummaryPath,
   });
   printCommandJson(command);

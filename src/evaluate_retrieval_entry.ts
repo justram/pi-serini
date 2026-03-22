@@ -1,13 +1,10 @@
 import { spawnSync } from "node:child_process";
 import {
-  hasEnv,
   printCommandJson,
   printCommandPlan,
   readEnv,
-  resolveBenchmarkIdFromRunPath,
-  resolveSecondaryQrelsForWrapper,
+  resolveWrapperQrels,
 } from "./downstream_tool_wrappers";
-import { resolveBenchmarkConfig } from "./benchmarks/registry";
 import { resolveRetrievalEvalSummaryPath } from "./output_layout";
 import { resolveAnseriniJarPath } from "./trec_eval_runner";
 
@@ -150,55 +147,40 @@ function main(): void {
     throw new Error("Specify exactly one of RUN_FILE or RUN_DIR");
   }
 
-  const benchmarkResolution = resolveBenchmarkIdFromRunPath({
+  const qrelsResolution = resolveWrapperQrels({
     benchmarkId: args.benchmarkId,
+    querySetId: args.querySetId ?? readEnv("QUERY_SET"),
     runPath: runDir,
+    qrelsPath: args.qrelsPath,
+    secondaryQrelsPath: args.secondaryQrelsPath,
+    secondaryQrelsDisabled: args.secondaryQrelsDisabled,
   });
-  const querySetId = args.querySetId ?? readEnv("QUERY_SET") ?? benchmarkResolution.querySetId;
-  const benchmarkConfig = resolveBenchmarkConfig({
-    benchmarkId: benchmarkResolution.benchmarkId,
-    querySetId,
-  });
-  const qrelsWasSet = args.qrelsPath !== undefined || hasEnv("QRELS_FILE");
-  const qrelsPath = args.qrelsPath ?? readEnv("QRELS_FILE") ?? benchmarkConfig.qrelsPath;
-  const secondaryQrelsWasSet =
-    args.secondaryQrelsDisabled ||
-    args.secondaryQrelsPath !== undefined ||
-    hasEnv("SECONDARY_QRELS_FILE");
-  const secondaryQrelsPath = args.secondaryQrelsDisabled
-    ? undefined
-    : resolveSecondaryQrelsForWrapper({
-        benchmarkId: benchmarkResolution.benchmarkId,
-        manifestPresent: benchmarkResolution.manifestPresent,
-        explicitWasSet: secondaryQrelsWasSet,
-        explicitValue: args.secondaryQrelsPath ?? readEnv("SECONDARY_QRELS_FILE"),
-      });
 
   const queryTsv = args.queryTsv ?? readEnv("QUERY_TSV");
   const writeRunFile = args.writeRunFile ?? readEnv("WRITE_RUN_FILE");
-  const retrievalEvaluation = benchmarkConfig.benchmark.retrievalEvaluation;
+  const retrievalEvaluation = qrelsResolution.benchmarkConfig.benchmark.retrievalEvaluation;
   const useTrecEvalBackend = Boolean(runFile) && retrievalEvaluation.runFileBackend === "trec_eval";
 
   if (useTrecEvalBackend) {
-    if (secondaryQrelsPath) {
+    if (qrelsResolution.secondaryQrelsPath) {
       throw new Error(
-        `Secondary qrels are not supported with trec_eval backend for benchmark ${benchmarkConfig.benchmark.id}.`,
+        `Secondary qrels are not supported with trec_eval backend for benchmark ${qrelsResolution.benchmarkConfig.benchmark.id}.`,
       );
     }
     if (queryTsv) {
       throw new Error(
-        `--queries is not supported with trec_eval backend for benchmark ${benchmarkConfig.benchmark.id}.`,
+        `--queries is not supported with trec_eval backend for benchmark ${qrelsResolution.benchmarkConfig.benchmark.id}.`,
       );
     }
     if (writeRunFile) {
       throw new Error(
-        `--writeRunFile is not supported with trec_eval backend for benchmark ${benchmarkConfig.benchmark.id}.`,
+        `--writeRunFile is not supported with trec_eval backend for benchmark ${qrelsResolution.benchmarkConfig.benchmark.id}.`,
       );
     }
   }
 
   const retrievalSummaryPath = resolveRetrievalEvalSummaryPath({
-    benchmarkId: benchmarkConfig.benchmark.id,
+    benchmarkId: qrelsResolution.benchmarkConfig.benchmark.id,
     sourcePath: runFile ?? runDir ?? "",
   });
 
@@ -208,11 +190,11 @@ function main(): void {
         "tsx",
         "src/eval_retrieval_trec_eval.ts",
         "--benchmark",
-        benchmarkResolution.benchmarkId,
+        qrelsResolution.benchmarkId,
         "--query-set",
-        benchmarkConfig.querySetId,
+        qrelsResolution.querySetId,
         "--qrels",
-        qrelsPath,
+        qrelsResolution.qrelsPath,
         "--runFile",
         runFile ?? "",
         "--anserini-jar",
@@ -225,9 +207,9 @@ function main(): void {
         "tsx",
         "src/eval_retrieval.ts",
         "--benchmark",
-        benchmarkResolution.benchmarkId,
+        qrelsResolution.benchmarkId,
         "--query-set",
-        benchmarkConfig.querySetId,
+        qrelsResolution.querySetId,
         "--recallCutoffs",
         args.recallCutoffs ?? readEnv("RECALL_CUTOFFS") ?? "100,1000",
         "--ndcgCutoffs",
@@ -238,11 +220,11 @@ function main(): void {
 
   if (!useTrecEvalBackend) {
     command.push("--summary-path", retrievalSummaryPath);
-    if (!benchmarkResolution.manifestPresent || qrelsWasSet) {
-      command.push("--qrels", qrelsPath);
+    if (qrelsResolution.includePrimaryQrelsOverride) {
+      command.push("--qrels", qrelsResolution.qrelsPath);
     }
-    if (secondaryQrelsPath) {
-      command.push("--secondaryQrels", secondaryQrelsPath);
+    if (qrelsResolution.secondaryQrelsPath) {
+      command.push("--secondaryQrels", qrelsResolution.secondaryQrelsPath);
     }
     if (runFile) {
       command.push("--runFile", runFile);
@@ -259,22 +241,22 @@ function main(): void {
   }
 
   printCommandPlan({
-    BENCHMARK: benchmarkResolution.benchmarkId,
+    BENCHMARK: qrelsResolution.benchmarkId,
     RUN_FILE: runFile,
     RUN_DIR: runDir,
-    QUERY_SET: benchmarkConfig.querySetId,
+    QUERY_SET: qrelsResolution.querySetId,
     RETRIEVAL_EVAL_BACKEND: useTrecEvalBackend
       ? "trec_eval"
       : runFile
         ? retrievalEvaluation.runFileBackend
         : retrievalEvaluation.runDirBackend,
-    USE_RUN_MANIFEST_DEFAULTS: benchmarkResolution.manifestPresent,
+    USE_RUN_MANIFEST_DEFAULTS: qrelsResolution.manifestPresent,
     QRELS_FILE: useTrecEvalBackend
-      ? qrelsPath
-      : !benchmarkResolution.manifestPresent || qrelsWasSet
-        ? qrelsPath
+      ? qrelsResolution.qrelsPath
+      : qrelsResolution.includePrimaryQrelsOverride
+        ? qrelsResolution.qrelsPath
         : undefined,
-    SECONDARY_QRELS_FILE: secondaryQrelsPath,
+    SECONDARY_QRELS_FILE: qrelsResolution.secondaryQrelsPath,
     RETRIEVAL_SUMMARY_PATH: retrievalSummaryPath,
   });
   printCommandJson(command);
