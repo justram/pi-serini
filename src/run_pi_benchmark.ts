@@ -10,7 +10,7 @@ import { dirname, resolve } from "node:path";
 import { spawn, spawnSync, type ChildProcess } from "node:child_process";
 
 import { attachJsonlLineReader } from "./pi-search/lib/jsonl";
-import { startBm25ServerTcp } from "./bm25_server_process";
+import { startBm25ServerTcp } from "./bm25/bm25_server_process";
 import { prepareIsolatedAgentDir } from "./pi_agent_dir";
 import { formatBenchmarkQueryPrompt, type BenchmarkPromptVariant } from "./prompt";
 import {

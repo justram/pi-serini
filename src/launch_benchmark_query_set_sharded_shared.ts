@@ -13,7 +13,7 @@ import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join, resolve } from "node:path";
-import { startBm25ServerTcp } from "./bm25_server_process";
+import { startBm25ServerTcp } from "./bm25/bm25_server_process";
 import {
   parseInteger,
   readEnv,

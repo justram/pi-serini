@@ -12,7 +12,7 @@ import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { connect } from "node:net";
 import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "../benchmarks/registry";
-import { Bm25StdioRpcClient } from "../bm25_stdio_rpc_client";
+import { Bm25StdioRpcClient } from "../bm25/bm25_stdio_rpc_client";
 import { attachJsonlLineReader, serializeJsonLine } from "./lib/jsonl";
 
 const SEARCH_QUERY_MODE = "plain";

@@ -1,7 +1,7 @@
 import { createWriteStream, mkdirSync } from "node:fs";
 import { spawn, type ChildProcess, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { dirname, join } from "node:path";
-import { attachJsonlLineReader } from "./pi-search/lib/jsonl";
+import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
 
 export type Bm25ServerReadyEndpoint = {
   host: string;

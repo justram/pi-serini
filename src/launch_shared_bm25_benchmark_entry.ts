@@ -1,7 +1,7 @@
 import { createWriteStream } from "node:fs";
 import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
-import { startBm25ServerTcp } from "./bm25_server_process";
+import { startBm25ServerTcp } from "./bm25/bm25_server_process";
 import { resolveBenchmarkAwareSharedLogDir } from "./output_layout";
 import {
   buildBenchmarkQuerySetLaunchEnv,
