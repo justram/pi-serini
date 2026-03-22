@@ -5,8 +5,12 @@ import {
   getDefaultBenchmarkId,
   listBenchmarks,
   resolveBenchmarkConfig,
-} from "./benchmarks/registry";
-import { printCommandJson, printCommandPlan, readEnv } from "./wrappers/downstream_tool_wrappers";
+} from "../benchmarks/registry";
+import {
+  printCommandJson,
+  printCommandPlan,
+  readEnv,
+} from "../wrappers/downstream_tool_wrappers";
 
 type Args = {
   benchmarkId?: string;
@@ -52,7 +56,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 function printHelp(): void {
-  console.log(`Usage: npx tsx src/tune_bm25_entry.ts [options]\n
+  console.log(`Usage: npx tsx src/orchestration/tune_bm25_entry.ts [options]\n
 Options:
   --benchmark <id>               Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()
     .map((benchmark) => benchmark.id)
@@ -85,7 +89,7 @@ function main(): void {
       ? benchmarkConfig.secondaryQrelsPath
       : undefined;
 
-  const command = ["npx", "tsx", "src/tune_bm25.ts", ...argv.filter((arg) => arg !== "--dryRun" && arg !== "--dry-run")];
+  const command = ["npx", "tsx", "src/orchestration/tune_bm25.ts", ...argv.filter((arg) => arg !== "--dryRun" && arg !== "--dry-run")];
 
   if (!hasAnyFlag(argv, ["--benchmark"])) {
     command.push("--benchmark", benchmarkConfig.benchmark.id);

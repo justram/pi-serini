@@ -69,7 +69,7 @@ function parseCommandJson(output: string): string[] {
 test("run_benchmark_query_set help lists supported benchmarks and benchmark-scoped override semantics", () => {
   const output = execFileSync(
     "node",
-    ["--import", "tsx", "src/run_benchmark_query_set.ts", "--help"],
+    ["--import", "tsx", "src/orchestration/run_benchmark_query_set.ts", "--help"],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -84,7 +84,7 @@ test("run_benchmark_query_set help lists supported benchmarks and benchmark-scop
 test("setup_benchmark_entry help lists supported benchmarks", () => {
   const output = execFileSync(
     "node",
-    ["--import", "tsx", "src/setup_benchmark_entry.ts", "--help"],
+    ["--import", "tsx", "src/orchestration/setup_benchmark_entry.ts", "--help"],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -173,7 +173,7 @@ test("node setup entrypoint resolves benchmark setup scripts from the registry",
     [
       "--import",
       "tsx",
-      "src/setup_benchmark_entry.ts",
+      "src/orchestration/setup_benchmark_entry.ts",
       "--dry-run",
       "--benchmark",
       "benchmark-template",
@@ -201,7 +201,7 @@ test("node setup entrypoint resolves MSMARCO setup scripts from the registry", (
     [
       "--import",
       "tsx",
-      "src/setup_benchmark_entry.ts",
+      "src/orchestration/setup_benchmark_entry.ts",
       "--dry-run",
       "--benchmark",
       "msmarco-v1-passage",
@@ -223,7 +223,7 @@ test("node setup entrypoint resolves MSMARCO setup scripts from the registry", (
 test("node setup entrypoint supports generic env-driven dispatch", () => {
   const output = execFileSync(
     "node",
-    ["--import", "tsx", "src/setup_benchmark_entry.ts", "--dry-run"],
+    ["--import", "tsx", "src/orchestration/setup_benchmark_entry.ts", "--dry-run"],
     {
       cwd: process.cwd(),
       env: {
@@ -251,7 +251,7 @@ test("node setup entrypoint fails cleanly when a benchmark does not support a se
         [
           "--import",
           "tsx",
-          "src/setup_benchmark_entry.ts",
+          "src/orchestration/setup_benchmark_entry.ts",
           "--dry-run",
           "--benchmark",
           "msmarco-v1-passage",
@@ -277,7 +277,7 @@ test("node setup entrypoint rejects invalid setup steps before dispatch", () => 
         [
           "--import",
           "tsx",
-          "src/setup_benchmark_entry.ts",
+          "src/orchestration/setup_benchmark_entry.ts",
           "--dry-run",
           "--benchmark",
           "benchmark-template",
@@ -330,7 +330,7 @@ test("node low-level benchmark entrypoint resolves manifest-aligned defaults", (
   assert.deepEqual(parseCommandJson(output), [
     "npx",
     "tsx",
-    "src/run_pi_benchmark.ts",
+    "src/orchestration/run_pi_benchmark.ts",
     "--benchmark",
     "benchmark-template",
     "--querySet",
@@ -433,7 +433,7 @@ test("node benchmark query-set entrypoint resolves manifest-aligned defaults", (
     [
       "--import",
       "tsx",
-      "src/run_benchmark_query_set.ts",
+      "src/orchestration/run_benchmark_query_set.ts",
       "--dry-run",
       "--benchmark",
       "benchmark-template",
@@ -454,7 +454,7 @@ test("node benchmark query-set entrypoint resolves manifest-aligned defaults", (
   assert.deepEqual(parseCommandJson(output), [
     "npx",
     "tsx",
-    "src/run_pi_benchmark.ts",
+    "src/orchestration/run_pi_benchmark.ts",
     "--benchmark",
     "benchmark-template",
     "--querySet",
@@ -523,7 +523,7 @@ test("node shared benchmark entrypoint resolves benchmark-aware shared defaults"
     [
       "--import",
       "tsx",
-      "src/launch_benchmark_query_set_shared.ts",
+      "src/orchestration/launch_benchmark_query_set_shared.ts",
       "--dry-run",
       "--benchmark",
       "benchmark-template",
@@ -539,7 +539,7 @@ test("node shared benchmark entrypoint resolves benchmark-aware shared defaults"
   assert.match(output, /QUERY_SET=dev/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_benchmark-template_dev_plain_minimal/);
   assert.match(output, /LOG_DIR=runs\/shared-bm25-benchmark-template-dev/);
-  assert.match(output, /RUN_ENTRYPOINT=src\/run_benchmark_query_set.ts/);
+  assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/run_benchmark_query_set.ts/);
 });
 
 test("legacy BrowseComp shared wrapper preserves legacy output naming", () => {
@@ -571,7 +571,7 @@ test("node sharded benchmark entrypoint resolves benchmark-aware output naming",
     [
       "--import",
       "tsx",
-      "src/launch_benchmark_query_set_sharded_shared.ts",
+      "src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
       "--dry-run",
       "--benchmark",
       "benchmark-template",
@@ -616,7 +616,7 @@ test("generic sharded launcher resolves benchmark-aware output naming", () => {
 test("node tune entrypoint resolves benchmark-aware defaults", () => {
   const output = execFileSync(
     "node",
-    ["--import", "tsx", "src/tune_bm25_entry.ts", "--dry-run", "--benchmark", "benchmark-template"],
+    ["--import", "tsx", "src/orchestration/tune_bm25_entry.ts", "--dry-run", "--benchmark", "benchmark-template"],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -631,7 +631,7 @@ test("node tune entrypoint resolves benchmark-aware defaults", () => {
   assert.match(output, /SECONDARY_QRELS_FILE=data\/benchmark-template\/qrels\/qrel_secondary.txt/);
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   const command = parseCommandJson(output);
-  assert.ok(command.includes("src/tune_bm25.ts"));
+  assert.ok(command.includes("src/orchestration/tune_bm25.ts"));
   assert.ok(command.includes("--benchmark"));
   assert.ok(command.includes("benchmark-template"));
   assert.ok(command.includes("--query-set"));

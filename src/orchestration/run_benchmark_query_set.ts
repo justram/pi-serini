@@ -10,14 +10,14 @@ import {
   resolveBenchmarkQuerySetLaunchPlan,
   type BenchmarkQuerySetLaunchArgs,
 } from "./benchmark_query_set_launch";
-import { getDefaultBenchmarkId, listBenchmarks } from "./benchmarks/registry";
-import { printCommandJson } from "./wrappers/downstream_tool_wrappers";
+import { getDefaultBenchmarkId, listBenchmarks } from "../benchmarks/registry";
+import { printCommandJson } from "../wrappers/downstream_tool_wrappers";
 
 type Args = BenchmarkQuerySetLaunchArgs & {
   dryRun: boolean;
 };
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 function parseArgs(argv: string[]): Args {
   const args: Args = { dryRun: false };
@@ -110,7 +110,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 function printHelp(): void {
-  console.log(`Usage: npx tsx src/run_benchmark_query_set.ts [options]
+  console.log(`Usage: npx tsx src/orchestration/run_benchmark_query_set.ts [options]
 
 Options:
   --benchmark <id>               Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()

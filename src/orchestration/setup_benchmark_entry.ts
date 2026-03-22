@@ -4,12 +4,12 @@ import {
   listBenchmarks,
   resolveBenchmarkConfig,
   resolveBenchmarkSetupStep,
-} from "./benchmarks/registry";
+} from "../benchmarks/registry";
 import {
   BENCHMARK_SETUP_STEPS,
   isBenchmarkSetupStep,
   type BenchmarkSetupStep,
-} from "./benchmarks/types";
+} from "../benchmarks/types";
 
 type Args = {
   benchmarkId?: string;
@@ -65,7 +65,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 function printHelp(): void {
-  console.log(`Usage: npx tsx src/setup_benchmark_entry.ts [options]
+  console.log(`Usage: npx tsx src/orchestration/setup_benchmark_entry.ts [options]
 
 Options:
   --benchmark <id>               Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()

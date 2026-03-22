@@ -6,7 +6,7 @@ import {
   listBenchmarks,
   resolveBenchmarkConfig,
   resolveInternalRetrievalMetricSemantics,
-} from "./benchmarks/registry";
+} from "../benchmarks/registry";
 import {
   evaluateRankings,
   getMetricValue,
@@ -14,7 +14,7 @@ import {
   readQueryIds,
   readRunFile,
   roundMetric,
-} from "./evaluation/retrieval_metrics";
+} from "../evaluation/retrieval_metrics";
 
 type Args = {
   benchmarkId: string;
@@ -54,7 +54,7 @@ type TuningRow = {
 };
 
 function printHelpAndExit(): never {
-  console.log(`Usage: npx tsx src/tune_bm25.ts [options]
+  console.log(`Usage: npx tsx src/orchestration/tune_bm25.ts [options]
 
 Benchmark defaults:
   --benchmark <id>              Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()

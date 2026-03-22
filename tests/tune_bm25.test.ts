@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseArgs } from "../src/tune_bm25";
+import { parseArgs } from "../src/orchestration/tune_bm25";
 
 test("parseArgs resolves tune_bm25 defaults from the benchmark registry", () => {
   const args = parseArgs(["--benchmark", "benchmark-template"]);

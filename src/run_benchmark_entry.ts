@@ -6,7 +6,7 @@ import {
   readEnv,
   resolveBenchmarkQuerySetLaunchPlan,
   type BenchmarkQuerySetLaunchArgs,
-} from "./benchmark_query_set_launch";
+} from "./orchestration/benchmark_query_set_launch";
 import { getDefaultBenchmarkId, listBenchmarks } from "./benchmarks/registry";
 import { printCommandJson } from "./wrappers/downstream_tool_wrappers";
 

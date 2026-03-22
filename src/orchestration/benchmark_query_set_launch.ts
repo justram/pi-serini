@@ -1,4 +1,8 @@
-import { getBenchmarkDefinition, getDefaultBenchmarkId, resolveBenchmarkConfig } from "./benchmarks/registry";
+import {
+  getBenchmarkDefinition,
+  getDefaultBenchmarkId,
+  resolveBenchmarkConfig,
+} from "../benchmarks/registry";
 
 export type BenchmarkQuerySetLaunchArgs = {
   benchmarkId?: string;
@@ -105,7 +109,7 @@ export function buildRunPiBenchmarkCommand(plan: BenchmarkQuerySetLaunchPlan): s
   return [
     "npx",
     "tsx",
-    "src/run_pi_benchmark.ts",
+    "src/orchestration/run_pi_benchmark.ts",
     "--benchmark",
     plan.benchmarkId,
     "--querySet",

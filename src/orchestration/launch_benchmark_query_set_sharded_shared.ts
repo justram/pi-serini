@@ -13,14 +13,14 @@ import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join, resolve } from "node:path";
-import { startBm25ServerTcp } from "./bm25/bm25_server_process";
+import { startBm25ServerTcp } from "../bm25/bm25_server_process";
 import {
   parseInteger,
   readEnv,
   resolveBenchmarkQuerySetLaunchPlan,
   type BenchmarkQuerySetLaunchPlan,
 } from "./benchmark_query_set_launch";
-import { getDefaultBenchmarkId, listBenchmarks } from "./benchmarks/registry";
+import { getDefaultBenchmarkId, listBenchmarks } from "../benchmarks/registry";
 
 type Args = {
   benchmarkId?: string;
@@ -77,7 +77,7 @@ type ShardFile = {
   queryCount: number;
 };
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 function parseBooleanFlag(value: string | undefined, defaultValue: boolean): boolean {
   if (!value) return defaultValue;
@@ -252,7 +252,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 function printHelp(): void {
-  console.log(`Usage: npx tsx src/launch_benchmark_query_set_sharded_shared.ts [options]
+  console.log(`Usage: npx tsx src/orchestration/launch_benchmark_query_set_sharded_shared.ts [options]
 
 Options:
   --benchmark <id>               Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()
@@ -534,7 +534,7 @@ function spawnShard(plan: ShardedLaunchPlan, shard: ShardFile, attempt: number):
     "npx",
     [
       "tsx",
-      "src/run_benchmark_query_set.ts",
+      "src/orchestration/run_benchmark_query_set.ts",
       "--benchmark",
       plan.benchmarkId,
       "--query-set",

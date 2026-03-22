@@ -3,7 +3,7 @@ import { spawn, type ChildProcess, type SpawnOptions } from "node:child_process"
 import net from "node:net";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
-import { startBm25ServerTcp } from "./bm25/bm25_server_process";
+import { startBm25ServerTcp } from "../bm25/bm25_server_process";
 import {
   buildBenchmarkQuerySetLaunchEnv,
   parseInteger,
@@ -12,7 +12,7 @@ import {
   resolveBenchmarkQuerySetLaunchPlan,
   type BenchmarkQuerySetLaunchPlan,
 } from "./benchmark_query_set_launch";
-import { getDefaultBenchmarkId, listBenchmarks } from "./benchmarks/registry";
+import { getDefaultBenchmarkId, listBenchmarks } from "../benchmarks/registry";
 
 type Args = {
   benchmarkId?: string;
@@ -32,7 +32,7 @@ type SharedLaunchPlan = BenchmarkQuerySetLaunchPlan & {
   runLogPath: string;
 };
 
-const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
 
 function parseArgs(argv: string[]): Args {
   const args: Args = { dryRun: false };
@@ -85,7 +85,7 @@ function parseArgs(argv: string[]): Args {
 }
 
 function printHelp(): void {
-  console.log(`Usage: npx tsx src/launch_benchmark_query_set_shared.ts [options]
+  console.log(`Usage: npx tsx src/orchestration/launch_benchmark_query_set_shared.ts [options]
 
 Options:
   --benchmark <id>               Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()
@@ -131,7 +131,7 @@ function printSharedLaunchPlan(plan: SharedLaunchPlan): void {
   console.log(`LOG_DIR=${plan.logDir}`);
   console.log(`HOST=${plan.host}`);
   console.log(`PORT=${plan.port}`);
-  console.log(`RUN_ENTRYPOINT=src/run_benchmark_query_set.ts`);
+  console.log(`RUN_ENTRYPOINT=src/orchestration/run_benchmark_query_set.ts`);
 }
 
 function spawnLogged(command: string, args: string[], options: SpawnOptions): ChildProcess {
@@ -190,7 +190,7 @@ async function startBm25Server(plan: SharedLaunchPlan) {
 
 async function runBenchmark(plan: SharedLaunchPlan): Promise<void> {
   const runLog = createWriteStream(plan.runLogPath, { flags: "a" });
-  const child = spawnLogged("npx", ["tsx", "src/run_benchmark_query_set.ts"], {
+  const child = spawnLogged("npx", ["tsx", "src/orchestration/run_benchmark_query_set.ts"], {
     cwd: REPO_ROOT,
     stdio: ["ignore", "pipe", "pipe"],
     env: {
