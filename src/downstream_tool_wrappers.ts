@@ -26,12 +26,14 @@ export function resolveBenchmarkIdFromRunPath(options: {
   runPath?: string;
 }): {
   benchmarkId: string;
+  querySetId?: string;
   manifestPresent: boolean;
 } {
   const manifest = options.runPath ? detectBenchmarkManifestSnapshot(options.runPath) : null;
   if (manifest) {
     return {
       benchmarkId: manifest.snapshot.benchmark_id,
+      querySetId: manifest.snapshot.query_set_id,
       manifestPresent: true,
     };
   }
@@ -39,7 +41,7 @@ export function resolveBenchmarkIdFromRunPath(options: {
   const benchmarkId = resolveBenchmarkConfig({
     benchmarkId: options.benchmarkId ?? readEnv("BENCHMARK") ?? getDefaultBenchmarkId(),
   }).benchmark.id;
-  return { benchmarkId, manifestPresent: false };
+  return { benchmarkId, querySetId: undefined, manifestPresent: false };
 }
 
 export function resolveSecondaryQrelsForWrapper(options: {

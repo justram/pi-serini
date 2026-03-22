@@ -21,7 +21,21 @@ function runScript(script: string, env: NodeJS.ProcessEnv = {}): string {
   });
 }
 
-function writeManifestRunFixture(name: string): string {
+function writeManifestRunFixture(
+  name: string,
+  overrides: Partial<{
+    benchmark_id: string;
+    benchmark_display_name: string;
+    dataset_id: string;
+    query_set_id: string;
+    prompt_variant: string;
+    query_path: string;
+    qrels_path: string;
+    secondary_qrels_path: string;
+    ground_truth_path: string;
+    index_path: string;
+  }> = {},
+): string {
   const root = mkdtempSync(join(tmpdir(), `${name}-`));
   writeFileSync(
     join(root, "benchmark_manifest_snapshot.json"),
@@ -37,6 +51,7 @@ function writeManifestRunFixture(name: string): string {
         secondary_qrels_path: "data/benchmark-template/qrels/qrel_secondary.txt",
         ground_truth_path: "data/benchmark-template/ground-truth/ground_truth.jsonl",
         index_path: "indexes/benchmark-template-bm25",
+        ...overrides,
       },
       null,
       2,
@@ -326,6 +341,26 @@ test("legacy low-level benchmark shell wrapper remains a compatibility shim", ()
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
 });
 
+test("legacy q9 single-run wrapper preserves historical q9 naming and prompt defaults", () => {
+  const output = runScript("scripts/run_q9_plain_minimal_excerpt.sh");
+
+  assert.match(output, /BENCHMARK=browsecomp-plus/);
+  assert.match(output, /QUERY_SET=q9/);
+  assert.match(output, /PROMPT_VARIANT=plain_minimal/);
+  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
+});
+
+test("legacy BrowseComp slice wrapper preserves slice-driven naming", () => {
+  const output = runScript("scripts/run_browsecomp_plus_slice_plain_minimal_excerpt.sh", {
+    SLICE: "q300",
+  });
+
+  assert.match(output, /BENCHMARK=browsecomp-plus/);
+  assert.match(output, /QUERY_SET=q300/);
+  assert.match(output, /PROMPT_VARIANT=plain_minimal/);
+  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q300_plain_minimal_excerpt/);
+});
+
 test("node low-level benchmark entrypoint resolves MSMARCO retrieval defaults", () => {
   const output = execFileSync(
     "node",
@@ -467,6 +502,15 @@ test("legacy BrowseComp shared wrapper preserves legacy output naming", () => {
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
+test("legacy q9 shared wrapper preserves historical q9 shared naming", () => {
+  const output = runScript("scripts/launch_q9_plain_minimal_excerpt_shared_server.sh");
+
+  assert.match(output, /BENCHMARK=browsecomp-plus/);
+  assert.match(output, /QUERY_SET=q9/);
+  assert.match(output, /LOG_DIR=runs\/shared-bm25-q9/);
+  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
+});
+
 test("node sharded benchmark entrypoint resolves benchmark-aware output naming", () => {
   const output = execFileSync(
     "node",
@@ -536,6 +580,21 @@ test("node summarize entrypoint prefers run-manifest defaults and auto-detects m
   assert.doesNotMatch(output, /QRELS_FILE=/);
   assert.doesNotMatch(output, /--qrels/);
   assert.doesNotMatch(output, /--secondaryQrels/);
+});
+
+test("legacy summarize shell wrapper preserves manifest-default behavior", () => {
+  const runRoot = writeManifestRunFixture("summarize-run-shell");
+  mkdirSync(join(runRoot, "merged"), { recursive: true });
+  writeFileSync(join(runRoot, "merged", "evaluation_summary.json"), "{}\n");
+
+  const output = runScript("scripts/summarize_run.sh", {
+    RUN_DIR: runRoot,
+  });
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  assert.match(output, /EVAL_SUMMARY=.*merged\/evaluation_summary\.json/);
+  assert.doesNotMatch(output, /QRELS_FILE=/);
 });
 
 test("node retrieval entrypoint routes MSMARCO run-file evaluation through trec_eval", () => {
@@ -608,6 +667,19 @@ test("node retrieval entrypoint omits qrels overrides when run manifest is prese
   assert.ok(command.includes("--summary-path"));
 });
 
+test("legacy retrieval shell wrapper preserves manifest-default behavior", () => {
+  const runRoot = writeManifestRunFixture("retrieval-run-shell");
+
+  const output = runScript("scripts/evaluate_retrieval.sh", {
+    RUN_DIR: runRoot,
+  });
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  assert.doesNotMatch(output, /QRELS_FILE=/);
+  assert.doesNotMatch(output, /--qrels/);
+});
+
 test("node retrieval entrypoint keeps explicit qrels overrides above manifest defaults", () => {
   const runRoot = writeManifestRunFixture("retrieval-run-explicit");
   const output = execFileSync(
@@ -641,6 +713,30 @@ test("node retrieval entrypoint keeps explicit qrels overrides above manifest de
   assert.ok(command.includes("data/custom/qrels_secondary.txt"));
 });
 
+test("node retrieval entrypoint prefers manifest query-set ids over benchmark defaults", () => {
+  const runRoot = writeManifestRunFixture("retrieval-run-queryset", {
+    query_set_id: "test",
+    query_path: "data/benchmark-template/queries/test.tsv",
+  });
+
+  const output = execFileSync(
+    "node",
+    ["--import", "tsx", "src/evaluate_retrieval_entry.ts", "--dry-run", "--run-dir", runRoot],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  const command = parseCommandJson(output);
+  const querySetIndex = command.indexOf("--query-set");
+  assert.notEqual(querySetIndex, -1);
+  assert.equal(command[querySetIndex + 1], "test");
+});
+
 test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", () => {
   const runRoot = writeManifestRunFixture("judge-run");
 
@@ -660,6 +756,19 @@ test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", 
   assert.doesNotMatch(output, /QREL_EVIDENCE=/);
   assert.doesNotMatch(output, /--groundTruth/);
   assert.doesNotMatch(output, /--qrelEvidence/);
+});
+
+test("legacy judge-eval shell wrapper preserves manifest-default behavior", () => {
+  const runRoot = writeManifestRunFixture("judge-run-shell");
+
+  const output = runScript("scripts/evaluate_run_with_pi.sh", {
+    INPUT_DIR: runRoot,
+  });
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  assert.doesNotMatch(output, /GROUND_TRUTH=/);
+  assert.doesNotMatch(output, /QREL_EVIDENCE=/);
 });
 
 test("node judge-eval entrypoint keeps explicit ground-truth and qrel-evidence overrides above manifest defaults", () => {
@@ -811,6 +920,19 @@ test("node report entrypoint omits qrels overrides when run manifest is present"
   assert.doesNotMatch(output, /QRELS_FILE=/);
   assert.doesNotMatch(output, /--qrels/);
   assert.doesNotMatch(output, /--secondaryQrels/);
+});
+
+test("legacy report shell wrapper preserves manifest-default behavior", () => {
+  const runRoot = writeManifestRunFixture("report-run-shell");
+
+  const output = runScript("scripts/report_run_markdown.sh", {
+    RUN_DIR: runRoot,
+  });
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /USE_RUN_MANIFEST_DEFAULTS=true/);
+  assert.doesNotMatch(output, /QRELS_FILE=/);
+  assert.doesNotMatch(output, /--qrels/);
 });
 
 test("node summarize and report entrypoints keep explicit overrides above manifest defaults", () => {

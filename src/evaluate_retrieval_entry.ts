@@ -154,7 +154,7 @@ function main(): void {
     benchmarkId: args.benchmarkId,
     runPath: runDir,
   });
-  const querySetId = args.querySetId ?? readEnv("QUERY_SET");
+  const querySetId = args.querySetId ?? readEnv("QUERY_SET") ?? benchmarkResolution.querySetId;
   const benchmarkConfig = resolveBenchmarkConfig({
     benchmarkId: benchmarkResolution.benchmarkId,
     querySetId,
