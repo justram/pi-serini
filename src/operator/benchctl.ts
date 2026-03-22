@@ -3,7 +3,7 @@ import {
   getDefaultBenchmarkId,
   listManagedPresetNames,
   resolveManagedPreset,
-} from "./benchmarks/registry";
+} from "../benchmarks/registry";
 import {
   killManagedRun,
   launchManagedRun,
@@ -33,7 +33,7 @@ type Args = {
 };
 
 function printHelpAndExit(): never {
-  console.log(`Usage: npx tsx src/benchctl.ts <command> [options]
+  console.log(`Usage: npx tsx src/operator/benchctl.ts <command> [options]
 
 Commands:
   status          Print a concise textual summary of runs with benchmark ids

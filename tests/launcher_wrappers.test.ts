@@ -96,7 +96,7 @@ test("setup_benchmark_entry help lists supported benchmarks", () => {
 });
 
 test("bench_tui help describes benchmark-aware qrels defaults instead of a BrowseComp-only path literal", () => {
-  const output = execFileSync("node", ["--import", "tsx", "src/bench_tui.ts", "--help"], {
+  const output = execFileSync("node", ["--import", "tsx", "src/operator/bench_tui.ts", "--help"], {
     cwd: process.cwd(),
     env: process.env,
     encoding: "utf8",
@@ -108,7 +108,7 @@ test("bench_tui help describes benchmark-aware qrels defaults instead of a Brows
 });
 
 test("benchctl help and status output surface benchmark-aware language", () => {
-  const help = execFileSync("node", ["--import", "tsx", "src/benchctl.ts", "--help"], {
+  const help = execFileSync("node", ["--import", "tsx", "src/operator/benchctl.ts", "--help"], {
     cwd: process.cwd(),
     env: process.env,
     encoding: "utf8",
@@ -157,7 +157,7 @@ test("benchctl help and status output surface benchmark-aware language", () => {
 
   const status = execFileSync(
     "node",
-    ["--import", "tsx", "src/benchctl.ts", "status", "--root-dir", root],
+    ["--import", "tsx", "src/operator/benchctl.ts", "status", "--root-dir", root],
     {
       cwd: process.cwd(),
       env: process.env,

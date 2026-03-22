@@ -13,7 +13,7 @@ import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import net from "node:net";
 
-import { renderManagedPresetPaths } from "./benchmarks/registry";
+import { renderManagedPresetPaths } from "../benchmarks/registry";
 
 export type ManagedRunPreset =
   | "q9_shared"
