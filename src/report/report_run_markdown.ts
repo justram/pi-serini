@@ -6,8 +6,8 @@ import {
   getDefaultBenchmarkId,
   resolveBenchmarkConfig,
   resolveInternalRetrievalMetricSemantics,
-} from "./benchmarks/registry";
-import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
+} from "../benchmarks/registry";
+import { detectBenchmarkManifestSnapshot } from "../benchmarks/run_manifest";
 import {
   type EvaluationCutoffs,
   evaluateRankings,
@@ -16,7 +16,7 @@ import {
   readQrels,
   readRunDir,
   resolveBenchmarkResultDir,
-} from "./retrieval_metrics";
+} from "../retrieval_metrics";
 import {
   buildCoverageRow,
   buildHitDepthExplanation,
@@ -35,7 +35,7 @@ import {
   getRetrievalEvalMetricValue,
   maybeLoadMatchingRetrievalEvalSummary,
   type RetrievalEvalSummary,
-} from "./retrieval_eval_summary";
+} from "../retrieval_eval_summary";
 import {
   buildLogLikeDepthTicks,
   buildNiceTicks,
@@ -250,7 +250,7 @@ function resolveGitCommitProvenance(): { gitCommit?: string; gitCommitShort?: st
 }
 
 function printHelpAndExit(): never {
-  console.log(`Usage: npx tsx src/report_run_markdown.ts --runDir runs/<run> [options]
+  console.log(`Usage: npx tsx src/report/report_run_markdown.ts --runDir runs/<run> [options]
 
 Options:
   --benchmark                      Benchmark manifest id (default: ${getDefaultBenchmarkId()})

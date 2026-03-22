@@ -1,4 +1,4 @@
-import type { EvaluationResult } from "./retrieval_metrics";
+import type { EvaluationResult } from "../retrieval_metrics";
 
 export type BenchmarkRun = {
   metadata?: {

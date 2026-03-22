@@ -135,7 +135,7 @@ function main(): void {
   const command = [
     "npx",
     "tsx",
-    "src/report_run_markdown.ts",
+    "src/report/report_run_markdown.ts",
     "--benchmark",
     qrelsResolution.benchmarkId,
     "--runDir",

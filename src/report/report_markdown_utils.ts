@@ -1,5 +1,5 @@
 import { basename, dirname, extname, resolve } from "node:path";
-import type { EvaluationResult } from "./retrieval_metrics";
+import type { EvaluationResult } from "../retrieval_metrics";
 import type { NumericSummary, PrefixMetricSpec } from "./report_markdown_types";
 
 export function qrelsLabel(path: string): string {

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { detectBenchmarkManifestSnapshot } from "./benchmarks/run_manifest";
-import { resolveInternalRetrievalMetricSemantics } from "./benchmarks/registry";
+import { detectBenchmarkManifestSnapshot } from "../benchmarks/run_manifest";
+import { resolveInternalRetrievalMetricSemantics } from "../benchmarks/registry";
 import {
   type EvaluationCutoffs,
   type EvaluationMetricSemantics,
@@ -12,7 +12,7 @@ import {
   readQrels,
   readRunDir,
   resolveBenchmarkResultDir,
-} from "./retrieval_metrics";
+} from "../retrieval_metrics";
 import type {
   BenchmarkRun,
   CoverageSummary,
@@ -24,7 +24,7 @@ import type {
   ToolCallRow,
 } from "./report_markdown_types";
 import { formatPercentFromRate, qrelsLabel } from "./report_markdown_utils";
-import { getJudgeEvalSummaryCandidates } from "./output_layout";
+import { getJudgeEvalSummaryCandidates } from "../output_layout";
 
 export function loadRun(path: string): BenchmarkRun {
   return JSON.parse(readFileSync(path, "utf8")) as BenchmarkRun;
