@@ -384,11 +384,22 @@ class BenchDashboard implements Component {
         ? chalk.bold.white(truncateToWidth(run.model, Math.max(1, width - 24), ""))
         : truncateToWidth(run.model, Math.max(1, width - 24), "");
       const primary = `${marker} ${status} ${progress} ${model}`;
-      const secondaryText = `  ${truncateToWidth(run.id, width - 2, "")}`;
+      const scope = `${run.benchmarkId}${run.querySetId ? `/${run.querySetId}` : ""}`;
+      const managedMarker = run.managedRunId ? "managed" : "unmanaged";
+      const retryMarker = run.retryPending ? "retry" : undefined;
+      const secondaryText = `  ${truncateToWidth(
+        [scope, run.launchTopology, `artifacts=${run.artifactSummary}`, managedMarker, retryMarker]
+          .filter(Boolean)
+          .join("  ·  "),
+        width - 2,
+        "",
+      )}`;
+      const tertiaryText = `  ${truncateToWidth(run.id, width - 2, "")}`;
       lines.push(pad(isSelected ? theme.selected(primary) : primary, width));
       lines.push(
         pad(isSelected ? theme.selectedSecondary(secondaryText) : theme.dim(secondaryText), width),
       );
+      lines.push(pad(isSelected ? theme.selectedSecondary(tertiaryText) : theme.dim(tertiaryText), width));
     });
     return lines;
   }
