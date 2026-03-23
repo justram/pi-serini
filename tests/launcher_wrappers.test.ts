@@ -265,6 +265,23 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
     ),
     "utf8",
   );
+  writeFileSync(
+    join(runDir, "run_setup.json"),
+    JSON.stringify(
+      {
+        slice: "dev",
+        model: "openai-codex/gpt-5.4-mini",
+        queryFile: join(root, "data", "benchmark-template", "queries", "dev.tsv"),
+        qrelsFile: join(root, "data", "benchmark-template", "qrels", "qrel_primary.txt"),
+        totalQueries: "1",
+        timeoutSeconds: "300",
+        indexPath: join(root, "indexes", "benchmark-template-bm25"),
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
 
   const status = execFileSync(
     "npx",
@@ -282,6 +299,10 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
   assert.match(status, /launch:\s+single-worker/);
   assert.match(status, /phase:\s+retrieval-active/);
   assert.match(status, /why:\s+recent artifact activity suggests retrieval is still active/);
+  assert.match(
+    status,
+    /provenance:\s+unmanaged artifact evidence: benchmark_manifest_snapshot\.json, run_setup\.json/,
+  );
   assert.match(status, /script:\s+n\/a/);
   assert.match(status, /command:\s+n\/a/);
 

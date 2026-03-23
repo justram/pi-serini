@@ -78,6 +78,7 @@ export type BenchRunSnapshot = {
   preferredLaunchScript?: string;
   launcherScript?: string;
   launcherCommandDisplay?: string;
+  provenanceHint?: string;
   statusDetail: string;
   isSharded: boolean;
   shardCount: number;
@@ -859,6 +860,30 @@ function findRetrievalEvaluationSummaryPath(
   return undefined;
 }
 
+function resolveUnmanagedProvenanceHint(options: {
+  runDir: string;
+  manifestSnapshot?: BenchmarkManifestSnapshot;
+  logInfo?: LogDirInfo;
+  isSharded: boolean;
+}): string | undefined {
+  const evidence: string[] = [];
+  if (options.manifestSnapshot) {
+    evidence.push("benchmark_manifest_snapshot.json");
+  }
+  if (existsSync(join(options.runDir, "run_setup.json"))) {
+    evidence.push("run_setup.json");
+  }
+  if (options.isSharded) {
+    evidence.push("sharded run layout");
+  }
+  if (options.logInfo?.path && LOG_DIR_PATTERN.test(basename(options.logInfo.path))) {
+    evidence.push("shared-bm25 log layout");
+  }
+  return evidence.length > 0
+    ? `unmanaged artifact evidence: ${evidence.join(", ")}`
+    : undefined;
+}
+
 function resolveStageInfo(options: {
   runDir: string;
   benchmarkId: string;
@@ -1122,6 +1147,14 @@ function loadRunSnapshot(
     logDir: logInfo?.path ?? managedState?.logDir,
     managedState,
   });
+  const provenanceHint = managedState
+    ? undefined
+    : resolveUnmanagedProvenanceHint({
+        runDir,
+        manifestSnapshot,
+        logInfo,
+        isSharded,
+      });
   const launchProvenance = managedState ? getManagedRunLaunchProvenance(managedState) : undefined;
   const statusDetail = describeRunStatusDetail({
     status,
@@ -1156,6 +1189,7 @@ function loadRunSnapshot(
     preferredLaunchScript: launchProvenance?.preferredPackageScript,
     launcherScript: launchProvenance?.launcherScript,
     launcherCommandDisplay: launchProvenance?.launcherCommandDisplay,
+    provenanceHint,
     statusDetail,
     isSharded,
     shardCount,

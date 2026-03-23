@@ -53,6 +53,23 @@ test("loadBenchSnapshot surfaces benchmark and query-set ids from run manifest s
     ),
     "utf8",
   );
+  writeFileSync(
+    join(runDir, "run_setup.json"),
+    JSON.stringify(
+      {
+        slice: "dev",
+        model: "openai-codex/gpt-5.4-mini",
+        queryFile: join(root, "data", "benchmark-template", "queries", "dev.tsv"),
+        qrelsFile: join(root, "data", "benchmark-template", "qrels", "qrel_primary.txt"),
+        totalQueries: "1",
+        timeoutSeconds: "300",
+        indexPath: join(root, "indexes", "benchmark-template-bm25"),
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
 
   const snapshot = loadBenchSnapshot({ rootDir: root });
   assert.equal(snapshot.runs.length, 1);
@@ -60,6 +77,10 @@ test("loadBenchSnapshot surfaces benchmark and query-set ids from run manifest s
   assert.equal(snapshot.runs[0]?.querySetId, "dev");
   assert.equal(snapshot.runs[0]?.launchTopology, "single-worker");
   assert.equal(snapshot.runs[0]?.artifactSummary, "none");
+  assert.equal(
+    snapshot.runs[0]?.provenanceHint,
+    "unmanaged artifact evidence: benchmark_manifest_snapshot.json, run_setup.json",
+  );
   assert.equal(snapshot.runs[0]?.statusDetail, "recent unmanaged activity detected");
   assert.equal(snapshot.runs[0]?.currentPhase, "retrieval-active");
   assert.equal(
@@ -282,6 +303,7 @@ test("loadBenchSnapshot infers BM25 listening from managed state and ready logs 
   assert.equal(snapshot.runs[0]?.bm25.listening, true);
   assert.equal(snapshot.runs[0]?.bm25.port, 50500);
   assert.equal(snapshot.runs[0]?.launchTopology, "shared-bm25");
+  assert.equal(snapshot.runs[0]?.provenanceHint, undefined);
   assert.equal(snapshot.runs[0]?.preferredLaunchScript, "run:benchmark:query-set:shared-bm25");
   assert.match(
     snapshot.runs[0]?.launcherCommandDisplay ?? "",

@@ -245,6 +245,7 @@ function printStatus(args: Args): void {
     console.log(`  launch:  ${run.launchTopology}`);
     console.log(`  script:  ${run.preferredLaunchScript ?? "n/a"}`);
     console.log(`  command: ${run.launcherCommandDisplay ?? "n/a"}`);
+    console.log(`  provenance: ${run.provenanceHint ?? "n/a"}`);
     console.log(`  managed: ${run.managedRunId ?? "n/a"}`);
     console.log(`  pid:     ${run.supervisorPid ?? "n/a"}`);
     console.log(`  progress:${run.progressCompleted}/${run.progressTotal ?? "?"}`);

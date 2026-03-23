@@ -472,6 +472,12 @@ class BenchDashboard implements Component {
     );
     lines.push(
       pad(
+        `${theme.label("provenance:")} ${truncateToWidth(run.provenanceHint ?? "n/a", Math.max(1, width - 14), "")}`,
+        width,
+      ),
+    );
+    lines.push(
+      pad(
         `${theme.label("elapsed:")} ${formatDuration(run.elapsedSeconds)}   ${theme.label("eta:")} ${formatDuration(run.estimatedRemainingSeconds)}`,
         width,
       ),
