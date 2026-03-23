@@ -24,6 +24,7 @@ export const browsecompPlusBenchmark: BenchmarkDefinition = {
     q9_shared: {
       id: "q9_shared",
       querySetId: "q9",
+      launchMode: "shared",
       launcherScript: "scripts/launch_q9_plain_minimal_excerpt_shared_server.sh",
       outputDirTemplate: "runs/pi_bm25_q9_plain_minimal_excerpt_{modelSlug}_{runStamp}",
       logDirTemplate: "runs/shared-bm25-q9-{modelSlug}_{runStamp}",
@@ -31,6 +32,7 @@ export const browsecompPlusBenchmark: BenchmarkDefinition = {
     q100_sharded: {
       id: "q100_sharded",
       querySetId: "q100",
+      launchMode: "sharded",
       launcherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
       outputDirTemplate:
@@ -42,6 +44,7 @@ export const browsecompPlusBenchmark: BenchmarkDefinition = {
     q300_sharded: {
       id: "q300_sharded",
       querySetId: "q300",
+      launchMode: "sharded",
       launcherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
       outputDirTemplate:
@@ -53,6 +56,7 @@ export const browsecompPlusBenchmark: BenchmarkDefinition = {
     qfull_sharded: {
       id: "qfull_sharded",
       querySetId: "qfull",
+      launchMode: "sharded",
       launcherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
       outputDirTemplate:

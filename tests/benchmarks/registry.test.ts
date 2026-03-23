@@ -63,7 +63,15 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
     {
       presetName: "q9_shared",
       expectedQuerySetId: "q9",
+      expectedLaunchMode: "shared",
       expectedLauncherScript: "scripts/launch_q9_plain_minimal_excerpt_shared_server.sh",
+      expectedLauncherCommand: [
+        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_shared.ts",
+        "--benchmark",
+        "browsecomp-plus",
+        "--query-set",
+        "q9",
+      ],
       expectedOutputDir:
         "/tmp/pi-serini/runs/pi_bm25_q9_plain_minimal_excerpt_gpt54mini_20260321_120000",
       expectedLogDir: "/tmp/pi-serini/runs/shared-bm25-q9-gpt54mini_20260321_120000",
@@ -72,8 +80,16 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
     {
       presetName: "q100_sharded",
       expectedQuerySetId: "q100",
+      expectedLaunchMode: "sharded",
       expectedLauncherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
+      expectedLauncherCommand: [
+        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+        "--benchmark",
+        "browsecomp-plus",
+        "--query-set",
+        "q100",
+      ],
       expectedOutputDir:
         "/tmp/pi-serini/runs/pi_bm25_q100_plain_minimal_excerpt_gpt54mini_shared4_20260321_120000",
       expectedLogDir:
@@ -87,8 +103,16 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
     {
       presetName: "q300_sharded",
       expectedQuerySetId: "q300",
+      expectedLaunchMode: "sharded",
       expectedLauncherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
+      expectedLauncherCommand: [
+        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+        "--benchmark",
+        "browsecomp-plus",
+        "--query-set",
+        "q300",
+      ],
       expectedOutputDir:
         "/tmp/pi-serini/runs/pi_bm25_q300_plain_minimal_excerpt_gpt54mini_shared4_20260321_120000",
       expectedLogDir:
@@ -102,8 +126,16 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
     {
       presetName: "qfull_sharded",
       expectedQuerySetId: "qfull",
+      expectedLaunchMode: "sharded",
       expectedLauncherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
+      expectedLauncherCommand: [
+        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+        "--benchmark",
+        "browsecomp-plus",
+        "--query-set",
+        "qfull",
+      ],
       expectedOutputDir:
         "/tmp/pi-serini/runs/pi_bm25_qfull_plain_minimal_excerpt_gpt54mini_shared4_20260321_120000",
       expectedLogDir:
@@ -121,6 +153,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
     assert.equal(resolved.benchmark.id, "browsecomp-plus");
     assert.equal(resolved.preset.id, presetCase.presetName);
     assert.equal(resolved.preset.querySetId, presetCase.expectedQuerySetId);
+    assert.equal(resolved.preset.launchMode, presetCase.expectedLaunchMode);
     assert.equal(resolved.preset.launcherScript, presetCase.expectedLauncherScript);
 
     const rendered = renderManagedPresetPaths({
@@ -132,6 +165,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
     assert.equal(rendered.benchmark.id, "browsecomp-plus");
     assert.equal(rendered.querySetId, presetCase.expectedQuerySetId);
     assert.equal(rendered.launcherScript, `${rootDir}/${presetCase.expectedLauncherScript}`);
+    assert.deepEqual(rendered.launcherCommand, ["npx", "tsx", ...presetCase.expectedLauncherCommand]);
     assert.equal(rendered.outputDir, presetCase.expectedOutputDir);
     assert.equal(rendered.logDir, presetCase.expectedLogDir);
     assert.deepEqual(rendered.launcherEnv, presetCase.expectedLauncherEnv);

@@ -13,7 +13,7 @@ import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import net from "node:net";
 
-import { renderManagedPresetPaths } from "../benchmarks/registry";
+import { renderManagedPresetPaths, resolveManagedPreset } from "../benchmarks/registry";
 
 export type ManagedRunPreset =
   | "q9_shared"
@@ -43,6 +43,7 @@ export type ManagedRunState = {
   outputDir: string;
   logDir: string;
   launcherScript: string;
+  launcherCommand: string[];
   launcherEnv?: Record<string, string>;
   launcherStdoutPath: string;
   launcherStderrPath: string;
@@ -145,6 +146,7 @@ function getPresetDefaults(
   benchmarkId: string;
   querySetId: string;
   launcherScript: string;
+  launcherCommand: string[];
   outputDir: string;
   logDir: string;
   launcherEnv?: Record<string, string>;
@@ -160,9 +162,29 @@ function getPresetDefaults(
     benchmarkId: rendered.benchmark.id,
     querySetId: rendered.querySetId,
     launcherScript: rendered.launcherScript,
+    launcherCommand: rendered.launcherCommand,
     outputDir: rendered.outputDir,
     logDir: rendered.logDir,
     launcherEnv: rendered.launcherEnv,
+  };
+}
+
+function buildManagedRunLauncherCommand(state: Pick<ManagedRunState, "rootDir" | "benchmarkId" | "querySetId" | "preset">): string[] {
+  const { preset } = resolveManagedPreset(state.preset);
+  const entrypoint =
+    preset.launchMode === "shared"
+      ? resolve(state.rootDir, "src/orchestration/launch_benchmark_query_set_shared.ts")
+      : resolve(state.rootDir, "src/orchestration/launch_benchmark_query_set_sharded_shared.ts");
+  return ["npx", "tsx", entrypoint, "--benchmark", state.benchmarkId, "--query-set", state.querySetId];
+}
+
+function normalizeManagedRunState(state: ManagedRunState): ManagedRunState {
+  if (Array.isArray(state.launcherCommand) && state.launcherCommand.length > 0) {
+    return state;
+  }
+  return {
+    ...state,
+    launcherCommand: buildManagedRunLauncherCommand(state),
   };
 }
 
@@ -213,7 +235,7 @@ export function listManagedRunStates(rootDir = process.cwd()): ManagedRunState[]
     .sort()
     .map((name) => {
       const fullPath = resolve(stateDir, name);
-      return JSON.parse(readFileSync(fullPath, "utf8")) as ManagedRunState;
+      return normalizeManagedRunState(JSON.parse(readFileSync(fullPath, "utf8")) as ManagedRunState);
     })
     .sort((left, right) => right.createdAt - left.createdAt);
 }
@@ -223,7 +245,7 @@ export function getManagedRunState(rootDir = process.cwd(), id: string): Managed
   if (!existsSync(path)) {
     throw new Error(`Managed run not found: ${id}`);
   }
-  return JSON.parse(readFileSync(path, "utf8")) as ManagedRunState;
+  return normalizeManagedRunState(JSON.parse(readFileSync(path, "utf8")) as ManagedRunState);
 }
 
 export function processExists(pid: number | undefined): boolean {
@@ -275,7 +297,7 @@ function startManagedRunProcess(state: ManagedRunState): ManagedRunState {
     BENCH_EVENTS_PATH: getEventPath(state.rootDir, state.id),
   };
 
-  const child = spawn("bash", [state.launcherScript], {
+  const child = spawn(state.launcherCommand[0], state.launcherCommand.slice(1), {
     cwd: state.rootDir,
     env,
     detached: true,
@@ -354,6 +376,7 @@ export async function launchManagedRun(options: LaunchManagedRunOptions): Promis
     outputDir,
     logDir,
     launcherScript: presetDefaults.launcherScript,
+    launcherCommand: presetDefaults.launcherCommand,
     launcherEnv: presetDefaults.launcherEnv,
     launcherStdoutPath: resolve(logDir, "launcher.stdout.log"),
     launcherStderrPath: resolve(logDir, "launcher.stderr.log"),

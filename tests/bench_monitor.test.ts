@@ -86,6 +86,15 @@ test("loadBenchSnapshot derives managed-run progress totals from benchmark metad
         outputDir: runDir,
         logDir: join(root, "runs", "shared-bm25-benchmark-template-dev"),
         launcherScript: "scripts/launch_benchmark_query_set_shared.sh",
+        launcherCommand: [
+          "npx",
+          "tsx",
+          join(root, "src", "orchestration", "launch_benchmark_query_set_shared.ts"),
+          "--benchmark",
+          "benchmark-template",
+          "--query-set",
+          "dev",
+        ],
         launcherEnv: undefined,
         launcherStdoutPath: join(
           root,

@@ -9,10 +9,11 @@ import {
   type BenchmarkDefinition,
   type BenchmarkInternalRetrievalMetricSemantics,
   type BenchmarkJudgeEvalMode,
+  type BenchmarkManagedPresetDefinition,
+  type BenchmarkManagedPresetLaunchMode,
   type BenchmarkManifestInputHash,
   type BenchmarkManifestInputHashes,
   type BenchmarkManifestSnapshot,
-  type BenchmarkManagedPresetDefinition,
   type BenchmarkQuerySetDefinition,
   type BenchmarkSetupStep,
   type ResolvedBenchmarkCompareConfig,
@@ -316,6 +317,15 @@ export function resolveBenchmarkSetupStep(
   return { benchmark, step, scriptPath };
 }
 
+function resolveManagedPresetNodeEntrypoint(rootDir: string, launchMode: BenchmarkManagedPresetLaunchMode): string {
+  return resolve(
+    rootDir,
+    launchMode === "shared"
+      ? "src/orchestration/launch_benchmark_query_set_shared.ts"
+      : "src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+  );
+}
+
 export function renderManagedPresetPaths(options: {
   rootDir: string;
   presetName: string;
@@ -329,6 +339,7 @@ export function renderManagedPresetPaths(options: {
   outputDir: string;
   logDir: string;
   launcherScript: string;
+  launcherCommand: string[];
   launcherEnv?: Record<string, string>;
 } {
   const { benchmark, preset } = resolveManagedPreset(options.presetName);
@@ -345,13 +356,24 @@ export function renderManagedPresetPaths(options: {
     shardCount,
     outputDir,
   });
+  const resolvedLogDir = resolve(options.rootDir, logDirRelative);
+  const launcherCommand = [
+    "npx",
+    "tsx",
+    resolveManagedPresetNodeEntrypoint(options.rootDir, preset.launchMode),
+    "--benchmark",
+    benchmark.id,
+    "--query-set",
+    preset.querySetId,
+  ];
   return {
     benchmark,
     preset,
     querySetId: preset.querySetId,
     outputDir,
-    logDir: resolve(options.rootDir, logDirRelative),
+    logDir: resolvedLogDir,
     launcherScript: resolve(options.rootDir, preset.launcherScript),
+    launcherCommand,
     launcherEnv: preset.launcherEnv
       ? {
           ...preset.launcherEnv,

@@ -1,8 +1,11 @@
 import type { BenchmarkPromptVariant } from "../runtime/prompt";
 
+export type BenchmarkManagedPresetLaunchMode = "shared" | "sharded";
+
 export type BenchmarkManagedPresetDefinition = {
   id: string;
   querySetId: string;
+  launchMode: BenchmarkManagedPresetLaunchMode;
   launcherScript: string;
   outputDirTemplate: string;
   logDirTemplate: string;

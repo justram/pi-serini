@@ -28,6 +28,7 @@ export const msmarcoV1PassageBenchmark: BenchmarkDefinition = {
     dl19_shared: {
       id: "dl19_shared",
       querySetId: "dl19",
+      launchMode: "shared",
       launcherScript: "scripts/launch_benchmark_query_set_shared.sh",
       outputDirTemplate: "runs/pi_agent_msmarco_dl19_plain_minimal_{modelSlug}_{runStamp}",
       logDirTemplate: "runs/shared-bm25-msmarco-dl19-{modelSlug}_{runStamp}",
@@ -39,6 +40,7 @@ export const msmarcoV1PassageBenchmark: BenchmarkDefinition = {
     dl20_shared: {
       id: "dl20_shared",
       querySetId: "dl20",
+      launchMode: "shared",
       launcherScript: "scripts/launch_benchmark_query_set_shared.sh",
       outputDirTemplate: "runs/pi_agent_msmarco_dl20_plain_minimal_{modelSlug}_{runStamp}",
       logDirTemplate: "runs/shared-bm25-msmarco-dl20-{modelSlug}_{runStamp}",
