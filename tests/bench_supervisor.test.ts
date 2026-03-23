@@ -1,10 +1,15 @@
 import assert from "node:assert/strict";
-import { mkdtempSync } from "node:fs";
+import { mkdirSync, mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-import { launchManagedRun, relaunchManagedRun } from "../src/operator/bench_supervisor";
+import {
+  launchManagedRun,
+  relaunchManagedRun,
+  startManagedRunProcess,
+  type ManagedRunState,
+} from "../src/operator/bench_supervisor";
 
 test("launchManagedRun preserves legacy BrowseComp q9 managed preset naming and metadata", async () => {
   const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-q9-"));
@@ -118,4 +123,72 @@ test("relaunchManagedRun keeps managed preset compatibility metadata and shard c
     "--query-set",
     "qfull",
   ]);
+});
+
+function createManagedRunState(rootDir: string, launcherCommand: string[]): ManagedRunState {
+  const outputDir = join(rootDir, "runs", "managed-output");
+  const logDir = join(outputDir, "logs");
+  mkdirSync(logDir, { recursive: true });
+  return {
+    id: "bench_test_managed",
+    preset: "benchmark-template/dev_shared",
+    benchmarkId: "benchmark-template",
+    querySetId: "dev",
+    rootDir,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    model: "openai-codex/gpt-5.4-mini",
+    thinking: "medium",
+    timeoutSeconds: 300,
+    port: 50555,
+    outputDir,
+    logDir,
+    launcherScript: launcherCommand[0] ?? "launcher",
+    launcherCommand,
+    launcherStdoutPath: join(logDir, "launcher.stdout.log"),
+    launcherStderrPath: join(logDir, "launcher.stderr.log"),
+    status: "launching",
+  };
+}
+
+test("startManagedRunProcess marks immediate launcher exit as failed with startup evidence", () => {
+  const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-startup-fail-"));
+
+  const started = startManagedRunProcess(
+    createManagedRunState(rootDir, [
+      process.execPath,
+      "-e",
+      'process.stderr.write("boom during startup\\n"); process.exit(1);',
+    ]),
+  );
+
+  assert.equal(started.status, "failed");
+  assert.ok(started.finishedAt);
+  assert.match(started.notes ?? "", /boom during startup/);
+});
+
+test("startManagedRunProcess waits for benchmark activity before marking the launcher running", () => {
+  const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-startup-running-"));
+
+  const started = startManagedRunProcess(
+    createManagedRunState(rootDir, [
+      process.execPath,
+      "-e",
+      [
+        'const fs = require("node:fs");',
+        'const path = require("node:path");',
+        'const logDir = process.env.LOG_DIR;',
+        'setTimeout(() => {',
+        '  fs.mkdirSync(logDir, { recursive: true });',
+        '  fs.appendFileSync(path.join(logDir, "run.log"), "Starting benchmark\\n");',
+        '}, 150);',
+        'setInterval(() => {}, 1000);',
+      ].join(" "),
+    ]),
+  );
+
+  assert.equal(started.status, "running");
+  assert.equal(started.notes, undefined);
+  assert.ok(started.pid);
+  process.kill(-started.pid!, "SIGKILL");
 });

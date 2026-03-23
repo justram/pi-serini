@@ -278,7 +278,117 @@ async function findFreePort(): Promise<number> {
   });
 }
 
-function startManagedRunProcess(state: ManagedRunState): ManagedRunState {
+const MANAGED_STARTUP_POLL_MS = 100;
+const MANAGED_STARTUP_TIMEOUT_MS = 1_500;
+const MANAGED_SLEEP_ARRAY = new Int32Array(new SharedArrayBuffer(4));
+
+function sleepSync(ms: number): void {
+  Atomics.wait(MANAGED_SLEEP_ARRAY, 0, 0, ms);
+}
+
+function readTextIfExists(path: string): string {
+  return existsSync(path) ? readFileSync(path, "utf8") : "";
+}
+
+function readLastNonEmptyLine(path: string): string | undefined {
+  const text = readTextIfExists(path).trim();
+  if (!text) return undefined;
+  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).at(-1);
+}
+
+function detectManagedRunFinished(state: Pick<ManagedRunState, "logDir">): boolean {
+  const runLogPath = join(state.logDir, "run.log");
+  return readTextIfExists(runLogPath).includes("Finished ");
+}
+
+function hasManagedStartupErrorOutput(state: Pick<ManagedRunState, "launcherStderrPath">): boolean {
+  return Boolean(readLastNonEmptyLine(state.launcherStderrPath));
+}
+
+function describeManagedLauncherFailure(state: Pick<ManagedRunState, "launcherStderrPath" | "launcherStdoutPath">): string {
+  const stderrLine = readLastNonEmptyLine(state.launcherStderrPath);
+  if (stderrLine) return `launcher exited during startup: ${stderrLine}`;
+  const stdoutLine = readLastNonEmptyLine(state.launcherStdoutPath);
+  if (stdoutLine) return `launcher exited during startup: ${stdoutLine}`;
+  return "launcher exited during startup before benchmark activity appeared";
+}
+
+function hasBenchmarkEventActivity(rootDir: string, id: string): boolean {
+  return listManagedRunEvents(rootDir, id, 50).some((event) =>
+    ["benchmark_started", "query_started", "query_completed", "query_skipped", "benchmark_finished"].includes(
+      event.type,
+    ),
+  );
+}
+
+function hasManagedBenchmarkActivity(state: Pick<ManagedRunState, "rootDir" | "id" | "logDir">): boolean {
+  if (hasBenchmarkEventActivity(state.rootDir, state.id)) return true;
+  const runLogPath = join(state.logDir, "run.log");
+  return readTextIfExists(runLogPath).trim().length > 0;
+}
+
+function resolveManagedRunStartupState(
+  state: ManagedRunState,
+): Pick<ManagedRunState, "status" | "finishedAt" | "notes"> {
+  const deadline = Date.now() + MANAGED_STARTUP_TIMEOUT_MS;
+
+  while (Date.now() < deadline) {
+    const alive = processExists(state.pid);
+    const finished = detectManagedRunFinished(state);
+    const benchmarkActive = hasManagedBenchmarkActivity(state);
+
+    if (finished) {
+      return {
+        status: "finished",
+        finishedAt: Date.now(),
+      };
+    }
+    if (!alive) {
+      return {
+        status: benchmarkActive ? "dead" : "failed",
+        finishedAt: Date.now(),
+        notes: benchmarkActive ? undefined : describeManagedLauncherFailure(state),
+      };
+    }
+    if (benchmarkActive) {
+      return {
+        status: "running",
+      };
+    }
+
+    sleepSync(MANAGED_STARTUP_POLL_MS);
+  }
+
+  if (detectManagedRunFinished(state)) {
+    return {
+      status: "finished",
+      finishedAt: Date.now(),
+    };
+  }
+  const benchmarkActive = hasManagedBenchmarkActivity(state);
+  if (!benchmarkActive && hasManagedStartupErrorOutput(state)) {
+    return {
+      status: "failed",
+      finishedAt: Date.now(),
+      notes: describeManagedLauncherFailure(state),
+    };
+  }
+  if (processExists(state.pid)) {
+    return {
+      status: "running",
+      notes: benchmarkActive
+        ? undefined
+        : "launcher process is alive; benchmark activity has not appeared yet",
+    };
+  }
+  return {
+    status: benchmarkActive ? "dead" : "failed",
+    finishedAt: Date.now(),
+    notes: benchmarkActive ? undefined : describeManagedLauncherFailure(state),
+  };
+}
+
+export function startManagedRunProcess(state: ManagedRunState): ManagedRunState {
   const env = {
     ...process.env,
     ...state.launcherEnv,
@@ -306,11 +416,9 @@ function startManagedRunProcess(state: ManagedRunState): ManagedRunState {
   state.pid = child.pid;
   state.pgid = child.pid;
   state.startedAt = Date.now();
-  state.status = processExists(child.pid) ? "running" : "failed";
-  if (state.status === "failed") {
-    state.finishedAt = Date.now();
-    state.notes = "launcher exited immediately";
-  }
+  state.status = "launching";
+  state.finishedAt = undefined;
+  state.notes = undefined;
   saveManagedRunState(state);
   appendManagedRunEvent(state.rootDir, {
     ts: Date.now(),
@@ -322,6 +430,22 @@ function startManagedRunProcess(state: ManagedRunState): ManagedRunState {
       status: state.status,
     },
   });
+
+  Object.assign(state, resolveManagedRunStartupState(state));
+  saveManagedRunState(state);
+  if (state.status !== "launching") {
+    appendManagedRunEvent(state.rootDir, {
+      ts: Date.now(),
+      runId: state.id,
+      type: "status_changed",
+      payload: {
+        previousStatus: "launching",
+        status: state.status,
+        finishedAt: state.finishedAt,
+        notes: state.notes,
+      },
+    });
+  }
   return state;
 }
 
@@ -476,7 +600,7 @@ export function startQueuedManagedRuns(
     });
     const started = startManagedRunProcess(state);
     updated.push(started);
-    if (started.status === "running") runningCount += 1;
+    if (["launching", "running"].includes(started.status)) runningCount += 1;
   }
   return updated.sort((left, right) => right.createdAt - left.createdAt);
 }
