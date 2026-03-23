@@ -4,7 +4,7 @@ import net from "node:net";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
-import { buildNodeTsxCommand } from "../runtime/node_tsx";
+import { buildTsxCommand } from "../runtime/tsx";
 import {
   buildBenchmarkQuerySetLaunchEnv,
   parseInteger,
@@ -234,7 +234,7 @@ async function startBm25Server(plan: SharedLaunchPlan) {
 
 async function runBenchmark(plan: SharedLaunchPlan): Promise<void> {
   const runLog = createWriteStream(plan.runLogPath, { flags: "a" });
-  const command = buildNodeTsxCommand("src/orchestration/run_benchmark_query_set.ts");
+  const command = buildTsxCommand("src/orchestration/run_benchmark_query_set.ts");
   const child = spawnLogged(command[0], command.slice(1), {
     cwd: REPO_ROOT,
     stdio: ["ignore", "pipe", "pipe"],

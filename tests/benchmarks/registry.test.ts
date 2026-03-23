@@ -166,8 +166,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
     assert.equal(rendered.querySetId, presetCase.expectedQuerySetId);
     assert.equal(rendered.launcherScript, `${rootDir}/${presetCase.expectedLauncherScript}`);
     assert.deepEqual(rendered.launcherCommand, [
-      process.execPath,
-      "--import",
+      "npx",
       "tsx",
       ...presetCase.expectedLauncherCommand,
     ]);

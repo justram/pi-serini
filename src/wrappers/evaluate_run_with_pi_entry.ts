@@ -8,7 +8,7 @@ import {
 } from "./downstream_tool_wrappers";
 import type { BenchmarkJudgeEvalMode } from "../benchmarks/types";
 import { resolveBenchmarkJudgeEvaluation } from "../evaluation/benchmark_evaluation";
-import { buildNodeTsxCommand } from "../runtime/node_tsx";
+import { buildTsxCommand } from "../runtime/tsx";
 
 type Args = {
   benchmarkId?: string;
@@ -176,7 +176,7 @@ function main(): void {
     );
   }
 
-  const command = buildNodeTsxCommand("src/evaluation/evaluate_run_with_pi.ts", [
+  const command = buildTsxCommand("src/evaluation/evaluate_run_with_pi.ts", [
     "--benchmark",
     judgeInputs.benchmarkId,
     "--inputDir",

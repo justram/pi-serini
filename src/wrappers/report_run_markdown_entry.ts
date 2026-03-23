@@ -5,7 +5,7 @@ import {
   readEnv,
   resolveWrapperQrels,
 } from "./downstream_tool_wrappers";
-import { buildNodeTsxCommand } from "../runtime/node_tsx";
+import { buildTsxCommand } from "../runtime/tsx";
 
 type Args = {
   benchmarkId?: string;
@@ -133,7 +133,7 @@ function main(): void {
     secondaryQrelsDisabled: args.secondaryQrelsDisabled,
   });
 
-  const command = buildNodeTsxCommand("src/report/report_run_markdown.ts", [
+  const command = buildTsxCommand("src/report/report_run_markdown.ts", [
     "--benchmark",
     qrelsResolution.benchmarkId,
     "--runDir",

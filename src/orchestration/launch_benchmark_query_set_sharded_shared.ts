@@ -14,7 +14,7 @@ import net from "node:net";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join, resolve } from "node:path";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
-import { buildNodeTsxCommand } from "../runtime/node_tsx";
+import { buildTsxCommand } from "../runtime/tsx";
 import {
   parseInteger,
   readEnv,
@@ -533,7 +533,7 @@ function spawnShard(plan: ShardedLaunchPlan, shard: ShardFile, attempt: number):
   const shardOutputDir = `${plan.shardOutputRoot}/${shard.shardName}`;
   mkdirSync(resolve(REPO_ROOT, shardOutputDir), { recursive: true });
   const shardLogPath = resolve(REPO_ROOT, plan.logDir, `${shard.shardName}.log`);
-  const args = buildNodeTsxCommand("src/orchestration/run_benchmark_query_set.ts", [
+  const args = buildTsxCommand("src/orchestration/run_benchmark_query_set.ts", [
     "--benchmark",
     plan.benchmarkId,
     "--query-set",
@@ -638,7 +638,7 @@ async function waitForRetryApproval(
 
 async function runSummarize(plan: ShardedLaunchPlan): Promise<void> {
   const summarizeLog = resolve(REPO_ROOT, plan.logDir, "summarize.log");
-  const args = buildNodeTsxCommand("src/evaluation/summarize_run.ts", [
+  const args = buildTsxCommand("src/evaluation/summarize_run.ts", [
     "--benchmark",
     plan.benchmarkId,
     "--runDir",
@@ -670,7 +670,7 @@ async function runSummarize(plan: ShardedLaunchPlan): Promise<void> {
 
 async function runEvaluate(plan: ShardedLaunchPlan): Promise<void> {
   const evaluateLog = resolve(REPO_ROOT, plan.logDir, "evaluate.log");
-  const args = buildNodeTsxCommand("src/evaluation/evaluate_run_with_pi.ts", [
+  const args = buildTsxCommand("src/evaluation/evaluate_run_with_pi.ts", [
     "--benchmark",
     plan.benchmarkId,
     "--inputDir",

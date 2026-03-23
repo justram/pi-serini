@@ -1,5 +1,5 @@
 import { spawnSync } from "node:child_process";
-import { buildNodeTsxCommand } from "../runtime/node_tsx";
+import { buildTsxCommand } from "../runtime/tsx";
 
 type Mode = "run" | "shared" | "sharded";
 
@@ -142,7 +142,7 @@ function buildCompatibilityCommand(args: Args): CompatibilityCommand {
       : args.mode === "shared"
         ? "src/orchestration/launch_benchmark_query_set_shared.ts"
         : "src/orchestration/launch_benchmark_query_set_sharded_shared.ts";
-  const command = buildNodeTsxCommand(scriptPath);
+  const command = buildTsxCommand(scriptPath);
 
   if (!hasAnyFlag(args.passthrough, ["--benchmark"])) {
     command.push("--benchmark", benchmarkId);

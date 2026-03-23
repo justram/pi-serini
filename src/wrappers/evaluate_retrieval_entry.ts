@@ -9,7 +9,7 @@ import {
 import { resolveRetrievalEvalSummaryPath } from "../runtime/output_layout";
 import { resolveAnseriniJarPath } from "../evaluation/trec_eval_runner";
 import { resolveBenchmarkRetrievalEvaluation } from "../evaluation/benchmark_evaluation";
-import { buildNodeTsxCommand } from "../runtime/node_tsx";
+import { buildTsxCommand } from "../runtime/tsx";
 
 type Args = {
   benchmarkId?: string;
@@ -195,7 +195,7 @@ function main(): void {
   });
 
   const command = useTrecEvalBackend
-    ? buildNodeTsxCommand("src/evaluation/eval_retrieval_trec_eval.ts", [
+    ? buildTsxCommand("src/evaluation/eval_retrieval_trec_eval.ts", [
         "--benchmark",
         qrelsResolution.benchmarkId,
         "--query-set",
@@ -209,7 +209,7 @@ function main(): void {
         "--summary-path",
         retrievalSummaryPath ?? "",
       ])
-    : buildNodeTsxCommand("src/evaluation/eval_retrieval.ts", [
+    : buildTsxCommand("src/evaluation/eval_retrieval.ts", [
         "--benchmark",
         qrelsResolution.benchmarkId,
         "--query-set",
