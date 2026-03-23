@@ -1038,6 +1038,65 @@ test("node judge-eval entrypoint defaults MSMARCO to reference-free judge mode",
   assert.ok(command.includes("reference-free"));
 });
 
+test("node judge-eval entrypoint rejects unsupported gold-answer mode for MSMARCO", () => {
+  assert.throws(
+    () =>
+      execFileSync(
+        "node",
+        [
+          "--import",
+          "tsx",
+          "src/wrappers/evaluate_run_with_pi_entry.ts",
+          "--dry-run",
+          "--benchmark",
+          "msmarco-v1-passage",
+          "--judge-mode",
+          "gold-answer",
+          "--input-dir",
+          "runs/pi_bm25_msmarco-v1-passage_dl19_plain_minimal",
+        ],
+        {
+          cwd: process.cwd(),
+          env: process.env,
+          encoding: "utf8",
+          stdio: "pipe",
+        },
+      ),
+    /Judge mode gold-answer is not supported for benchmark msmarco-v1-passage\. Supported modes: reference-free/,
+  );
+});
+
+test("node judge-eval entrypoint allows optional reference-free mode without ground truth on gold-answer benchmarks", () => {
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/wrappers/evaluate_run_with_pi_entry.ts",
+      "--dry-run",
+      "--benchmark",
+      "benchmark-template",
+      "--judge-mode",
+      "reference-free",
+      "--input-dir",
+      "runs/pi_bm25_benchmark-template_dev_plain_minimal",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /JUDGE_MODE=reference-free/);
+  assert.doesNotMatch(output, /GROUND_TRUTH=/);
+  const command = parseCommandJson(output);
+  assert.ok(command.includes("--judgeMode"));
+  assert.ok(command.includes("reference-free"));
+  assert.doesNotMatch(command.join(" "), /--groundTruth/);
+});
+
 test("judge eval ignores run_setup.json during per-query discovery", () => {
   const root = mkdtempSync(join(tmpdir(), "judge-eval-run-"));
   const queryPath = join(root, "queries.tsv");
