@@ -726,7 +726,7 @@ test("legacy tune shell wrapper remains a compatibility shim over the node entry
   assert.match(output, /QUERY_SET=test/);
   assert.match(output, /QUERY_FILE=data\/benchmark-template\/queries\/test.tsv/);
   assert.match(output, /QRELS_FILE=data\/benchmark-template\/qrels\/qrel_primary.txt/);
-  assert.match(output, /SECONDARY_QRELS_FILE=data\/benchmark-template\/qrels\/qrel_secondary.txt/);
+  assert.match(output, /SECONDARY_QRELS_FILE=data\/browsecomp-plus\/qrels\/qrel_gold.txt/);
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   assert.match(output, /OUTPUT_DIR=runs\/custom-tuning-output/);
   assert.match(output, /KEEP_RUNS=1/);
@@ -940,6 +940,37 @@ test("node retrieval entrypoint prefers manifest query-set ids over benchmark de
   const querySetIndex = command.indexOf("--query-set");
   assert.notEqual(querySetIndex, -1);
   assert.equal(command[querySetIndex + 1], "test");
+});
+
+test("node retrieval entrypoint resolves query-set-specific secondary qrels for non-manifest benchmark runs", () => {
+  const output = execFileSync(
+    "node",
+    [
+      "--import",
+      "tsx",
+      "src/wrappers/evaluate_retrieval_entry.ts",
+      "--dry-run",
+      "--benchmark",
+      "benchmark-template",
+      "--query-set",
+      "test",
+      "--run-file",
+      "data/benchmark-template/source/bm25_pure.trec",
+    ],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+
+  assert.match(output, /BENCHMARK=benchmark-template/);
+  assert.match(output, /QUERY_SET=test/);
+  assert.match(output, /SECONDARY_QRELS_FILE=data\/browsecomp-plus\/qrels\/qrel_gold.txt/);
+  const command = parseCommandJson(output);
+  assert.ok(command.includes("--secondaryQrels"));
+  assert.ok(command.includes("data/browsecomp-plus/qrels/qrel_gold.txt"));
+  assert.doesNotMatch(output, /SECONDARY_QRELS_FILE=data\/benchmark-template\/qrels\/qrel_secondary.txt/);
 });
 
 test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", () => {

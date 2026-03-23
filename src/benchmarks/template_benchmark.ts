@@ -12,6 +12,7 @@ export const templateBenchmark: BenchmarkDefinition = {
     dev: "data/benchmark-template/queries/dev.tsv",
     test: {
       queryPath: "data/benchmark-template/queries/test.tsv",
+      secondaryQrelsPath: "data/browsecomp-plus/qrels/qrel_gold.txt",
       compareBaselineRunPath: "data/benchmark-template/source/bm25_pure.trec",
     },
   },

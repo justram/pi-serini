@@ -48,6 +48,7 @@ export function resolveBenchmarkIdFromRunPath(options: {
 
 export function resolveSecondaryQrelsForWrapper(options: {
   benchmarkId: string;
+  querySetId?: string;
   manifestPresent: boolean;
   explicitWasSet: boolean;
   explicitValue?: string;
@@ -58,7 +59,10 @@ export function resolveSecondaryQrelsForWrapper(options: {
   if (options.manifestPresent) {
     return undefined;
   }
-  const secondaryPath = resolveBenchmarkConfig({ benchmarkId: options.benchmarkId }).secondaryQrelsPath;
+  const secondaryPath = resolveBenchmarkConfig({
+    benchmarkId: options.benchmarkId,
+    querySetId: options.querySetId,
+  }).secondaryQrelsPath;
   if (!secondaryPath) {
     return undefined;
   }
@@ -167,6 +171,7 @@ export function resolveWrapperQrels(options: {
     ? undefined
     : resolveSecondaryQrelsForWrapper({
         benchmarkId: context.benchmarkId,
+        querySetId: context.querySetId,
         manifestPresent: context.manifestPresent,
         explicitWasSet: secondaryQrelsWasSet,
         explicitValue: options.secondaryQrelsPath ?? readEnv(secondaryQrelsEnvName),

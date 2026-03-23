@@ -280,6 +280,7 @@ test("registry includes runnable local and external second benchmarks", () => {
   });
   assert.equal(templateResolved.queryPath, "data/benchmark-template/queries/test.tsv");
   assert.equal(templateResolved.qrelsPath, "data/benchmark-template/qrels/qrel_primary.txt");
+  assert.equal(templateResolved.secondaryQrelsPath, "data/browsecomp-plus/qrels/qrel_gold.txt");
 
   const msmarcoResolved = resolveBenchmarkConfig({ benchmarkId: "msmarco-v1-passage" });
   assert.equal(msmarcoResolved.querySetId, "dl19");
