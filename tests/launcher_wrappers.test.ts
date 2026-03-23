@@ -276,6 +276,7 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
     },
   );
   assert.match(status, /benchmark:benchmark-template \(dev\)/);
+  assert.match(status, /detail:\s+recent unmanaged activity detected/);
   assert.match(status, /launch:\s+single-worker/);
 });
 

@@ -72,6 +72,7 @@ export type BenchRunSnapshot = {
   pendingRetryShards: string[];
   promptVariant?: string;
   launchTopology: "single-worker" | "shared-bm25" | "sharded-shared-bm25";
+  statusDetail: string;
   isSharded: boolean;
   shardCount: number;
   activeShardCount: number;
@@ -238,6 +239,57 @@ function inferLaunchTopology(options: {
   }
 
   return "single-worker";
+}
+
+function describeRunStatusDetail(options: {
+  status: BenchRunSnapshot["status"];
+  managedState?: ManagedRunState;
+  retryPending: boolean;
+  pendingRetryShards: string[];
+}): string {
+  if (options.retryPending) {
+    return options.pendingRetryShards.length > 0
+      ? `waiting for shard retry approval: ${options.pendingRetryShards.join(", ")}`
+      : "waiting for shard retry approval";
+  }
+
+  if (!options.managedState) {
+    switch (options.status) {
+      case "finished":
+        return "finished artifact-only run";
+      case "running":
+        return "recent unmanaged activity detected";
+      case "stalled":
+        return "partial unmanaged artifacts with no recent activity";
+      case "dead":
+        return "unmanaged run appears inactive before completion";
+      default:
+        return "not supervisor-managed";
+    }
+  }
+
+  if (options.managedState.notes?.trim()) {
+    return options.managedState.notes.trim();
+  }
+
+  switch (options.managedState.status) {
+    case "queued":
+      return "waiting for a supervisor launch slot";
+    case "launching":
+      return "starting launcher process";
+    case "running":
+      return "launcher process is alive";
+    case "finished":
+      return "benchmark finished";
+    case "killed":
+      return "terminated by operator request";
+    case "failed":
+      return "launcher failed during startup";
+    case "dead":
+      return "launcher is no longer alive before benchmark completion";
+    default:
+      return options.managedState.status;
+  }
 }
 
 function inferBm25Listening(logInfo: LogDirInfo | undefined, managedState: ManagedRunState | undefined): boolean {
@@ -864,6 +916,12 @@ function loadRunSnapshot(
     logDir: logInfo?.path ?? managedState?.logDir,
     managedState,
   });
+  const statusDetail = describeRunStatusDetail({
+    status,
+    managedState,
+    retryPending: pendingShardRetry.pending,
+    pendingRetryShards: pendingShardRetry.shards,
+  });
 
   return {
     id: runDir.split("/").at(-1) ?? runDir,
@@ -876,6 +934,7 @@ function loadRunSnapshot(
     pendingRetryShards: pendingShardRetry.shards,
     promptVariant,
     launchTopology,
+    statusDetail,
     isSharded,
     shardCount,
     activeShardCount,

@@ -188,6 +188,31 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
+function describeManagedStatus(state: {
+  status: string;
+  notes?: string;
+}): string {
+  if (state.notes?.trim()) return state.notes.trim();
+  switch (state.status) {
+    case "queued":
+      return "waiting for a supervisor launch slot";
+    case "launching":
+      return "starting launcher process";
+    case "running":
+      return "launcher process is alive";
+    case "finished":
+      return "benchmark finished";
+    case "killed":
+      return "terminated by operator request";
+    case "failed":
+      return "launcher failed during startup";
+    case "dead":
+      return "launcher is no longer alive before benchmark completion";
+    default:
+      return state.status;
+  }
+}
+
 function printStatus(args: Args): void {
   const priorMaxConcurrent = process.env.BENCH_MAX_CONCURRENT;
   if (args.maxConcurrent !== undefined) {
@@ -213,6 +238,7 @@ function printStatus(args: Args): void {
     console.log(`  benchmark:${run.benchmarkId}${run.querySetId ? ` (${run.querySetId})` : ""}`);
     console.log(`  model:   ${run.model}`);
     console.log(`  status:  ${run.status} (${run.stage})`);
+    console.log(`  detail:  ${run.statusDetail}`);
     console.log(`  launch:  ${run.launchTopology}`);
     console.log(`  managed: ${run.managedRunId ?? "n/a"}`);
     console.log(`  pid:     ${run.supervisorPid ?? "n/a"}`);
@@ -253,6 +279,7 @@ function printManaged(args: Args): void {
     console.log(`  query set: ${state.querySetId ?? resolvedPreset.preset.querySetId}`);
     console.log(`  model:  ${state.model}`);
     console.log(`  status: ${state.status}`);
+    console.log(`  detail: ${describeManagedStatus(state)}`);
     console.log(`  launch: ${resolvedPreset.preset.launchMode === "shared" ? "shared-bm25" : "sharded-shared-bm25"}`);
     console.log(`  pid:    ${state.pid ?? "n/a"}`);
     console.log(`  port:   ${state.port}`);

@@ -410,6 +410,7 @@ class BenchDashboard implements Component {
         width,
       ),
     );
+    lines.push(pad(`${theme.label("detail:")} ${run.statusDetail}`, width));
     lines.push(
       pad(
         `${theme.label("launch:")} ${run.launchTopology}   ${theme.label("layout:")} ${run.isSharded ? `sharded (${run.shardCount})` : "single-worker"}   ${theme.label("active shards:")} ${run.activeShardCount}`,
