@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -12,6 +12,17 @@ const baseEnv = {
 
 function runScript(script: string, env: NodeJS.ProcessEnv = {}): string {
   return execFileSync("bash", [script], {
+    cwd: process.cwd(),
+    env: {
+      ...baseEnv,
+      ...env,
+    },
+    encoding: "utf8",
+  });
+}
+
+function runNodeTsx(script: string, args: string[] = [], env: NodeJS.ProcessEnv = {}): string {
+  return execFileSync("node", ["--import", "tsx", script, ...args], {
     cwd: process.cwd(),
     env: {
       ...baseEnv,
@@ -65,6 +76,33 @@ function parseCommandJson(output: string): string[] {
   assert.ok(match, "Expected COMMAND_JSON in dry-run output");
   return JSON.parse(match[1]) as string[];
 }
+
+test("package scripts keep legacy run aliases on Node entrypoints instead of bash control-plane wrappers", () => {
+  const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
+    scripts: Record<string, string>;
+  };
+
+  assert.equal(
+    packageJson.scripts["run:q9"],
+    "npx tsx src/legacy/browsecomp_compat_entry.ts --mode run --slice q9",
+  );
+  assert.equal(
+    packageJson.scripts["run:q9:shared"],
+    "npx tsx src/legacy/browsecomp_compat_entry.ts --mode shared --slice q9",
+  );
+  assert.equal(
+    packageJson.scripts["run:browsecomp-plus:slice"],
+    "npx tsx src/legacy/browsecomp_compat_entry.ts --mode run",
+  );
+  assert.equal(
+    packageJson.scripts["run:browsecomp-plus:slice:shared"],
+    "npx tsx src/legacy/browsecomp_compat_entry.ts --mode shared",
+  );
+  assert.equal(
+    packageJson.scripts["run:browsecomp-plus:slice:sharded"],
+    "npx tsx src/legacy/browsecomp_compat_entry.ts --mode sharded",
+  );
+});
 
 test("run_benchmark_query_set help lists supported benchmarks, query sets, and benchmark-scoped examples", () => {
   const output = execFileSync(
@@ -418,6 +456,15 @@ test("legacy q9 single-run wrapper preserves historical q9 naming and prompt def
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
+test("node BrowseComp compatibility entrypoint preserves historical q9 single-run naming", () => {
+  const output = runNodeTsx("src/legacy/browsecomp_compat_entry.ts", ["--mode", "run", "--slice", "q9", "--dry-run"]);
+
+  assert.match(output, /BENCHMARK=browsecomp-plus/);
+  assert.match(output, /QUERY_SET=q9/);
+  assert.match(output, /PROMPT_VARIANT=plain_minimal/);
+  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
+});
+
 test("legacy BrowseComp slice wrapper preserves slice-driven naming", () => {
   const output = runScript("scripts/run_browsecomp_plus_slice_plain_minimal_excerpt.sh", {
     SLICE: "q300",
@@ -611,6 +658,15 @@ test("legacy q9 shared wrapper preserves historical q9 shared naming", () => {
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
+test("node BrowseComp compatibility entrypoint preserves historical q9 shared naming", () => {
+  const output = runNodeTsx("src/legacy/browsecomp_compat_entry.ts", ["--mode", "shared", "--slice", "q9", "--dry-run"]);
+
+  assert.match(output, /BENCHMARK=browsecomp-plus/);
+  assert.match(output, /QUERY_SET=q9/);
+  assert.match(output, /LOG_DIR=runs\/shared-bm25-q9/);
+  assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
+});
+
 test("node sharded benchmark entrypoint resolves benchmark-aware output naming and forwards critical launch defaults", () => {
   const output = execFileSync(
     "node",
@@ -687,6 +743,17 @@ test("generic sharded launcher resolves benchmark-aware output naming", () => {
     output,
     /OUTPUT_ROOT=runs\/pi_bm25_benchmark-template_dev_plain_minimal_gpt54mini_shared3_\d{8}_\d{6}/,
   );
+});
+
+test("node BrowseComp compatibility entrypoint preserves historical sharded slice naming", () => {
+  const output = runNodeTsx("src/legacy/browsecomp_compat_entry.ts", ["--mode", "sharded", "--slice", "q300", "--dry-run"]);
+
+  assert.match(output, /BENCHMARK=browsecomp-plus/);
+  assert.match(output, /QUERY_SET=q300/);
+  assert.match(output, /SHARD_COUNT=4/);
+  assert.match(output, /MODEL=openai-codex\/gpt-5.4-mini/);
+  assert.match(output, /PROMPT_VARIANT=plain_minimal/);
+  assert.match(output, /OUTPUT_ROOT=runs\/pi_bm25_q300_plain_minimal_excerpt_gpt54mini_shared4_\d{8}_\d{6}/);
 });
 
 test("node tune entrypoint resolves benchmark-aware defaults", () => {
