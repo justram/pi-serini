@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 import {
@@ -12,6 +11,7 @@ import {
 } from "./benchmark_query_set_launch";
 import { getDefaultBenchmarkId, listBenchmarkCatalog, listBenchmarks } from "../benchmarks/registry";
 import { printCommandJson } from "../wrappers/downstream_tool_wrappers";
+import { runInheritedCommandSync } from "../runtime/process";
 
 type Args = BenchmarkQuerySetLaunchArgs & {
   dryRun: boolean;
@@ -148,21 +148,10 @@ Examples:
 function runLaunchPlan(args: BenchmarkQuerySetLaunchArgs): void {
   const plan = resolveBenchmarkQuerySetLaunchPlan(args);
   const command = buildRunPiBenchmarkCommand(plan);
-  const result = spawnSync(command[0], command.slice(1), {
+  runInheritedCommandSync(command, {
     cwd: REPO_ROOT,
-    stdio: "inherit",
     env: buildBenchmarkQuerySetLaunchEnv(plan),
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
-  if (result.signal) {
-    throw new Error(`run_pi_benchmark exited with signal ${result.signal}`);
-  }
+  }, "run_pi_benchmark");
 }
 
 function main(): void {

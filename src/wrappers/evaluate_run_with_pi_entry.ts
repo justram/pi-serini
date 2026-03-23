@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import {
   parseInteger,
   printCommandJson,
@@ -9,6 +8,7 @@ import {
 import type { BenchmarkJudgeEvalMode } from "../benchmarks/types";
 import { resolveBenchmarkJudgeEvaluation } from "../evaluation/benchmark_evaluation";
 import { buildTsxCommand } from "../runtime/tsx";
+import { runInheritedCommandSync } from "../runtime/process";
 
 type Args = {
   benchmarkId?: string;
@@ -240,9 +240,7 @@ function main(): void {
     return;
   }
 
-  const result = spawnSync(command[0], command.slice(1), { stdio: "inherit", env: process.env });
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  runInheritedCommandSync(command);
 }
 
 main();

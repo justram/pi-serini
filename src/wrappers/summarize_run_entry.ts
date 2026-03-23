@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import {
   detectShellCompatibleEvalSummary,
   printCommandJson,
@@ -7,6 +6,7 @@ import {
   resolveWrapperQrels,
 } from "./downstream_tool_wrappers";
 import { buildTsxCommand } from "../runtime/tsx";
+import { runInheritedCommandSync } from "../runtime/process";
 
 type Args = {
   benchmarkId?: string;
@@ -151,9 +151,7 @@ function main(): void {
     return;
   }
 
-  const result = spawnSync(command[0], command.slice(1), { stdio: "inherit", env: process.env });
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
+  runInheritedCommandSync(command);
 }
 
 main();

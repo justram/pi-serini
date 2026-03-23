@@ -1,4 +1,3 @@
-import { spawnSync } from "node:child_process";
 import {
   buildBenchmarkQuerySetLaunchEnv,
   buildRunPiBenchmarkCommand,
@@ -9,6 +8,7 @@ import {
 } from "../orchestration/benchmark_query_set_launch";
 import { getDefaultBenchmarkId, listBenchmarks } from "../benchmarks/registry";
 import { printCommandJson } from "../wrappers/downstream_tool_wrappers";
+import { runInheritedCommandSync } from "../runtime/process";
 
 type Args = BenchmarkQuerySetLaunchArgs & {
   dryRun: boolean;
@@ -137,12 +137,9 @@ function main(): void {
     return;
   }
 
-  const result = spawnSync(command[0], command.slice(1), {
-    stdio: "inherit",
+  runInheritedCommandSync(command, {
     env: buildBenchmarkQuerySetLaunchEnv(plan),
   });
-  if (result.error) throw result.error;
-  if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
 main();

@@ -1,5 +1,5 @@
-import { spawnSync } from "node:child_process";
 import { buildTsxCommand } from "../runtime/tsx";
+import { runInheritedCommandSync } from "../runtime/process";
 
 type Mode = "run" | "shared" | "sharded";
 
@@ -213,20 +213,7 @@ function buildCompatibilityCommand(args: Args): CompatibilityCommand {
 function main(): void {
   const args = parseArgs(process.argv.slice(2));
   const { command, env } = buildCompatibilityCommand(args);
-  const result = spawnSync(command[0], command.slice(1), {
-    stdio: "inherit",
-    env,
-  });
-
-  if (result.error) {
-    throw result.error;
-  }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
-  if (result.signal) {
-    throw new Error(`compatibility entrypoint exited with signal ${result.signal}`);
-  }
+  runInheritedCommandSync(command, { env }, "compatibility entrypoint");
 }
 
 main();
