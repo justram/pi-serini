@@ -28,9 +28,8 @@ test("run_pi_benchmark records a failed query artifact when pi stdout ends with 
   chmodSync(fakePiPath, 0o755);
 
   const output = execFileSync(
-    "node",
+    "npx",
     [
-      "--import",
       "tsx",
       "src/orchestration/run_pi_benchmark.ts",
       "--benchmark",

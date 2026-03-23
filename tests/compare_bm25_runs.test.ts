@@ -43,9 +43,8 @@ test("buildBuckets uses benchmark recall semantics for difficulty and gold bucke
 
 test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () => {
   const output = execFileSync(
-    "node",
+    "npx",
     [
-      "--import",
       "tsx",
       "src/evaluation/compare_bm25_runs.ts",
       "--help",
@@ -60,9 +59,8 @@ test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () =>
   assert.match(output, /--querySet, --query-set\s+Query set id for benchmark-scoped compare defaults/);
 
   const dl19Output = execFileSync(
-    "node",
+    "npx",
     [
-      "--import",
       "tsx",
       "src/evaluation/compare_bm25_runs.ts",
       "--benchmark",
@@ -85,9 +83,8 @@ test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () =>
   assert.match(dl19Output, /Qrels: .*data\/msmarco-v1-passage\/qrels\/qrels\.dl19-passage\.txt/);
 
   const dl20Output = execFileSync(
-    "node",
+    "npx",
     [
-      "--import",
       "tsx",
       "src/evaluation/compare_bm25_runs.ts",
       "--benchmark",

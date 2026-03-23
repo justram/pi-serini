@@ -719,9 +719,8 @@ test("shared benchmark entrypoint fails fast when the extension path does not ex
   assert.throws(
     () =>
       execFileSync(
-        "node",
+        "npx",
         [
-          "--import",
           "tsx",
           "src/orchestration/launch_benchmark_query_set_shared.ts",
           "--dry-run",
@@ -1150,9 +1149,8 @@ test("node judge-eval entrypoint rejects unsupported gold-answer mode for MSMARC
   assert.throws(
     () =>
       execFileSync(
-        "node",
+        "npx",
         [
-          "--import",
           "tsx",
           "src/wrappers/evaluate_run_with_pi_entry.ts",
           "--dry-run",
