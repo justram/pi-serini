@@ -1,10 +1,6 @@
 import { basename, dirname, resolve } from "node:path";
 import { mkdirSync } from "node:fs";
-import {
-  getDefaultBenchmarkId,
-  resolveBenchmarkConfig,
-  resolveInternalRetrievalMetricSemantics,
-} from "../benchmarks/registry";
+import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "../benchmarks/registry";
 import { detectBenchmarkManifestSnapshot } from "../benchmarks/run_manifest";
 import {
   type EvaluationCutoffs,
@@ -19,6 +15,7 @@ import {
   writeRunFile,
 } from "./retrieval_metrics";
 import { writeRetrievalEvalSummary } from "./retrieval_eval_summary";
+import { resolveBenchmarkRetrievalEvaluation } from "./benchmark_evaluation";
 
 type Args = {
   benchmarkId: string;
@@ -220,7 +217,10 @@ function main() {
     mrrCutoffs: args.mrrCutoffs,
   };
 
-  const internalMetricSemantics = resolveInternalRetrievalMetricSemantics(args.benchmarkId);
+  const internalMetricSemantics = resolveBenchmarkRetrievalEvaluation({
+    benchmarkId: args.benchmarkId,
+    sourceType: args.runFile ? "run-file" : "run-dir",
+  }).internalMetricSemantics;
   const primaryResult = evaluateRankings(
     readQrels(resolve(args.qrelsPath)),
     rankings,

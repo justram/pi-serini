@@ -8,6 +8,7 @@ import {
 } from "./downstream_tool_wrappers";
 import { resolveRetrievalEvalSummaryPath } from "../runtime/output_layout";
 import { resolveAnseriniJarPath } from "../evaluation/trec_eval_runner";
+import { resolveBenchmarkRetrievalEvaluation } from "../evaluation/benchmark_evaluation";
 
 type Args = {
   benchmarkId?: string;
@@ -159,8 +160,11 @@ function main(): void {
 
   const queryTsv = args.queryTsv ?? readEnv("QUERY_TSV");
   const writeRunFile = args.writeRunFile ?? readEnv("WRITE_RUN_FILE");
-  const retrievalEvaluation = qrelsResolution.benchmarkConfig.benchmark.retrievalEvaluation;
-  const useTrecEvalBackend = Boolean(runFile) && retrievalEvaluation.runFileBackend === "trec_eval";
+  const retrievalEvaluation = resolveBenchmarkRetrievalEvaluation({
+    benchmarkId: qrelsResolution.benchmarkId,
+    sourceType: runFile ? "run-file" : "run-dir",
+  });
+  const useTrecEvalBackend = retrievalEvaluation.selectedBackend === "trec_eval";
 
   if (useTrecEvalBackend) {
     if (qrelsResolution.secondaryQrelsPath) {
@@ -251,11 +255,7 @@ function main(): void {
     RUN_DIR: runDir,
     RETRIEVAL_SOURCE_PATH: retrievalSourcePath,
     QUERY_SET: qrelsResolution.querySetId,
-    RETRIEVAL_EVAL_BACKEND: useTrecEvalBackend
-      ? "trec_eval"
-      : runFile
-        ? retrievalEvaluation.runFileBackend
-        : retrievalEvaluation.runDirBackend,
+    RETRIEVAL_EVAL_BACKEND: retrievalEvaluation.selectedBackend,
     USE_RUN_MANIFEST_DEFAULTS: qrelsResolution.manifestPresent,
     QRELS_FILE: useTrecEvalBackend
       ? qrelsResolution.qrelsPath

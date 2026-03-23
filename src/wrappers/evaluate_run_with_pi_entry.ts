@@ -7,6 +7,7 @@ import {
   resolveJudgeWrapperInputs,
 } from "./downstream_tool_wrappers";
 import type { BenchmarkJudgeEvalMode } from "../benchmarks/types";
+import { resolveBenchmarkJudgeEvaluation } from "../evaluation/benchmark_evaluation";
 
 type Args = {
   benchmarkId?: string;
@@ -145,17 +146,18 @@ function main(): void {
     groundTruthPath: args.groundTruthPath,
     qrelEvidencePath: args.qrelEvidencePath,
   });
+  const judgeEvaluation = resolveBenchmarkJudgeEvaluation({
+    benchmarkId: judgeInputs.benchmarkId,
+    groundTruthConfigured: Boolean(judgeInputs.benchmarkConfig.groundTruthPath),
+  });
   const judgeMode =
     args.judgeMode ??
     (readEnv("JUDGE_MODE") as BenchmarkJudgeEvalMode | undefined) ??
-    judgeInputs.benchmarkConfig.benchmark.judgeEvaluation?.defaultMode ??
-    (judgeInputs.benchmarkConfig.groundTruthPath ? "gold-answer" : "reference-free");
+    judgeEvaluation.defaultMode;
   if (judgeMode !== "gold-answer" && judgeMode !== "reference-free") {
     throw new Error(`Unsupported judge mode: ${judgeMode}`);
   }
-  const supportedJudgeModes = judgeInputs.benchmarkConfig.benchmark.judgeEvaluation?.supportedModes ?? [
-    judgeInputs.benchmarkConfig.groundTruthPath ? "gold-answer" : "reference-free",
-  ];
+  const supportedJudgeModes = judgeEvaluation.supportedModes;
   if (!supportedJudgeModes.includes(judgeMode)) {
     throw new Error(
       `Judge mode ${judgeMode} is not supported for benchmark ${judgeInputs.benchmarkId}. Supported modes: ${supportedJudgeModes.join(", ")}`,

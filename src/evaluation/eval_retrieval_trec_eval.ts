@@ -2,11 +2,7 @@ import { mkdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 
-import {
-  getDefaultBenchmarkId,
-  resolveBenchmarkConfig,
-  resolveInternalRetrievalMetricSemantics,
-} from "../benchmarks/registry";
+import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "../benchmarks/registry";
 import {
   buildTrecEvalCommands,
   parseTrecEvalMetricOutput,
@@ -15,6 +11,7 @@ import {
 } from "./trec_eval_runner";
 import { resolveRetrievalEvalSummaryPath } from "../runtime/output_layout";
 import { writeRetrievalEvalSummary } from "./retrieval_eval_summary";
+import { resolveBenchmarkRetrievalEvaluation } from "./benchmark_evaluation";
 
 type Args = {
   benchmarkId: string;
@@ -107,8 +104,11 @@ function main(): void {
     querySetId: args.querySetId,
     qrelsPath: args.qrelsPath,
   });
-  const retrievalEvaluation = benchmarkConfig.benchmark.retrievalEvaluation;
-  if (retrievalEvaluation.runFileBackend !== "trec_eval" || !retrievalEvaluation.trecEvalMetrics) {
+  const retrievalEvaluation = resolveBenchmarkRetrievalEvaluation({
+    benchmarkId: benchmarkConfig.benchmark.id,
+    sourceType: "run-file",
+  });
+  if (retrievalEvaluation.selectedBackend !== "trec_eval" || !retrievalEvaluation.trecEvalMetrics) {
     throw new Error(
       `Benchmark ${benchmarkConfig.benchmark.id} is not configured for trec_eval run-file evaluation.`,
     );
@@ -127,7 +127,7 @@ function main(): void {
     metrics: retrievalEvaluation.trecEvalMetrics,
   });
 
-  const metricSemantics = resolveInternalRetrievalMetricSemantics(benchmarkConfig.benchmark.id);
+  const metricSemantics = retrievalEvaluation.internalMetricSemantics;
 
   const summaryPath = resolve(
     args.summaryPath ??

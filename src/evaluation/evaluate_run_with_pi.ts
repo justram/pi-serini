@@ -14,6 +14,7 @@ import { createJudgePrompt } from "./judge_prompt";
 import { parseJudgeResponse, type JudgeResult } from "./judge_parse";
 import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "../benchmarks/registry";
 import type { BenchmarkJudgeEvalMode } from "../benchmarks/types";
+import { resolveBenchmarkJudgeEvaluation } from "./benchmark_evaluation";
 import { detectBenchmarkManifestSnapshot } from "../benchmarks/run_manifest";
 import { resolveJudgeEvalOutputDir } from "../runtime/output_layout";
 import { loadJudgeEvalRelevantDocids } from "./judge_eval_qrels";
@@ -219,11 +220,12 @@ function parseArgs(argv: string[]): Args {
     args.qrelEvidencePath ||= manifest.snapshot.qrels_path;
   }
   const benchmarkConfig = resolveBenchmarkConfig({ benchmarkId: args.benchmarkId });
-  args.judgeMode =
-    args.judgeMode ?? benchmarkConfig.benchmark.judgeEvaluation?.defaultMode ?? "gold-answer";
-  const supportedJudgeModes = benchmarkConfig.benchmark.judgeEvaluation?.supportedModes ?? [
-    benchmarkConfig.groundTruthPath ? "gold-answer" : "reference-free",
-  ];
+  const judgeEvaluation = resolveBenchmarkJudgeEvaluation({
+    benchmarkId: args.benchmarkId,
+    groundTruthConfigured: Boolean(benchmarkConfig.groundTruthPath),
+  });
+  args.judgeMode = args.judgeMode ?? judgeEvaluation.defaultMode;
+  const supportedJudgeModes = judgeEvaluation.supportedModes;
   if (!supportedJudgeModes.includes(args.judgeMode)) {
     throw new Error(
       `Judge mode ${args.judgeMode} is not supported for benchmark ${args.benchmarkId}. Supported modes: ${supportedJudgeModes.join(", ")}`,
