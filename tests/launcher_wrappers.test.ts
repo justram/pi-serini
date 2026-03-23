@@ -109,7 +109,7 @@ test("package scripts keep legacy run aliases on Node entrypoints instead of bas
 test("run_benchmark_query_set help lists supported benchmarks, query sets, and benchmark-scoped examples", () => {
   const output = execFileSync(
     "npx",
-    ["tsx", "src/orchestration/run_benchmark_query_set.ts", "--help"],
+    ["tsx", "src/orchestration/query_set.ts", "--help"],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -118,7 +118,7 @@ test("run_benchmark_query_set help lists supported benchmarks, query sets, and b
   );
 
   assert.match(output, /Preferred package entrypoint: npm run run:benchmark:query-set -- \[options\]/);
-  assert.match(output, /Low-level direct command: npx tsx src\/orchestration\/run_benchmark_query_set\.ts \[options\]/);
+  assert.match(output, /Low-level direct command: npx tsx src\/orchestration\/query_set\.ts \[options\]/);
   assert.match(output, /supported: browsecomp-plus, msmarco-v1-passage, benchmark-template/);
   assert.match(output, /Explicit override; wins over benchmark defaults/);
   assert.match(output, /browsecomp-plus: default query set q9; query sets q9, q100, q300, qfull/);
@@ -539,7 +539,7 @@ test("node benchmark query-set entrypoint resolves manifest-aligned defaults", (
     "npx",
     [
       "tsx",
-      "src/orchestration/run_benchmark_query_set.ts",
+      "src/orchestration/query_set.ts",
       "--dry-run",
       "--benchmark",
       "benchmark-template",
@@ -627,7 +627,7 @@ test("node shared benchmark entrypoint resolves benchmark-aware shared defaults"
     "npx",
     [
       "tsx",
-      "src/orchestration/launch_benchmark_query_set_shared.ts",
+      "src/orchestration/query_set_shared_bm25.ts",
       "--dry-run",
       "--benchmark",
       "benchmark-template",
@@ -645,7 +645,7 @@ test("node shared benchmark entrypoint resolves benchmark-aware shared defaults"
   assert.match(output, /BM25_THREADS=7/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_benchmark-template_dev_plain_minimal/);
   assert.match(output, /LOG_DIR=runs\/shared-bm25-benchmark-template-dev/);
-  assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/run_benchmark_query_set.ts/);
+  assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/query_set.ts/);
 });
 
 test("legacy BrowseComp shared wrapper preserves legacy output naming", () => {
@@ -688,7 +688,7 @@ test("node sharded benchmark entrypoint resolves benchmark-aware output naming a
     "npx",
     [
       "tsx",
-      "src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+      "src/orchestration/query_set_sharded_shared_bm25.ts",
       "--dry-run",
       "--benchmark",
       "benchmark-template",
@@ -722,7 +722,7 @@ test("shared benchmark entrypoint fails fast when the extension path does not ex
         "npx",
         [
           "tsx",
-          "src/orchestration/launch_benchmark_query_set_shared.ts",
+          "src/orchestration/query_set_shared_bm25.ts",
           "--dry-run",
           "--benchmark",
           "benchmark-template",

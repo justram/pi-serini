@@ -66,7 +66,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
       expectedLaunchMode: "shared",
       expectedLauncherScript: "scripts/launch_q9_plain_minimal_excerpt_shared_server.sh",
       expectedLauncherCommand: [
-        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_shared.ts",
+        "/tmp/pi-serini/src/orchestration/query_set_shared_bm25.ts",
         "--benchmark",
         "browsecomp-plus",
         "--query-set",
@@ -84,7 +84,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
       expectedLauncherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
       expectedLauncherCommand: [
-        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+        "/tmp/pi-serini/src/orchestration/query_set_sharded_shared_bm25.ts",
         "--benchmark",
         "browsecomp-plus",
         "--query-set",
@@ -107,7 +107,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
       expectedLauncherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
       expectedLauncherCommand: [
-        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+        "/tmp/pi-serini/src/orchestration/query_set_sharded_shared_bm25.ts",
         "--benchmark",
         "browsecomp-plus",
         "--query-set",
@@ -130,7 +130,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
       expectedLauncherScript:
         "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_sharded_shared_server.sh",
       expectedLauncherCommand: [
-        "/tmp/pi-serini/src/orchestration/launch_benchmark_query_set_sharded_shared.ts",
+        "/tmp/pi-serini/src/orchestration/query_set_sharded_shared_bm25.ts",
         "--benchmark",
         "browsecomp-plus",
         "--query-set",

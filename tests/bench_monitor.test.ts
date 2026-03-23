@@ -96,7 +96,7 @@ test("loadBenchSnapshot infers BM25 listening from managed state and ready logs 
         launcherCommand: [
           "npx",
           "tsx",
-          join(root, "src", "orchestration", "launch_benchmark_query_set_shared.ts"),
+          join(root, "src", "orchestration", "query_set_shared_bm25.ts"),
           "--benchmark",
           "benchmark-template",
           "--query-set",
@@ -156,7 +156,7 @@ test("loadBenchSnapshot does not report BM25 listening for terminal managed runs
         launcherCommand: [
           "npx",
           "tsx",
-          join(root, "src", "orchestration", "launch_benchmark_query_set_shared.ts"),
+          join(root, "src", "orchestration", "query_set_shared_bm25.ts"),
           "--benchmark",
           "benchmark-template",
           "--query-set",
@@ -208,7 +208,7 @@ test("loadBenchSnapshot derives managed-run progress totals from benchmark metad
         launcherCommand: [
           "npx",
           "tsx",
-          join(root, "src", "orchestration", "launch_benchmark_query_set_shared.ts"),
+          join(root, "src", "orchestration", "query_set_shared_bm25.ts"),
           "--benchmark",
           "benchmark-template",
           "--query-set",

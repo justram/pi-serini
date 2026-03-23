@@ -174,8 +174,8 @@ function buildManagedRunLauncherCommand(state: Pick<ManagedRunState, "rootDir" |
   const { preset } = resolveManagedPreset(state.preset);
   const entrypoint =
     preset.launchMode === "shared"
-      ? resolve(state.rootDir, "src/orchestration/launch_benchmark_query_set_shared.ts")
-      : resolve(state.rootDir, "src/orchestration/launch_benchmark_query_set_sharded_shared.ts");
+      ? resolve(state.rootDir, "src/orchestration/query_set_shared_bm25.ts")
+      : resolve(state.rootDir, "src/orchestration/query_set_sharded_shared_bm25.ts");
   return buildTsxCommand(entrypoint, [
     "--benchmark",
     state.benchmarkId,

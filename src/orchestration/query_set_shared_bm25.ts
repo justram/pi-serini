@@ -114,7 +114,7 @@ function parseArgs(argv: string[]): Args {
 
 function printHelp(): void {
   console.log(`Preferred package entrypoint: npm run run:benchmark:query-set:shared -- [options]
-Low-level direct command: npx tsx src/orchestration/launch_benchmark_query_set_shared.ts [options]
+Low-level direct command: npx tsx src/orchestration/query_set_shared_bm25.ts [options]
 
 Options:
   --benchmark <id>               Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()
@@ -176,7 +176,7 @@ function printSharedLaunchPlan(plan: SharedLaunchPlan): void {
   console.log(`HOST=${plan.host}`);
   console.log(`PORT=${plan.port}`);
   console.log(`BM25_THREADS=${process.env.PI_BM25_THREADS?.trim() || "1"}`);
-  console.log(`RUN_ENTRYPOINT=src/orchestration/run_benchmark_query_set.ts`);
+  console.log(`RUN_ENTRYPOINT=src/orchestration/query_set.ts`);
 }
 
 async function isTcpPortListening(host: string, port: number): Promise<boolean> {
@@ -208,7 +208,7 @@ async function startBm25Server(plan: SharedLaunchPlan) {
 
 async function runBenchmark(plan: SharedLaunchPlan): Promise<void> {
   const runLog = createWriteStream(plan.runLogPath, { flags: "a" });
-  const command = buildTsxCommand("src/orchestration/run_benchmark_query_set.ts");
+  const command = buildTsxCommand("src/orchestration/query_set.ts");
   const child = spawnPipedCommand(command, {
     cwd: REPO_ROOT,
     env: {

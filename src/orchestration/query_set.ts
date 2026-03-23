@@ -117,7 +117,7 @@ function printHelp(): void {
     )
     .join("\n");
   console.log(`Preferred package entrypoint: npm run run:benchmark:query-set -- [options]
-Low-level direct command: npx tsx src/orchestration/run_benchmark_query_set.ts [options]
+Low-level direct command: npx tsx src/orchestration/query_set.ts [options]
 
 Options:
   --benchmark <id>               Benchmark manifest id (default: ${getDefaultBenchmarkId()}; supported: ${listBenchmarks()

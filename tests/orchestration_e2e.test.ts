@@ -97,7 +97,7 @@ test("package run:benchmark:query-set:shared script drives the active shared orc
   assert.match(output, /LOG_DIR=runs\/shared-bm25-benchmark-template-test/);
   assert.match(output, /HOST=127\.0\.0\.1/);
   assert.match(output, /PORT=51001/);
-  assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/run_benchmark_query_set.ts/);
+  assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/query_set.ts/);
 });
 
 test("package run:benchmark:shared script preserves the legacy low-level shared path end-to-end", () => {

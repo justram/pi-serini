@@ -25,7 +25,7 @@ test("launchManagedRun preserves legacy BrowseComp q9 managed preset naming and 
   assert.deepEqual(state.launcherCommand.slice(0, 3), [
     "npx",
     "tsx",
-    `${rootDir}/src/orchestration/launch_benchmark_query_set_shared.ts`,
+    `${rootDir}/src/orchestration/query_set_shared_bm25.ts`,
   ]);
   assert.deepEqual(state.launcherCommand.slice(3), [
     "--benchmark",
@@ -62,7 +62,7 @@ test("launchManagedRun preserves legacy BrowseComp sharded preset env and naming
   assert.deepEqual(state.launcherCommand.slice(0, 3), [
     "npx",
     "tsx",
-    `${rootDir}/src/orchestration/launch_benchmark_query_set_sharded_shared.ts`,
+    `${rootDir}/src/orchestration/query_set_sharded_shared_bm25.ts`,
   ]);
   assert.deepEqual(state.launcherCommand.slice(3), [
     "--benchmark",
@@ -110,7 +110,7 @@ test("relaunchManagedRun keeps managed preset compatibility metadata and shard c
   assert.deepEqual(relaunched.launcherCommand.slice(0, 3), [
     "npx",
     "tsx",
-    `${rootDir}/src/orchestration/launch_benchmark_query_set_sharded_shared.ts`,
+    `${rootDir}/src/orchestration/query_set_sharded_shared_bm25.ts`,
   ]);
   assert.deepEqual(relaunched.launcherCommand.slice(3), [
     "--benchmark",

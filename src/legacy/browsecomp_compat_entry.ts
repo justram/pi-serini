@@ -138,10 +138,10 @@ function buildCompatibilityCommand(args: Args): CompatibilityCommand {
 
   const scriptPath =
     args.mode === "run"
-      ? "src/orchestration/run_benchmark_query_set.ts"
+      ? "src/orchestration/query_set.ts"
       : args.mode === "shared"
-        ? "src/orchestration/launch_benchmark_query_set_shared.ts"
-        : "src/orchestration/launch_benchmark_query_set_sharded_shared.ts";
+        ? "src/orchestration/query_set_shared_bm25.ts"
+        : "src/orchestration/query_set_sharded_shared_bm25.ts";
   const command = buildTsxCommand(scriptPath);
 
   if (!hasAnyFlag(args.passthrough, ["--benchmark"])) {
