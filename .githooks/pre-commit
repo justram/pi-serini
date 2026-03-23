@@ -4,4 +4,8 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+npm run format
+git add -A
+npm run lint
+npm run typecheck
 bash scripts/check_no_sensitive_tracking.sh --staged

@@ -4,4 +4,5 @@ set -euo pipefail
 repo_root="$(git rev-parse --show-toplevel)"
 cd "$repo_root"
 
+npm run test
 bash scripts/check_no_sensitive_tracking.sh --tracked
