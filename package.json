@@ -30,11 +30,11 @@
     "evaluate:retrieval": "npx tsx src/wrappers/evaluate_retrieval_entry.ts",
     "report:run": "npx tsx src/wrappers/report_run_markdown_entry.ts",
     "tune:bm25": "npx tsx src/orchestration/tune_bm25_entry.ts",
-    "compare:bm25": "tsx src/evaluation/compare_bm25_runs.ts",
-    "bench": "tsx src/operator/benchctl.ts",
-    "bench:status": "tsx src/operator/benchctl.ts status",
-    "bench:managed": "tsx src/operator/benchctl.ts managed",
-    "bench:tui": "tsx src/operator/benchctl.ts tui"
+    "compare:bm25": "npx tsx src/evaluation/compare_bm25_runs.ts",
+    "bench": "npx tsx src/operator/benchctl.ts",
+    "bench:status": "npx tsx src/operator/benchctl.ts status",
+    "bench:managed": "npx tsx src/operator/benchctl.ts managed",
+    "bench:tui": "npx tsx src/operator/benchctl.ts tui"
   },
   "dependencies": {
     "@mariozechner/pi-tui": "file:../../oss/pi-mono/packages/tui",

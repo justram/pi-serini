@@ -102,8 +102,8 @@ test("package scripts keep legacy run aliases on Node entrypoints instead of bas
     packageJson.scripts["run:browsecomp-plus:slice:sharded"],
     "npx tsx src/legacy/browsecomp_compat_entry.ts --mode sharded",
   );
-  assert.equal(packageJson.scripts["bench"], "tsx src/operator/benchctl.ts");
-  assert.equal(packageJson.scripts["compare:bm25"], "tsx src/evaluation/compare_bm25_runs.ts");
+  assert.equal(packageJson.scripts["bench"], "npx tsx src/operator/benchctl.ts");
+  assert.equal(packageJson.scripts["compare:bm25"], "npx tsx src/evaluation/compare_bm25_runs.ts");
 });
 
 test("run_benchmark_query_set help lists supported benchmarks, query sets, and benchmark-scoped examples", () => {
