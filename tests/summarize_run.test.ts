@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
 
-test("summarize_run uses benchmark-aware recall thresholds for graded qrels", () => {
+void test("summarize_run uses benchmark-aware recall thresholds for graded qrels", () => {
   const root = mkdtempSync(join(tmpdir(), "summarize-run-"));
   const runDir = join(root, "run");
   const queryPath = join(root, "queries.tsv");

@@ -1,13 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { mkdtempSync, mkdirSync, realpathSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { buildReport } from "../src/report/report_run_markdown";
 import { detectEvalSummaryPath } from "../src/report/report_markdown_data";
 import type { Args, JudgeEvaluationSummary } from "../src/report/report_markdown_types";
 
-test("detectEvalSummaryPath finds namespaced sharded judge summaries under evals/pi_judge/<benchmark>/<run>/merged", () => {
+void test("detectEvalSummaryPath finds namespaced sharded judge summaries under evals/pi_judge/<benchmark>/<run>/merged", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const cwd = process.cwd();
   const runDir = join(root, "runs", "run");
@@ -27,7 +27,7 @@ test("detectEvalSummaryPath finds namespaced sharded judge summaries under evals
   }
 });
 
-test("buildReport loads qrels defaults from benchmark manifest snapshots", () => {
+void test("buildReport loads qrels defaults from benchmark manifest snapshots", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const runDir = join(root, "run");
   const mergedDir = join(runDir, "merged");
@@ -85,14 +85,17 @@ test("buildReport loads qrels defaults from benchmark manifest snapshots", () =>
 
   assert.match(report.markdown, /Benchmark: `browsecomp-plus` \(BrowseComp-Plus\)/);
   assert.match(report.markdown, /Query set: `q9`/);
-  assert.match(report.markdown, /- Benchmark: `browsecomp-plus` \(BrowseComp-Plus\), query set: `q9`\./);
+  assert.match(
+    report.markdown,
+    /- Benchmark: `browsecomp-plus` \(BrowseComp-Plus\), query set: `q9`\./,
+  );
   assert.match(report.markdown, /Run commit: `123456`/);
   assert.match(report.markdown, /- Run commit: `123456`\./);
   assert.match(report.markdown, /Report commit: `[0-9a-f]{6}`/);
   assert.match(report.markdown, /- Report commit: `[0-9a-f]{6}`\./);
   assert.match(report.markdown, /## Run setup/);
-+  assert.match(report.markdown, /\| Benchmark \| browsecomp-plus \(BrowseComp-Plus\) \|/);
-+  assert.match(report.markdown, /\| Query set \| q9 \|/);
+  assert.match(report.markdown, /\| Benchmark \| browsecomp-plus \(BrowseComp-Plus\) \|/);
+  assert.match(report.markdown, /\| Query set \| q9 \|/);
   assert.match(report.markdown, /\| Model \| openai-codex\/gpt-5\.4-mini \|/);
   assert.match(report.markdown, /\| Query file \| data\/browsecomp-plus\/queries\/q9\.tsv \|/);
   assert.match(report.markdown, /\| Index path \| indexes\/browsecomp-plus-bm25-tevatron \|/);
@@ -103,7 +106,7 @@ test("buildReport loads qrels defaults from benchmark manifest snapshots", () =>
   assert.doesNotMatch(report.markdown, /\| gold \|/);
 });
 
-test("buildReport prefers structured run_setup.json for reproducibility metadata", () => {
+void test("buildReport prefers structured run_setup.json for reproducibility metadata", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const runDir = join(root, "run");
   const mergedDir = join(runDir, "merged");
@@ -159,7 +162,10 @@ test("buildReport prefers structured run_setup.json for reproducibility metadata
   assert.match(report.markdown, /Benchmark: `benchmark-template` \(Benchmark Template Tiny Demo\)/);
   assert.match(report.markdown, /Query set: `dev`/);
   assert.match(report.markdown, /## Run setup/);
-  assert.match(report.markdown, /\| Benchmark \| benchmark-template \(Benchmark Template Tiny Demo\) \|/);
+  assert.match(
+    report.markdown,
+    /\| Benchmark \| benchmark-template \(Benchmark Template Tiny Demo\) \|/,
+  );
   assert.match(report.markdown, /\| Query set \| dev \|/);
   assert.match(report.markdown, /\| Slice \| dl19 \|/);
   assert.match(report.markdown, /\| Model \| openai-codex\/gpt-5\.4-mini \|/);
@@ -168,7 +174,7 @@ test("buildReport prefers structured run_setup.json for reproducibility metadata
   assert.match(report.markdown, /\| BM25 threads \| 8 \|/);
 });
 
-test("buildReport formats reference-free judge accuracy with explicit mode labels", () => {
+void test("buildReport formats reference-free judge accuracy with explicit mode labels", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const runDir = join(root, "run");
   const mergedDir = join(runDir, "merged");
@@ -235,7 +241,7 @@ test("buildReport formats reference-free judge accuracy with explicit mode label
   assert.match(report.markdown, /\| Accuracy \(reference-free judge\) \| 70\.00% \|/);
 });
 
-test("buildReport formats judged incorrect query recall as a percent, not a rate", () => {
+void test("buildReport formats judged incorrect query recall as a percent, not a rate", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const runDir = join(root, "run");
   const mergedDir = join(runDir, "merged");
@@ -301,7 +307,7 @@ test("buildReport formats judged incorrect query recall as a percent, not a rate
   assert.doesNotMatch(report.markdown, /\| 1265 \| 2500\.00% \|/);
 });
 
-test("buildReport prefers matching normalized retrieval summaries for aggregate prefix metrics", () => {
+void test("buildReport prefers matching normalized retrieval summaries for aggregate prefix metrics", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const cwd = process.cwd();
   const runDir = join(root, "run");
@@ -390,7 +396,7 @@ test("buildReport prefers matching normalized retrieval summaries for aggregate 
   }
 });
 
-test("buildReport surfaces benchmark-specific retrieval semantics for MSMARCO-style runs", () => {
+void test("buildReport surfaces benchmark-specific retrieval semantics for MSMARCO-style runs", () => {
   const root = mkdtempSync(join(tmpdir(), "report-run-markdown-"));
   const runDir = join(root, "run");
   const mergedDir = join(runDir, "merged");

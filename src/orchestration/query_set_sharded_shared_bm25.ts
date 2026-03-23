@@ -12,7 +12,7 @@ import {
 import type { ChildProcess } from "node:child_process";
 import net from "node:net";
 import { fileURLToPath } from "node:url";
-import { basename, dirname, join, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
 import { spawnPipedCommand, waitForChildExit } from "../runtime/process";
 import { buildTsxCommand } from "../runtime/tsx";
@@ -324,10 +324,12 @@ function resolveShardedLaunchPlan(args: Args): ShardedLaunchPlan {
     throw new Error(`MAX_SHARD_ATTEMPTS must be a positive integer; got ${maxShardAttempts}`);
   }
 
-  const shardRetryMode =
-    args.shardRetryMode ?? (readEnv("SHARD_RETRY_MODE") as "auto" | "manual" | undefined) ?? "auto";
+  const rawShardRetryMode = args.shardRetryMode ?? readEnv("SHARD_RETRY_MODE");
+  const shardRetryMode = (rawShardRetryMode as "auto" | "manual" | undefined) ?? "auto";
   if (shardRetryMode !== "auto" && shardRetryMode !== "manual") {
-    throw new Error(`SHARD_RETRY_MODE must be 'auto' or 'manual'; got ${shardRetryMode}`);
+    throw new Error(
+      `SHARD_RETRY_MODE must be 'auto' or 'manual'; got ${String(rawShardRetryMode)}`,
+    );
   }
 
   const modelTag = sanitizeModelTag(benchmarkPlan.model);
@@ -633,10 +635,14 @@ async function runSummarize(plan: ShardedLaunchPlan): Promise<void> {
     "--qrels",
     plan.qrelsPath,
   ]);
-  const child = spawnPipedCommand(args, {
-    cwd: REPO_ROOT,
-    env: process.env,
-  }, "summarize run");
+  const child = spawnPipedCommand(
+    args,
+    {
+      cwd: REPO_ROOT,
+      env: process.env,
+    },
+    "summarize run",
+  );
   const stdout = child.stdout;
   const stderr = child.stderr;
   if (!stdout || !stderr) throw new Error("Failed to capture summarize output");

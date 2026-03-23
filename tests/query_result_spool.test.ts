@@ -6,7 +6,7 @@ import test from "node:test";
 
 import { QueryResultSpool } from "../src/orchestration/query_result_spool";
 
-test("QueryResultSpool appends and reloads normalized results in order", () => {
+void test("QueryResultSpool appends and reloads normalized results in order", () => {
   const root = mkdtempSync(join(tmpdir(), "query-result-spool-"));
   const spool = new QueryResultSpool(join(root, "nested", "1.jsonl"));
 
@@ -39,7 +39,7 @@ test("QueryResultSpool appends and reloads normalized results in order", () => {
   ]);
 });
 
-test("QueryResultSpool cleanup removes its dedicated temp directory", () => {
+void test("QueryResultSpool cleanup removes its dedicated temp directory", () => {
   const root = mkdtempSync(join(tmpdir(), "query-result-spool-cleanup-"));
   const spool = new QueryResultSpool(join(root, "nested", "1.jsonl"));
   spool.append({

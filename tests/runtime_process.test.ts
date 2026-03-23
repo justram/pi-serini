@@ -12,7 +12,7 @@ import {
   waitForChildExit,
 } from "../src/runtime/process";
 
-test("runInheritedCommandSync executes a successful child command with inherited defaults", () => {
+void test("runInheritedCommandSync executes a successful child command with inherited defaults", () => {
   assert.doesNotThrow(() => {
     runInheritedCommandSync(
       [process.execPath, "-e", 'if (process.env.PI_SERINI_TEST_FLAG !== "ok") process.exit(2)'],
@@ -28,42 +28,36 @@ test("runInheritedCommandSync executes a successful child command with inherited
   });
 });
 
-test("runInheritedCommandSync exits with the child status code on non-zero exit", () => {
-  const originalExit = process.exit;
+void test("runInheritedCommandSync exits with the child status code on non-zero exit", () => {
+  const originalExit = process.exit.bind(process) as typeof process.exit;
   try {
     process.exit = ((code?: number) => {
       throw new Error(`process.exit:${code ?? "undefined"}`);
     }) as typeof process.exit;
 
-    assert.throws(
-      () => {
-        runInheritedCommandSync(
-          [process.execPath, "-e", "process.exit(7)"],
-          { stdio: "pipe" },
-          "non-zero-test",
-        );
-      },
-      /process\.exit:7/,
-    );
+    assert.throws(() => {
+      runInheritedCommandSync(
+        [process.execPath, "-e", "process.exit(7)"],
+        { stdio: "pipe" },
+        "non-zero-test",
+      );
+    }, /process\.exit:7/);
   } finally {
     process.exit = originalExit;
   }
 });
 
-test("runInheritedCommandSync throws when the child exits with a signal", () => {
-  assert.throws(
-    () => {
-      runInheritedCommandSync(
-        [process.execPath, "-e", "process.kill(process.pid, 'SIGTERM')"],
-        { stdio: "pipe" },
-        "signal-test",
-      );
-    },
-    /signal-test exited with signal SIGTERM/,
-  );
+void test("runInheritedCommandSync throws when the child exits with a signal", () => {
+  assert.throws(() => {
+    runInheritedCommandSync(
+      [process.execPath, "-e", "process.kill(process.pid, 'SIGTERM')"],
+      { stdio: "pipe" },
+      "signal-test",
+    );
+  }, /signal-test exited with signal SIGTERM/);
 });
 
-test("spawnPipedCommand returns a child with piped stdout and stderr", async () => {
+void test("spawnPipedCommand returns a child with piped stdout and stderr", async () => {
   const child = spawnPipedCommand(
     [process.execPath, "-e", "process.stdout.write('out'); process.stderr.write('err')"],
     { stdio: ["ignore", "pipe", "pipe"] },
@@ -85,18 +79,14 @@ test("spawnPipedCommand returns a child with piped stdout and stderr", async () 
   assert.equal(stderr, "err");
 });
 
-test("waitForChildExit returns the child status code for non-zero exits", async () => {
-  const child = spawnPipedCommand(
-    [process.execPath, "-e", "process.exit(9)"],
-    {},
-    "status-test",
-  );
+void test("waitForChildExit returns the child status code for non-zero exits", async () => {
+  const child = spawnPipedCommand([process.execPath, "-e", "process.exit(9)"], {}, "status-test");
 
   const status = await waitForChildExit(child, "status-test");
   assert.equal(status, 9);
 });
 
-test("waitForChildExit throws when the child exits with a signal", async () => {
+void test("waitForChildExit throws when the child exits with a signal", async () => {
   const fakeChild = {
     once(event: string, handler: (...args: unknown[]) => void) {
       if (event === "close") {
@@ -109,7 +99,7 @@ test("waitForChildExit throws when the child exits with a signal", async () => {
   await assert.rejects(() => waitForChildExit(fakeChild, "async-signal-test"), /SIGTERM/);
 });
 
-test("spawnDetachedCommand launches a detached child and redirects stdout/stderr to files", async () => {
+void test("spawnDetachedCommand launches a detached child and redirects stdout/stderr to files", async () => {
   const root = mkdtempSync(join(tmpdir(), "runtime-process-detached-"));
   const stdoutPath = join(root, "stdout.log");
   const stderrPath = join(root, "stderr.log");

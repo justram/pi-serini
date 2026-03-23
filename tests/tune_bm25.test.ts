@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { parseArgs } from "../src/orchestration/tune_bm25";
 
-test("parseArgs resolves tune_bm25 defaults from the benchmark registry", () => {
+void test("parseArgs resolves tune_bm25 defaults from the benchmark registry", () => {
   const args = parseArgs(["--benchmark", "benchmark-template"]);
 
   assert.equal(args.benchmarkId, "benchmark-template");
@@ -14,7 +14,7 @@ test("parseArgs resolves tune_bm25 defaults from the benchmark registry", () => 
   assert.equal(args.indexPath, "indexes/benchmark-template-bm25");
 });
 
-test("parseArgs preserves explicit tune_bm25 path overrides over benchmark defaults", () => {
+void test("parseArgs preserves explicit tune_bm25 path overrides over benchmark defaults", () => {
   const args = parseArgs([
     "--benchmark",
     "benchmark-template",

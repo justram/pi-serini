@@ -6,7 +6,7 @@ import test from "node:test";
 
 import { prepareIsolatedAgentDir, resolveDefaultAgentDir } from "../src/runtime/pi_agent_dir";
 
-test("resolveDefaultAgentDir honors tilde-expanded PI_CODING_AGENT_DIR overrides", () => {
+void test("resolveDefaultAgentDir honors tilde-expanded PI_CODING_AGENT_DIR overrides", () => {
   const originalHome = process.env.HOME;
   process.env.HOME = "/tmp/pi-agent-home";
 
@@ -25,14 +25,17 @@ test("resolveDefaultAgentDir honors tilde-expanded PI_CODING_AGENT_DIR overrides
   }
 });
 
-test("prepareIsolatedAgentDir creates temp agent state outside artifact roots", () => {
+void test("prepareIsolatedAgentDir creates temp agent state outside artifact roots", () => {
   const root = mkdtempSync(join(tmpdir(), "pi-agent-dir-"));
   const sourceAgentDir = join(root, "source-agent");
   const artifactRoot = join(root, "runs", "demo-run");
   const tempRoot = join(root, "temp-agent-dirs");
 
   mkdirSync(sourceAgentDir, { recursive: true });
-  writeFileSync(join(sourceAgentDir, "auth.json"), '{"token":"secret"}\n', { encoding: "utf8", flag: "wx" });
+  writeFileSync(join(sourceAgentDir, "auth.json"), '{"token":"secret"}\n', {
+    encoding: "utf8",
+    flag: "wx",
+  });
   writeFileSync(join(sourceAgentDir, "models.json"), '{"default":"model"}\n', {
     encoding: "utf8",
     flag: "wx",

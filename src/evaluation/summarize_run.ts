@@ -249,7 +249,9 @@ function main() {
     statusCounts.set(run.status, (statusCounts.get(run.status) ?? 0) + 1);
   }
 
-  const recallSummaries = [computeRecallSummary(runFiles, runDir, args.qrelsPath, args.benchmarkId)];
+  const recallSummaries = [
+    computeRecallSummary(runFiles, runDir, args.qrelsPath, args.benchmarkId),
+  ];
   if (args.secondaryQrelsPath) {
     const primaryPath = resolve(args.qrelsPath);
     const secondaryPath = resolve(args.secondaryQrelsPath);

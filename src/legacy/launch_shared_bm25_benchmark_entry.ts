@@ -156,13 +156,17 @@ async function main(): Promise<void> {
 
   try {
     const command = buildTsxCommand("src/legacy/run_benchmark_entry.ts");
-    const child = spawnPipedCommand(command, {
-      env: {
-        ...buildBenchmarkQuerySetLaunchEnv(plan),
-        PI_BM25_RPC_HOST: host,
-        PI_BM25_RPC_PORT: String(port),
+    const child = spawnPipedCommand(
+      command,
+      {
+        env: {
+          ...buildBenchmarkQuerySetLaunchEnv(plan),
+          PI_BM25_RPC_HOST: host,
+          PI_BM25_RPC_PORT: String(port),
+        },
       },
-    }, "shared benchmark run");
+      "shared benchmark run",
+    );
     const stdout = child.stdout;
     const stderr = child.stderr;
     stdout.on("data", (chunk) => {

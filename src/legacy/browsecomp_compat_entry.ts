@@ -202,7 +202,10 @@ function buildCompatibilityCommand(args: Args): CompatibilityCommand {
       command.push("--output-root", effectiveOutputDir);
       env.OUTPUT_DIR = effectiveOutputDir;
     }
-    if (!hasAnyFlag(args.passthrough, ["--logDir", "--log-dir"]) && (userLogDir ?? readEnv("LOG_DIR"))) {
+    if (
+      !hasAnyFlag(args.passthrough, ["--logDir", "--log-dir"]) &&
+      (userLogDir ?? readEnv("LOG_DIR"))
+    ) {
       command.push("--log-dir", userLogDir ?? (readEnv("LOG_DIR") as string));
     }
   }

@@ -39,14 +39,20 @@ export function markdownTable(headers: string[], rows: string[][]): string {
   return [headerLine, dividerLine, ...rowLines].join("\n");
 }
 
-export function maybeAddSecondaryPath(primaryPath: string, secondaryPath?: string): string | undefined {
+export function maybeAddSecondaryPath(
+  primaryPath: string,
+  secondaryPath?: string,
+): string | undefined {
   if (!secondaryPath) return undefined;
   const primaryResolved = resolve(primaryPath);
   const secondaryResolved = resolve(secondaryPath);
   return primaryResolved === secondaryResolved ? undefined : secondaryResolved;
 }
 
-export function formatPrefixMetricSummary(metricSpecs: PrefixMetricSpec[], result: EvaluationResult): string {
+export function formatPrefixMetricSummary(
+  metricSpecs: PrefixMetricSpec[],
+  result: EvaluationResult,
+): string {
   return metricSpecs
     .map((spec) => `${spec.summaryLabel}=${formatPercentFromRate(spec.extractFromResult(result))}`)
     .join(", ");

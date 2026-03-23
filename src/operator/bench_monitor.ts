@@ -391,7 +391,11 @@ function resolveRunPhase(options: {
       phaseDetail: "detached launcher started; waiting for benchmark-side activity",
     };
   }
-  if (options.benchmarkFinishedEvent || options.logInfo?.finished || options.status === "finished") {
+  if (
+    options.benchmarkFinishedEvent ||
+    options.logInfo?.finished ||
+    options.status === "finished"
+  ) {
     return {
       currentPhase: "finished",
       phaseDetail: "benchmark completion evidence was detected",
@@ -411,7 +415,10 @@ function resolveRunPhase(options: {
   };
 }
 
-function inferBm25Listening(logInfo: LogDirInfo | undefined, managedState: ManagedRunState | undefined): boolean {
+function inferBm25Listening(
+  logInfo: LogDirInfo | undefined,
+  managedState: ManagedRunState | undefined,
+): boolean {
   const port = logInfo?.port ?? managedState?.port;
   if (port === undefined) return false;
 
@@ -848,7 +855,9 @@ function findRetrievalEvaluationSummaryPath(
   benchmarkId: string,
 ): string | undefined {
   const runRoot = resolveRunRoot(runDir);
-  const sourcePaths = existsSync(join(runRoot, "merged")) ? [join(runRoot, "merged"), runRoot] : [runRoot];
+  const sourcePaths = existsSync(join(runRoot, "merged"))
+    ? [join(runRoot, "merged"), runRoot]
+    : [runRoot];
   for (const sourcePath of sourcePaths) {
     const candidate = getRetrievalEvalSummaryCandidates({
       benchmarkId,
@@ -879,9 +888,7 @@ function resolveUnmanagedProvenanceHint(options: {
   if (options.logInfo?.path && LOG_DIR_PATTERN.test(basename(options.logInfo.path))) {
     evidence.push("shared-bm25 log layout");
   }
-  return evidence.length > 0
-    ? `unmanaged artifact evidence: ${evidence.join(", ")}`
-    : undefined;
+  return evidence.length > 0 ? `unmanaged artifact evidence: ${evidence.join(", ")}` : undefined;
 }
 
 function resolveStageInfo(options: {

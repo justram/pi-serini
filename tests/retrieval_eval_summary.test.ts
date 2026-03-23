@@ -12,7 +12,7 @@ import {
   writeRetrievalEvalSummary,
 } from "../src/evaluation/retrieval_eval_summary";
 
-test("buildRetrievalEvalSummaryPath preserves source-relative nesting under evals/retrieval", () => {
+void test("buildRetrievalEvalSummaryPath preserves source-relative nesting under evals/retrieval", () => {
   assert.equal(
     buildRetrievalEvalSummaryPath({
       benchmarkId: "msmarco-v1-passage",
@@ -22,7 +22,7 @@ test("buildRetrievalEvalSummaryPath preserves source-relative nesting under eval
   );
 });
 
-test("buildRetrievalEvalSummaryPath uses external/ prefix for sources outside the repo root", () => {
+void test("buildRetrievalEvalSummaryPath uses external/ prefix for sources outside the repo root", () => {
   assert.equal(
     buildRetrievalEvalSummaryPath({
       benchmarkId: "benchmark-template",
@@ -33,7 +33,7 @@ test("buildRetrievalEvalSummaryPath uses external/ prefix for sources outside th
   );
 });
 
-test("writeRetrievalEvalSummary and loadRetrievalEvalSummary round-trip unified summaries", () => {
+void test("writeRetrievalEvalSummary and loadRetrievalEvalSummary round-trip unified summaries", () => {
   const root = mkdtempSync(join(tmpdir(), "retrieval-eval-summary-"));
   const summaryPath = join(root, "summary.json");
   const expected = {
@@ -59,7 +59,7 @@ test("writeRetrievalEvalSummary and loadRetrievalEvalSummary round-trip unified 
   assert.deepEqual(loadRetrievalEvalSummary(summaryPath), expected);
 });
 
-test("maybeLoadMatchingRetrievalEvalSummary falls back to the legacy flat path for existing artifacts", () => {
+void test("maybeLoadMatchingRetrievalEvalSummary falls back to the legacy flat path for existing artifacts", () => {
   const root = mkdtempSync(join(tmpdir(), "retrieval-eval-summary-legacy-"));
   const sourcePath = resolve(root, "runs", "nested", "candidate.trec");
   const qrelsPath = resolve(root, "qrels.txt");

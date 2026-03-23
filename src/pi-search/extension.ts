@@ -205,7 +205,6 @@ function getHelperPaths(cwd: string, env: NodeJS.ProcessEnv = process.env) {
   };
 }
 
-
 function getSharedHelperEndpoint(): { host: string; port: number } | null {
   const host = process.env.PI_BM25_RPC_HOST?.trim();
   const rawPort = process.env.PI_BM25_RPC_PORT?.trim();
@@ -225,7 +224,6 @@ function getSubmitNowDelayMs(): number | null {
   }
   return Math.max(1, Math.floor(BENCHMARK_TIMEOUT_SECONDS * SUBMIT_NOW_TRIGGER_RATIO * 1000));
 }
-
 
 export class ManagedTempSpillDir {
   readonly rootDir: string;
@@ -252,6 +250,21 @@ export class ManagedTempSpillDir {
 function sanitizeSpillPathPart(value: string): string {
   const sanitized = value.replace(/[^A-Za-z0-9._-]+/g, "_").slice(0, 120);
   return sanitized.length > 0 ? sanitized : "unknown";
+}
+
+export function buildReadSpillFileName(parsed: ReadDocumentPayload, spillSequence: number): string {
+  const docid = sanitizeSpillPathPart(parsed.docid ?? "unknown");
+  const returnedLineStart = parsed.returned_line_start ?? parsed.offset ?? 0;
+  const returnedLineEnd = parsed.returned_line_end ?? returnedLineStart;
+  return `${spillSequence}-${docid}-lines-${returnedLineStart}-${returnedLineEnd}.txt`;
+}
+
+export function buildSearchSpillFileName(page: SearchPage, spillSequence: number): string {
+  const searchId = sanitizeSpillPathPart(page.searchId);
+  if (page.results.length === 0) {
+    return `${spillSequence}-${searchId}-offset-${page.offset}-limit-${page.limit}-empty.json`;
+  }
+  return `${spillSequence}-${searchId}-ranks-${page.returnedRankStart}-${page.returnedRankEnd}.json`;
 }
 
 function spillFullOutput(
@@ -402,8 +415,9 @@ function formatReadDocumentText(parsed: ReadDocumentPayload): string {
   return lines.join("\n").trim();
 }
 
-function truncateReadDocumentOutput(
+export function truncateReadDocumentOutput(
   spillDir: ManagedTempSpillDir,
+  spillFileName: string,
   text: string,
   fullText: string,
   parsed: ReadDocumentPayload,
@@ -417,7 +431,7 @@ function truncateReadDocumentOutput(
   }
 
   const docid = parsed.docid ?? "unknown";
-  const fullOutputPath = spillFullOutput(spillDir, "read", `${docid}.txt`, fullText);
+  const fullOutputPath = spillFullOutput(spillDir, "read", spillFileName, fullText);
   const omittedLines = truncation.totalLines - truncation.outputLines;
   const omittedBytes = truncation.totalBytes - truncation.outputBytes;
   const continuationHint =
@@ -437,8 +451,9 @@ function truncateReadDocumentOutput(
   };
 }
 
-function truncateSearchOutput(
+export function truncateSearchOutput(
   spillDir: ManagedTempSpillDir,
+  spillFileName: string,
   text: string,
   fullJson: string,
 ): { text: string; truncation?: TruncationResult; fullOutputPath?: string } {
@@ -450,7 +465,7 @@ function truncateSearchOutput(
     return { text };
   }
 
-  const fullOutputPath = spillFullOutput(spillDir, "search", "results.json", fullJson);
+  const fullOutputPath = spillFullOutput(spillDir, "search", spillFileName, fullJson);
   const omittedLines = truncation.totalLines - truncation.outputLines;
   const omittedBytes = truncation.totalBytes - truncation.outputBytes;
   const suffix = [
@@ -538,6 +553,7 @@ export default function (pi: ExtensionAPI) {
   const spillDir = new ManagedTempSpillDir("pi-bm25-extension-");
   const submitNowDelayMs = getSubmitNowDelayMs();
   let searchCounter = 0;
+  let spillSequence = 0;
   let submitNowTimer: ReturnType<typeof setTimeout> | null = null;
   let submitNowMode = false;
   let promptSnapshotWritten = false;
@@ -589,6 +605,11 @@ export default function (pi: ExtensionAPI) {
       helperByKey.set(key, helper);
     }
     return helper;
+  }
+
+  function nextSpillSequence(): number {
+    spillSequence += 1;
+    return spillSequence;
   }
 
   pi.on("before_agent_start", async (event) => {
@@ -714,7 +735,12 @@ export default function (pi: ExtensionAPI) {
 
       const page = await buildSearchPage(helper, cached, 1, SEARCH_FIRST_PAGE_LIMIT, signal);
       const fullPageJson = JSON.stringify(page, null, 2);
-      const rendered = truncateSearchOutput(spillDir, formatSearchPageText(page), fullPageJson);
+      const rendered = truncateSearchOutput(
+        spillDir,
+        buildSearchSpillFileName(page, nextSpillSequence()),
+        formatSearchPageText(page),
+        fullPageJson,
+      );
 
       return {
         content: [{ type: "text", text: rendered.text }],
@@ -766,7 +792,12 @@ export default function (pi: ExtensionAPI) {
 
       const page = await buildSearchPage(helper, cached, offset, limit, signal);
       const fullPageJson = JSON.stringify(page, null, 2);
-      const rendered = truncateSearchOutput(spillDir, formatSearchPageText(page), fullPageJson);
+      const rendered = truncateSearchOutput(
+        spillDir,
+        buildSearchSpillFileName(page, nextSpillSequence()),
+        formatSearchPageText(page),
+        fullPageJson,
+      );
 
       return {
         content: [{ type: "text", text: rendered.text }],
@@ -828,7 +859,13 @@ export default function (pi: ExtensionAPI) {
       }
 
       const formatted = formatReadDocumentText(parsed);
-      const rendered = truncateReadDocumentOutput(spillDir, formatted, formatted, parsed);
+      const rendered = truncateReadDocumentOutput(
+        spillDir,
+        buildReadSpillFileName(parsed, nextSpillSequence()),
+        formatted,
+        formatted,
+        parsed,
+      );
 
       return {
         content: [{ type: "text", text: rendered.text }],

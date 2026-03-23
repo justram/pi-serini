@@ -124,9 +124,14 @@ function main(): void {
         qrelsResolution.benchmarkId,
         args.evalSummaryPath ?? readEnv("EVAL_SUMMARY"),
       )
-    : args.evalSummaryPath ?? readEnv("EVAL_SUMMARY");
+    : (args.evalSummaryPath ?? readEnv("EVAL_SUMMARY"));
 
-  const command = buildTsxCommand("src/evaluation/summarize_run.ts", ["--benchmark", qrelsResolution.benchmarkId, "--runDir", runDir]);
+  const command = buildTsxCommand("src/evaluation/summarize_run.ts", [
+    "--benchmark",
+    qrelsResolution.benchmarkId,
+    "--runDir",
+    runDir,
+  ]);
   if (qrelsResolution.includePrimaryQrelsOverride) {
     command.push("--qrels", qrelsResolution.qrelsPath);
   }

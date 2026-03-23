@@ -9,7 +9,11 @@ import {
   resolveBenchmarkQuerySetLaunchPlan,
   type BenchmarkQuerySetLaunchArgs,
 } from "./benchmark_query_set_launch";
-import { getDefaultBenchmarkId, listBenchmarkCatalog, listBenchmarks } from "../benchmarks/registry";
+import {
+  getDefaultBenchmarkId,
+  listBenchmarkCatalog,
+  listBenchmarks,
+} from "../benchmarks/registry";
 import { printCommandJson } from "../wrappers/downstream_tool_wrappers";
 import { runInheritedCommandSync } from "../runtime/process";
 
@@ -148,10 +152,14 @@ Examples:
 function runLaunchPlan(args: BenchmarkQuerySetLaunchArgs): void {
   const plan = resolveBenchmarkQuerySetLaunchPlan(args);
   const command = buildRunPiBenchmarkCommand(plan);
-  runInheritedCommandSync(command, {
-    cwd: REPO_ROOT,
-    env: buildBenchmarkQuerySetLaunchEnv(plan),
-  }, "run_pi_benchmark");
+  runInheritedCommandSync(
+    command,
+    {
+      cwd: REPO_ROOT,
+      env: buildBenchmarkQuerySetLaunchEnv(plan),
+    },
+    "run_pi_benchmark",
+  );
 }
 
 function main(): void {

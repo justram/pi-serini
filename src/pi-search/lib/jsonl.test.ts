@@ -3,7 +3,7 @@ import test from "node:test";
 import { PassThrough } from "node:stream";
 import { attachJsonlLineReader } from "./jsonl";
 
-test("attachJsonlLineReader routes an unterminated trailing line to onTrailingLine", async () => {
+void test("attachJsonlLineReader routes an unterminated trailing line to onTrailingLine", async () => {
   const stream = new PassThrough();
   const lines: string[] = [];
   const trailing: string[] = [];
@@ -28,7 +28,7 @@ test("attachJsonlLineReader routes an unterminated trailing line to onTrailingLi
   assert.deepEqual(trailing, ['{"type":"message_start"']);
 });
 
-test("attachJsonlLineReader preserves legacy behavior when onTrailingLine is omitted", async () => {
+void test("attachJsonlLineReader preserves legacy behavior when onTrailingLine is omitted", async () => {
   const stream = new PassThrough();
   const lines: string[] = [];
 

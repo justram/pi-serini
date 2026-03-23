@@ -78,7 +78,9 @@ export class Bm25TcpRpcClient implements Bm25RpcClient {
       });
       socket.on("close", () => {
         if (!settled && !sawResponse) {
-          cleanup(new Error(`BM25 helper RPC connection closed before response for ${commandType}.`));
+          cleanup(
+            new Error(`BM25 helper RPC connection closed before response for ${commandType}.`),
+          );
         }
       });
     });

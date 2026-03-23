@@ -49,7 +49,6 @@ import {
   formatJudgeCost,
   formatPercent,
   formatPercentFromRate,
-  formatPrefixMetricSummary,
   formatStat1,
   markdownTable,
   maybeAddSecondaryPath,

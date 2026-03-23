@@ -7,7 +7,7 @@ import test from "node:test";
 import { loadBenchSnapshot } from "../src/operator/bench_monitor";
 import { resolveRetrievalEvalSummaryPath } from "../src/runtime/output_layout";
 
-test("loadBenchSnapshot surfaces benchmark and query-set ids from run manifest snapshots", () => {
+void test("loadBenchSnapshot surfaces benchmark and query-set ids from run manifest snapshots", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-"));
   const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
   mkdirSync(runDir, { recursive: true });
@@ -89,7 +89,7 @@ test("loadBenchSnapshot surfaces benchmark and query-set ids from run manifest s
   );
 });
 
-test("loadBenchSnapshot marks unmanaged runs finished when artifact progress reaches the expected total", () => {
+void test("loadBenchSnapshot marks unmanaged runs finished when artifact progress reaches the expected total", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-finished-unmanaged-"));
   const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
   const queryDir = join(root, "data", "benchmark-template", "queries");
@@ -142,7 +142,7 @@ test("loadBenchSnapshot marks unmanaged runs finished when artifact progress rea
   assert.equal(snapshot.runs[0]?.phaseDetail, "benchmark completion evidence was detected");
 });
 
-test("loadBenchSnapshot marks stale incomplete unmanaged runs dead when expected progress is missing", () => {
+void test("loadBenchSnapshot marks stale incomplete unmanaged runs dead when expected progress is missing", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-dead-unmanaged-"));
   const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
   const queryDir = join(root, "data", "benchmark-template", "queries");
@@ -191,11 +191,17 @@ test("loadBenchSnapshot marks stale incomplete unmanaged runs dead when expected
   assert.equal(snapshot.runs[0]?.statusDetail, "unmanaged run appears inactive before completion");
 });
 
-test("loadBenchSnapshot reports evaluation stage provenance from downstream artifacts", () => {
+void test("loadBenchSnapshot reports evaluation stage provenance from downstream artifacts", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-eval-stage-"));
   const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
   const queryDir = join(root, "data", "benchmark-template", "queries");
-  const judgeDir = join(root, "evals", "pi_judge", "benchmark-template", "pi_bm25_benchmark-template_dev_plain_minimal");
+  const judgeDir = join(
+    root,
+    "evals",
+    "pi_judge",
+    "benchmark-template",
+    "pi_bm25_benchmark-template_dev_plain_minimal",
+  );
   const retrievalSummaryPath = resolveRetrievalEvalSummaryPath({
     benchmarkId: "benchmark-template",
     sourcePath: runDir,
@@ -243,7 +249,7 @@ test("loadBenchSnapshot reports evaluation stage provenance from downstream arti
   );
 });
 
-test("loadBenchSnapshot infers BM25 listening from managed state and ready logs without lsof", () => {
+void test("loadBenchSnapshot infers BM25 listening from managed state and ready logs without lsof", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-bm25-running-"));
   const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
   const logDir = join(root, "runs", "shared-bm25-benchmark-template-dev");
@@ -252,7 +258,11 @@ test("loadBenchSnapshot infers BM25 listening from managed state and ready logs 
   mkdirSync(logDir, { recursive: true });
   mkdirSync(stateDir, { recursive: true });
 
-  writeFileSync(join(logDir, "run.log"), "OUTPUT_DIR=pi_bm25_benchmark-template_dev_plain_minimal\nStarting shared BM25 RPC daemon on 127.0.0.1:50500\n", "utf8");
+  writeFileSync(
+    join(logDir, "run.log"),
+    "OUTPUT_DIR=pi_bm25_benchmark-template_dev_plain_minimal\nStarting shared BM25 RPC daemon on 127.0.0.1:50500\n",
+    "utf8",
+  );
   writeFileSync(
     join(logDir, "bm25_server.log"),
     '{"type":"server_ready","transport":"tcp","host":"127.0.0.1","port":50500,"timing_ms":{"init":123}}\n',
@@ -317,7 +327,7 @@ test("loadBenchSnapshot infers BM25 listening from managed state and ready logs 
   );
 });
 
-test("loadBenchSnapshot does not report BM25 listening for terminal managed runs", () => {
+void test("loadBenchSnapshot does not report BM25 listening for terminal managed runs", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-bm25-dead-"));
   const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
   const logDir = join(root, "runs", "shared-bm25-benchmark-template-dev");
@@ -326,7 +336,11 @@ test("loadBenchSnapshot does not report BM25 listening for terminal managed runs
   mkdirSync(logDir, { recursive: true });
   mkdirSync(stateDir, { recursive: true });
 
-  writeFileSync(join(logDir, "run.log"), "OUTPUT_DIR=pi_bm25_benchmark-template_dev_plain_minimal\nStarting shared BM25 RPC daemon on 127.0.0.1:50500\n", "utf8");
+  writeFileSync(
+    join(logDir, "run.log"),
+    "OUTPUT_DIR=pi_bm25_benchmark-template_dev_plain_minimal\nStarting shared BM25 RPC daemon on 127.0.0.1:50500\n",
+    "utf8",
+  );
   writeFileSync(
     join(logDir, "bm25_server.log"),
     '{"type":"server_ready","transport":"tcp","host":"127.0.0.1","port":50500}\n',
@@ -375,7 +389,7 @@ test("loadBenchSnapshot does not report BM25 listening for terminal managed runs
   assert.equal(snapshot.runs[0]?.bm25.listening, false);
 });
 
-test("loadBenchSnapshot derives managed-run progress totals and sharded launch topology from benchmark metadata instead of preset name heuristics", () => {
+void test("loadBenchSnapshot derives managed-run progress totals and sharded launch topology from benchmark metadata instead of preset name heuristics", () => {
   const root = mkdtempSync(join(tmpdir(), "bench-monitor-managed-"));
   const runDir = join(root, "runs", "pi_bm25_benchmark-template_dev_plain_minimal");
   const stateDir = join(root, "runs", "_bench", "state");

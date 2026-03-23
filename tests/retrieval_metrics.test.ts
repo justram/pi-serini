@@ -27,7 +27,7 @@ function buildRankings(): Rankings {
   ]);
 }
 
-test("evaluateRankings supports benchmark-configured nDCG gain semantics", () => {
+void test("evaluateRankings supports benchmark-configured nDCG gain semantics", () => {
   const qrels = buildQrels();
   const rankings = buildRankings();
   const cutoffs = { recallCutoffs: [2], ndcgCutoffs: [2], mrrCutoffs: [10] };
@@ -43,7 +43,7 @@ test("evaluateRankings supports benchmark-configured nDCG gain semantics", () =>
   assert.equal(linear.ndcgByCutoff.get(2)?.toFixed(4), "0.8597");
 });
 
-test("evaluateRankings applies recall thresholds without changing binary MRR/MAP relevance", () => {
+void test("evaluateRankings applies recall thresholds without changing binary MRR/MAP relevance", () => {
   const qrels = buildQrels();
   const rankings = buildRankings();
   const cutoffs = { recallCutoffs: [1, 2], ndcgCutoffs: [2], mrrCutoffs: [10] };

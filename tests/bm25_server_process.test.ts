@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { buildBm25ServerStdioArgs, buildBm25ServerTcpArgs } from "../src/bm25/bm25_server_process";
 
-test("buildBm25ServerStdioArgs uses default tuning values when env is unset", () => {
+void test("buildBm25ServerStdioArgs uses default tuning values when env is unset", () => {
   const args = buildBm25ServerStdioArgs("indexes/demo", {});
   assert.deepEqual(args, [
     "scripts/bm25_server.sh",
@@ -18,7 +18,7 @@ test("buildBm25ServerStdioArgs uses default tuning values when env is unset", ()
   ]);
 });
 
-test("buildBm25ServerTcpArgs uses default tuning values when env is unset", () => {
+void test("buildBm25ServerTcpArgs uses default tuning values when env is unset", () => {
   const args = buildBm25ServerTcpArgs("indexes/demo", "127.0.0.1", 50455, {});
   assert.deepEqual(args, [
     "scripts/bm25_server.sh",
@@ -39,7 +39,7 @@ test("buildBm25ServerTcpArgs uses default tuning values when env is unset", () =
   ]);
 });
 
-test("buildBm25ServerStdioArgs and buildBm25ServerTcpArgs preserve explicit BM25 tuning env overrides", () => {
+void test("buildBm25ServerStdioArgs and buildBm25ServerTcpArgs preserve explicit BM25 tuning env overrides", () => {
   const env = {
     PI_BM25_K1: " 1.7 ",
     PI_BM25_B: " 0.2 ",

@@ -37,7 +37,7 @@ async function withJsonlServer(
   }
 }
 
-test("Bm25TcpRpcClient sends requests and normalizes successful responses", async () => {
+void test("Bm25TcpRpcClient sends requests and normalizes successful responses", async () => {
   const seen: Array<{ id: number; type: string }> = [];
 
   await withJsonlServer(
@@ -76,7 +76,7 @@ test("Bm25TcpRpcClient sends requests and normalizes successful responses", asyn
   ]);
 });
 
-test("Bm25TcpRpcClient rejects protocol errors consistently", async () => {
+void test("Bm25TcpRpcClient rejects protocol errors consistently", async () => {
   await withJsonlServer(
     (message, socket) => {
       socket.write(
@@ -98,7 +98,7 @@ test("Bm25TcpRpcClient rejects protocol errors consistently", async () => {
   );
 });
 
-test("Bm25TcpRpcClient rejects aborts with the shared request wording", async () => {
+void test("Bm25TcpRpcClient rejects aborts with the shared request wording", async () => {
   await withJsonlServer(
     (_message, _socket) => {
       // Intentionally never respond so the client must abort.

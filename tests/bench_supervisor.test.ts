@@ -11,7 +11,7 @@ import {
   type ManagedRunState,
 } from "../src/operator/bench_supervisor";
 
-test("launchManagedRun preserves legacy BrowseComp q9 managed preset naming and metadata", async () => {
+void test("launchManagedRun preserves legacy BrowseComp q9 managed preset naming and metadata", async () => {
   const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-q9-"));
 
   const state = await launchManagedRun({
@@ -41,7 +41,7 @@ test("launchManagedRun preserves legacy BrowseComp q9 managed preset naming and 
   assert.equal(state.launcherEnv, undefined);
 });
 
-test("launchManagedRun preserves legacy BrowseComp sharded preset env and naming", async () => {
+void test("launchManagedRun preserves legacy BrowseComp sharded preset env and naming", async () => {
   const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-q300-"));
 
   const state = await launchManagedRun({
@@ -82,7 +82,7 @@ test("launchManagedRun preserves legacy BrowseComp sharded preset env and naming
   });
 });
 
-test("relaunchManagedRun keeps managed preset compatibility metadata and shard count", async () => {
+void test("relaunchManagedRun keeps managed preset compatibility metadata and shard count", async () => {
   const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-relaunch-"));
 
   const original = await launchManagedRun({
@@ -151,7 +151,7 @@ function createManagedRunState(rootDir: string, launcherCommand: string[]): Mana
   };
 }
 
-test("startManagedRunProcess marks immediate launcher exit as failed with startup evidence", () => {
+void test("startManagedRunProcess marks immediate launcher exit as failed with startup evidence", () => {
   const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-startup-fail-"));
 
   const started = startManagedRunProcess(
@@ -167,7 +167,7 @@ test("startManagedRunProcess marks immediate launcher exit as failed with startu
   assert.match(started.notes ?? "", /boom during startup/);
 });
 
-test("startManagedRunProcess waits for benchmark activity before marking the launcher running", () => {
+void test("startManagedRunProcess waits for benchmark activity before marking the launcher running", () => {
   const rootDir = mkdtempSync(join(tmpdir(), "bench-supervisor-startup-running-"));
 
   const started = startManagedRunProcess(
@@ -177,12 +177,12 @@ test("startManagedRunProcess waits for benchmark activity before marking the lau
       [
         'const fs = require("node:fs");',
         'const path = require("node:path");',
-        'const logDir = process.env.LOG_DIR;',
-        'setTimeout(() => {',
-        '  fs.mkdirSync(logDir, { recursive: true });',
+        "const logDir = process.env.LOG_DIR;",
+        "setTimeout(() => {",
+        "  fs.mkdirSync(logDir, { recursive: true });",
         '  fs.appendFileSync(path.join(logDir, "run.log"), "Starting benchmark\\n");',
-        '}, 150);',
-        'setInterval(() => {}, 1000);',
+        "}, 150);",
+        "setInterval(() => {}, 1000);",
       ].join(" "),
     ]),
   );

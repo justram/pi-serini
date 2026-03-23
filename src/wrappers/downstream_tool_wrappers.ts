@@ -96,7 +96,9 @@ export function resolveRetrievalEvaluationSourcePath(options: {
   throw new Error("Specify exactly one of runFile or runDir");
 }
 
-export function printCommandPlan(details: Record<string, string | number | boolean | undefined>): void {
+export function printCommandPlan(
+  details: Record<string, string | number | boolean | undefined>,
+): void {
   for (const [key, value] of Object.entries(details)) {
     if (value === undefined) continue;
     console.log(`${key}=${String(value)}`);

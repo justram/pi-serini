@@ -19,7 +19,9 @@ function createFakeLauncher(
   counters?: { launches: number; stops: number },
 ): Bm25StdioRpcLauncher {
   return () => {
-    counters && (counters.launches += 1);
+    if (counters) {
+      counters.launches += 1;
+    }
     const stdout = new PassThrough();
     const stderr = new PassThrough();
     const stdin = new PassThrough();
@@ -50,7 +52,9 @@ function createFakeLauncher(
     return {
       child,
       stop: () => {
-        counters && (counters.stops += 1);
+        if (counters) {
+          counters.stops += 1;
+        }
         stopReading();
         child.kill();
       },
@@ -58,7 +62,7 @@ function createFakeLauncher(
   };
 }
 
-test("Bm25StdioRpcClient launches once, handshakes with ping, and reuses the same process", async () => {
+void test("Bm25StdioRpcClient launches once, handshakes with ping, and reuses the same process", async () => {
   const counters = { launches: 0, stops: 0 };
   const seen: Array<{ id: number; type: string }> = [];
   const client = new Bm25StdioRpcClient({
@@ -112,7 +116,7 @@ test("Bm25StdioRpcClient launches once, handshakes with ping, and reuses the sam
   assert.equal(counters.stops, 1);
 });
 
-test("Bm25StdioRpcClient rejects when the ping handshake fails", async () => {
+void test("Bm25StdioRpcClient rejects when the ping handshake fails", async () => {
   const counters = { launches: 0, stops: 0 };
   const client = new Bm25StdioRpcClient({
     cwd: process.cwd(),
@@ -129,7 +133,7 @@ test("Bm25StdioRpcClient rejects when the ping handshake fails", async () => {
   assert.equal(counters.stops, 1);
 });
 
-test("Bm25StdioRpcClient rejects pending requests when the helper exits unexpectedly", async () => {
+void test("Bm25StdioRpcClient rejects pending requests when the helper exits unexpectedly", async () => {
   const counters = { launches: 0, stops: 0 };
   const client = new Bm25StdioRpcClient({
     cwd: process.cwd(),

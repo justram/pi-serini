@@ -17,7 +17,7 @@ import {
   resolveManagedPreset,
 } from "../../src/benchmarks/registry";
 
-test("resolveBenchmarkConfig normalizes BrowseComp aliases and query sets", () => {
+void test("resolveBenchmarkConfig normalizes BrowseComp aliases and query sets", () => {
   const resolved = resolveBenchmarkConfig({ benchmarkId: "browsecomp_plus", querySetId: "q100" });
   assert.equal(resolved.benchmark.id, "browsecomp-plus");
   assert.equal(resolved.querySetId, "q100");
@@ -30,7 +30,7 @@ test("resolveBenchmarkConfig normalizes BrowseComp aliases and query sets", () =
   );
 });
 
-test("renderManagedPresetPaths preserves legacy BrowseComp sharded naming", () => {
+void test("renderManagedPresetPaths preserves legacy BrowseComp sharded naming", () => {
   const rendered = renderManagedPresetPaths({
     rootDir: "/tmp/pi-serini",
     presetName: "q300_sharded",
@@ -55,7 +55,7 @@ test("renderManagedPresetPaths preserves legacy BrowseComp sharded naming", () =
   });
 });
 
-test("legacy BrowseComp managed presets preserve canonical launcher/query-set compatibility", () => {
+void test("legacy BrowseComp managed presets preserve canonical launcher/query-set compatibility", () => {
   const rootDir = "/tmp/pi-serini";
   const modelSlug = "gpt54mini";
   const runStamp = "20260321_120000";
@@ -176,7 +176,7 @@ test("legacy BrowseComp managed presets preserve canonical launcher/query-set co
   }
 });
 
-test("manifest snapshots capture benchmark identity and resolved paths", () => {
+void test("manifest snapshots capture benchmark identity and resolved paths", () => {
   const snapshot = createBenchmarkManifestSnapshot(
     resolveBenchmarkConfig({ benchmarkId: getDefaultBenchmarkId(), querySetId: "q9" }),
     {
@@ -197,7 +197,7 @@ test("manifest snapshots capture benchmark identity and resolved paths", () => {
   assert.equal(typeof snapshot.input_hashes?.ground_truth?.exists, "boolean");
 });
 
-test("manifest snapshots hash critical benchmark input files when they exist", () => {
+void test("manifest snapshots hash critical benchmark input files when they exist", () => {
   const root = mkdtempSync(join(tmpdir(), "manifest-input-hashes-"));
   const queryPath = join(root, "queries.tsv");
   const qrelsPath = join(root, "qrels.txt");
@@ -249,7 +249,7 @@ test("manifest snapshots hash critical benchmark input files when they exist", (
   });
 });
 
-test("resolveManagedPreset accepts explicit benchmark-qualified preset names", () => {
+void test("resolveManagedPreset accepts explicit benchmark-qualified preset names", () => {
   const resolved = resolveManagedPreset("browsecomp-plus/qfull_sharded");
   assert.equal(resolved.benchmark.id, "browsecomp-plus");
   assert.equal(resolved.preset.id, "qfull_sharded");
@@ -259,7 +259,7 @@ test("resolveManagedPreset accepts explicit benchmark-qualified preset names", (
   assert.equal(msmarcoResolved.preset.id, "dl20_shared");
 });
 
-test("registry resolves query-set-specific compare defaults", () => {
+void test("registry resolves query-set-specific compare defaults", () => {
   const templateCompare = resolveBenchmarkCompareConfig({
     benchmarkId: "benchmark-template",
     querySetId: "test",
@@ -272,20 +272,31 @@ test("registry resolves query-set-specific compare defaults", () => {
     benchmarkId: "msmarco-v1-passage",
     querySetId: "dl19",
   });
-  assert.equal(msmarcoDl19Compare.baselineRunPath, "data/msmarco-v1-passage/source/bm25_pure.dl19.trec");
+  assert.equal(
+    msmarcoDl19Compare.baselineRunPath,
+    "data/msmarco-v1-passage/source/bm25_pure.dl19.trec",
+  );
 
   const msmarcoDl20Compare = resolveBenchmarkCompareConfig({
     benchmarkId: "msmarco-v1-passage",
     querySetId: "dl20",
   });
-  assert.equal(msmarcoDl20Compare.baselineRunPath, "data/msmarco-v1-passage/source/bm25_pure.dl20.trec");
+  assert.equal(
+    msmarcoDl20Compare.baselineRunPath,
+    "data/msmarco-v1-passage/source/bm25_pure.dl20.trec",
+  );
 
-  const msmarcoDefaultCompare = resolveBenchmarkCompareConfig({ benchmarkId: "msmarco-v1-passage" });
+  const msmarcoDefaultCompare = resolveBenchmarkCompareConfig({
+    benchmarkId: "msmarco-v1-passage",
+  });
   assert.equal(msmarcoDefaultCompare.querySetId, "dl20");
-  assert.equal(msmarcoDefaultCompare.baselineRunPath, "data/msmarco-v1-passage/source/bm25_pure.dl20.trec");
+  assert.equal(
+    msmarcoDefaultCompare.baselineRunPath,
+    "data/msmarco-v1-passage/source/bm25_pure.dl20.trec",
+  );
 });
 
-test("registry renders MSMARCO managed preset paths for shared runs", () => {
+void test("registry renders MSMARCO managed preset paths for shared runs", () => {
   const rendered = renderManagedPresetPaths({
     rootDir: "/tmp/pi-serini",
     presetName: "dl19_shared",
@@ -308,7 +319,7 @@ test("registry renders MSMARCO managed preset paths for shared runs", () => {
   });
 });
 
-test("registry includes runnable local and external second benchmarks", () => {
+void test("registry includes runnable local and external second benchmarks", () => {
   const benchmarkIds = listBenchmarks().map((benchmark) => benchmark.id);
   assert.deepEqual(benchmarkIds, ["browsecomp-plus", "msmarco-v1-passage", "benchmark-template"]);
 
@@ -339,7 +350,7 @@ test("registry includes runnable local and external second benchmarks", () => {
   );
 });
 
-test("registry resolves benchmark-specific internal retrieval semantics", () => {
+void test("registry resolves benchmark-specific internal retrieval semantics", () => {
   assert.deepEqual(resolveInternalRetrievalMetricSemantics("benchmark-template"), {
     ndcgGainMode: "exponential",
     recallRelevantThreshold: 1,
@@ -352,7 +363,7 @@ test("registry resolves benchmark-specific internal retrieval semantics", () => 
   });
 });
 
-test("registry resolves benchmark setup scripts", () => {
+void test("registry resolves benchmark setup scripts", () => {
   const browsecompSetup = resolveBenchmarkSetupStep("browsecomp-plus", "setup");
   assert.equal(browsecompSetup.scriptPath, "scripts/benchmarks/browsecomp_plus/setup.sh");
 

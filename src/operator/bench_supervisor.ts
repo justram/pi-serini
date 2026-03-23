@@ -1,4 +1,11 @@
-import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
+import {
+  appendFileSync,
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  writeFileSync,
+} from "node:fs";
 import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import net from "node:net";
@@ -167,7 +174,9 @@ function getPresetDefaults(
   };
 }
 
-function buildManagedRunLauncherCommand(state: Pick<ManagedRunState, "rootDir" | "benchmarkId" | "querySetId" | "preset">): string[] {
+function buildManagedRunLauncherCommand(
+  state: Pick<ManagedRunState, "rootDir" | "benchmarkId" | "querySetId" | "preset">,
+): string[] {
   const { preset } = resolveManagedPreset(state.preset);
   const entrypoint =
     preset.launchMode === "shared"
@@ -263,7 +272,9 @@ export function listManagedRunStates(rootDir = process.cwd()): ManagedRunState[]
     .sort()
     .map((name) => {
       const fullPath = resolve(stateDir, name);
-      return normalizeManagedRunState(JSON.parse(readFileSync(fullPath, "utf8")) as ManagedRunState);
+      return normalizeManagedRunState(
+        JSON.parse(readFileSync(fullPath, "utf8")) as ManagedRunState,
+      );
     })
     .sort((left, right) => right.createdAt - left.createdAt);
 }
@@ -324,7 +335,11 @@ function readTextIfExists(path: string): string {
 function readLastNonEmptyLine(path: string): string | undefined {
   const text = readTextIfExists(path).trim();
   if (!text) return undefined;
-  return text.split(/\r?\n/).map((line) => line.trim()).filter(Boolean).at(-1);
+  return text
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .at(-1);
 }
 
 function detectManagedRunFinished(state: Pick<ManagedRunState, "logDir">): boolean {
@@ -336,7 +351,9 @@ function hasManagedStartupErrorOutput(state: Pick<ManagedRunState, "launcherStde
   return Boolean(readLastNonEmptyLine(state.launcherStderrPath));
 }
 
-function describeManagedLauncherFailure(state: Pick<ManagedRunState, "launcherStderrPath" | "launcherStdoutPath">): string {
+function describeManagedLauncherFailure(
+  state: Pick<ManagedRunState, "launcherStderrPath" | "launcherStdoutPath">,
+): string {
   const stderrLine = readLastNonEmptyLine(state.launcherStderrPath);
   if (stderrLine) return `launcher exited during startup: ${stderrLine}`;
   const stdoutLine = readLastNonEmptyLine(state.launcherStdoutPath);
@@ -346,13 +363,19 @@ function describeManagedLauncherFailure(state: Pick<ManagedRunState, "launcherSt
 
 function hasBenchmarkEventActivity(rootDir: string, id: string): boolean {
   return listManagedRunEvents(rootDir, id, 50).some((event) =>
-    ["benchmark_started", "query_started", "query_completed", "query_skipped", "benchmark_finished"].includes(
-      event.type,
-    ),
+    [
+      "benchmark_started",
+      "query_started",
+      "query_completed",
+      "query_skipped",
+      "benchmark_finished",
+    ].includes(event.type),
   );
 }
 
-function hasManagedBenchmarkActivity(state: Pick<ManagedRunState, "rootDir" | "id" | "logDir">): boolean {
+function hasManagedBenchmarkActivity(
+  state: Pick<ManagedRunState, "rootDir" | "id" | "logDir">,
+): boolean {
   if (hasBenchmarkEventActivity(state.rootDir, state.id)) return true;
   const runLogPath = join(state.logDir, "run.log");
   return readTextIfExists(runLogPath).trim().length > 0;

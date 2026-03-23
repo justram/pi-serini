@@ -24,8 +24,13 @@ function parseCommandJson(output: string): string[] {
   return JSON.parse(match[1]) as string[];
 }
 
-test("package setup:benchmark script delegates to orchestration setup entrypoint", () => {
-  const output = runNpmScript("setup:benchmark", ["--benchmark", "benchmark-template", "--step", "query-slices"]);
+void test("package setup:benchmark script delegates to orchestration setup entrypoint", () => {
+  const output = runNpmScript("setup:benchmark", [
+    "--benchmark",
+    "benchmark-template",
+    "--step",
+    "query-slices",
+  ]);
 
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /STEP=query-slices/);
@@ -35,7 +40,7 @@ test("package setup:benchmark script delegates to orchestration setup entrypoint
   );
 });
 
-test("package run:benchmark:query-set script drives the active orchestration path end-to-end", () => {
+void test("package run:benchmark:query-set script drives the active orchestration path end-to-end", () => {
   const output = runNpmScript("run:benchmark:query-set", [
     "--benchmark",
     "benchmark-template",
@@ -82,7 +87,7 @@ test("package run:benchmark:query-set script drives the active orchestration pat
   ]);
 });
 
-test("package run:benchmark:query-set:shared-bm25 script drives the active shared orchestration path end-to-end", () => {
+void test("package run:benchmark:query-set:shared-bm25 script drives the active shared orchestration path end-to-end", () => {
   const output = runNpmScript("run:benchmark:query-set:shared-bm25", [
     "--benchmark",
     "benchmark-template",
@@ -100,7 +105,7 @@ test("package run:benchmark:query-set:shared-bm25 script drives the active share
   assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/query_set.ts/);
 });
 
-test("package run:benchmark:query-set:shared remains a compatibility alias for the active shared orchestration path", () => {
+void test("package run:benchmark:query-set:shared remains a compatibility alias for the active shared orchestration path", () => {
   const output = runNpmScript("run:benchmark:query-set:shared", [
     "--benchmark",
     "benchmark-template",
@@ -118,7 +123,7 @@ test("package run:benchmark:query-set:shared remains a compatibility alias for t
   assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/query_set.ts/);
 });
 
-test("package run:benchmark:query-set:sharded-shared-bm25 script drives the active sharded shared orchestration path end-to-end", () => {
+void test("package run:benchmark:query-set:sharded-shared-bm25 script drives the active sharded shared orchestration path end-to-end", () => {
   const output = runNpmScript("run:benchmark:query-set:sharded-shared-bm25", [
     "--benchmark",
     "benchmark-template",
@@ -133,11 +138,14 @@ test("package run:benchmark:query-set:sharded-shared-bm25 script drives the acti
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=test/);
   assert.match(output, /SHARD_COUNT=2/);
-  assert.match(output, /LOG_DIR=runs\/pi_bm25_benchmark-template_test_plain_minimal_gpt54mini_shared2_\d{8}_\d{6}\/logs/);
+  assert.match(
+    output,
+    /LOG_DIR=runs\/pi_bm25_benchmark-template_test_plain_minimal_gpt54mini_shared2_\d{8}_\d{6}\/logs/,
+  );
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
 });
 
-test("package run:benchmark:query-set:sharded remains a compatibility alias for the active sharded shared orchestration path", () => {
+void test("package run:benchmark:query-set:sharded remains a compatibility alias for the active sharded shared orchestration path", () => {
   const output = runNpmScript("run:benchmark:query-set:sharded", [
     "--benchmark",
     "benchmark-template",
@@ -152,11 +160,14 @@ test("package run:benchmark:query-set:sharded remains a compatibility alias for 
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=test/);
   assert.match(output, /SHARD_COUNT=2/);
-  assert.match(output, /LOG_DIR=runs\/pi_bm25_benchmark-template_test_plain_minimal_gpt54mini_shared2_\d{8}_\d{6}\/logs/);
+  assert.match(
+    output,
+    /LOG_DIR=runs\/pi_bm25_benchmark-template_test_plain_minimal_gpt54mini_shared2_\d{8}_\d{6}\/logs/,
+  );
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
 });
 
-test("package run:benchmark:shared script preserves the legacy low-level shared path end-to-end", () => {
+void test("package run:benchmark:shared script preserves the legacy low-level shared path end-to-end", () => {
   const output = runNpmScript("run:benchmark:shared", [
     "--benchmark",
     "benchmark-template",
@@ -174,7 +185,7 @@ test("package run:benchmark:shared script preserves the legacy low-level shared 
   assert.match(output, /RUN_ENTRYPOINT=src\/legacy\/run_benchmark_entry.ts/);
 });
 
-test("package tune:bm25 script delegates to orchestration tuning entrypoint", () => {
+void test("package tune:bm25 script delegates to orchestration tuning entrypoint", () => {
   const output = runNpmScript("tune:bm25", ["--dry-run", "--benchmark", "benchmark-template"]);
 
   assert.match(output, /BENCHMARK=benchmark-template/);

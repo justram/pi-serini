@@ -6,7 +6,7 @@ import test from "node:test";
 
 import { loadJudgeEvalRelevantDocids } from "../src/evaluation/judge_eval_qrels";
 
-test("loadJudgeEvalRelevantDocids applies benchmark recall thresholds", () => {
+void test("loadJudgeEvalRelevantDocids applies benchmark recall thresholds", () => {
   const root = mkdtempSync(join(tmpdir(), "judge-eval-qrels-"));
   const qrelsPath = join(root, "qrels.txt");
   writeFileSync(

@@ -210,14 +210,18 @@ async function startBm25Server(plan: SharedLaunchPlan) {
 async function runBenchmark(plan: SharedLaunchPlan): Promise<void> {
   const runLog = createWriteStream(plan.runLogPath, { flags: "a" });
   const command = buildTsxCommand("src/orchestration/query_set.ts");
-  const child = spawnPipedCommand(command, {
-    cwd: REPO_ROOT,
-    env: {
-      ...buildBenchmarkQuerySetLaunchEnv(plan),
-      PI_BM25_RPC_HOST: plan.host,
-      PI_BM25_RPC_PORT: String(plan.port),
+  const child = spawnPipedCommand(
+    command,
+    {
+      cwd: REPO_ROOT,
+      env: {
+        ...buildBenchmarkQuerySetLaunchEnv(plan),
+        PI_BM25_RPC_HOST: plan.host,
+        PI_BM25_RPC_PORT: String(plan.port),
+      },
     },
-  }, "shared benchmark run");
+    "shared benchmark run",
+  );
 
   const childStdout = child.stdout;
   const childStderr = child.stderr;

@@ -7,11 +7,7 @@ import {
 } from "../benchmarks/registry";
 import { buildTsxCommand } from "../runtime/tsx";
 import { runInheritedCommandSync } from "../runtime/process";
-import {
-  printCommandJson,
-  printCommandPlan,
-  readEnv,
-} from "../wrappers/downstream_tool_wrappers";
+import { printCommandJson, printCommandPlan, readEnv } from "../wrappers/downstream_tool_wrappers";
 
 type Args = {
   benchmarkId?: string;
@@ -106,7 +102,14 @@ function main(): void {
   if (!hasAnyFlag(argv, ["--qrels"])) {
     command.push("--qrels", benchmarkConfig.qrelsPath);
   }
-  if (!hasAnyFlag(argv, ["--secondaryQrels", "--secondary-qrels", "--noSecondaryQrels", "--no-secondary-qrels"])) {
+  if (
+    !hasAnyFlag(argv, [
+      "--secondaryQrels",
+      "--secondary-qrels",
+      "--noSecondaryQrels",
+      "--no-secondary-qrels",
+    ])
+  ) {
     if (secondaryQrelsPath) {
       command.push("--secondaryQrels", secondaryQrelsPath);
     } else {

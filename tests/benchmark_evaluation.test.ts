@@ -6,7 +6,7 @@ import {
   resolveBenchmarkRetrievalEvaluation,
 } from "../src/evaluation/benchmark_evaluation";
 
-test("benchmark evaluation resolver exposes benchmark-specific retrieval backends and semantics", () => {
+void test("benchmark evaluation resolver exposes benchmark-specific retrieval backends and semantics", () => {
   const browsecompRunFile = resolveBenchmarkRetrievalEvaluation({
     benchmarkId: "browsecomp-plus",
     sourceType: "run-file",
@@ -38,7 +38,7 @@ test("benchmark evaluation resolver exposes benchmark-specific retrieval backend
   assert.equal(msmarcoRunDir.selectedBackend, "internal");
 });
 
-test("benchmark evaluation resolver exposes benchmark-specific judge defaults", () => {
+void test("benchmark evaluation resolver exposes benchmark-specific judge defaults", () => {
   const browsecompJudge = resolveBenchmarkJudgeEvaluation({
     benchmarkId: "browsecomp-plus",
     groundTruthConfigured: true,

@@ -66,7 +66,8 @@ export function listBenchmarkCatalog(): BenchmarkCatalogEntry[] {
   return BENCHMARKS.map((benchmark) => {
     const compareConfig = resolveBenchmarkCompareConfig({ benchmarkId: benchmark.id });
     const managedPresetDescriptions = Object.values(benchmark.managedPresets).map(
-      (preset) => `${preset.id} (${preset.launchMode === "shared" ? "shared-bm25" : "sharded-shared-bm25"})`,
+      (preset) =>
+        `${preset.id} (${preset.launchMode === "shared" ? "shared-bm25" : "sharded-shared-bm25"})`,
     );
     return {
       id: benchmark.id,
@@ -187,7 +188,8 @@ export function resolveBenchmarkCompareConfig(options?: {
   baselineRunPath?: string;
 }): ResolvedBenchmarkCompareConfig {
   const benchmark = getBenchmarkDefinition(options?.benchmarkId);
-  const compareQuerySetId = options?.querySetId ?? benchmark.defaultCompareQuerySetId ?? benchmark.defaultQuerySetId;
+  const compareQuerySetId =
+    options?.querySetId ?? benchmark.defaultCompareQuerySetId ?? benchmark.defaultQuerySetId;
   const resolved = resolveBenchmarkConfig({
     ...options,
     benchmarkId: benchmark.id,
@@ -197,7 +199,9 @@ export function resolveBenchmarkCompareConfig(options?: {
   return {
     ...resolved,
     baselineRunPath:
-      options?.baselineRunPath ?? querySet.compareBaselineRunPath ?? resolved.benchmark.defaultBaselineRunPath,
+      options?.baselineRunPath ??
+      querySet.compareBaselineRunPath ??
+      resolved.benchmark.defaultBaselineRunPath,
   };
 }
 
@@ -327,7 +331,10 @@ export function resolveBenchmarkSetupStep(
   return { benchmark, step, scriptPath };
 }
 
-function resolveManagedPresetNodeEntrypoint(rootDir: string, launchMode: BenchmarkManagedPresetLaunchMode): string {
+function resolveManagedPresetNodeEntrypoint(
+  rootDir: string,
+  launchMode: BenchmarkManagedPresetLaunchMode,
+): string {
   return resolve(
     rootDir,
     launchMode === "shared"

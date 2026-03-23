@@ -7,7 +7,7 @@ import {
   resolveAnseriniJarPath,
 } from "../src/evaluation/trec_eval_runner";
 
-test("resolveAnseriniJarPath prefers explicit environment overrides", () => {
+void test("resolveAnseriniJarPath prefers explicit environment overrides", () => {
   assert.equal(
     resolveAnseriniJarPath({ ANSERINI_JAR: "custom/anserini.jar" } as NodeJS.ProcessEnv),
     "custom/anserini.jar",
@@ -18,7 +18,7 @@ test("resolveAnseriniJarPath prefers explicit environment overrides", () => {
   );
 });
 
-test("parseTrecEvalMetricOutput parses standard trec_eval metric output", () => {
+void test("parseTrecEvalMetricOutput parses standard trec_eval metric output", () => {
   assert.deepEqual(parseTrecEvalMetricOutput("ndcg_cut_10            all\t0.5058\n"), {
     metric: "ndcg_cut_10",
     scope: "all",
@@ -27,7 +27,7 @@ test("parseTrecEvalMetricOutput parses standard trec_eval metric output", () => 
   });
 });
 
-test("buildTrecEvalCommands builds Java trec_eval commands for configured metrics", () => {
+void test("buildTrecEvalCommands builds Java trec_eval commands for configured metrics", () => {
   const commands = buildTrecEvalCommands({
     anseriniJarPath: "vendor/anserini/anserini-1.6.0-fatjar.jar",
     qrelsPath: "data/msmarco-v1-passage/qrels/qrels.dl19-passage.txt",

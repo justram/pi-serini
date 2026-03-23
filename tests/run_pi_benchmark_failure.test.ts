@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { execFileSync } from "node:child_process";
 import test from "node:test";
 
-test("run_pi_benchmark records a failed query artifact when pi stdout ends with a truncated trailing JSON line", () => {
+void test("run_pi_benchmark records a failed query artifact when pi stdout ends with a truncated trailing JSON line", () => {
   const root = mkdtempSync(join(tmpdir(), "run-pi-benchmark-failure-"));
   const queryPath = join(root, "queries.tsv");
   const qrelsPath = join(root, "qrels.txt");
@@ -19,8 +19,8 @@ test("run_pi_benchmark records a failed query artifact when pi stdout ends with 
     [
       "#!/bin/sh",
       "printf '%s\\n' '{\"type\":\"session\"}'",
-      "printf '%s\\n' '{\"type\":\"tool_execution_start\",\"toolCallId\":\"1\",\"toolName\":\"search\",\"args\":{\"reason\":\"initial search\"}}'",
-      "printf '%s\\n' '{\"type\":\"tool_execution_end\",\"toolCallId\":\"1\",\"toolName\":\"search\",\"result\":{\"content\":[{\"type\":\"text\",\"text\":\"{\\\"results\\\":[{\\\"docid\\\":\\\"d1\\\"}]}\"}]}}'",
+      'printf \'%s\\n\' \'{"type":"tool_execution_start","toolCallId":"1","toolName":"search","args":{"reason":"initial search"}}\'',
+      'printf \'%s\\n\' \'{"type":"tool_execution_end","toolCallId":"1","toolName":"search","result":{"content":[{"type":"text","text":"{\\"results\\":[{\\"docid\\":\\"d1\\"}]}"}]}}\'',
       "printf '%s' '{\"type\":\"message_end\"'",
     ].join("\n"),
     "utf8",
@@ -88,8 +88,7 @@ test("run_pi_benchmark records a failed query artifact when pi stdout ends with 
   assert.ok(
     run.result.some(
       (entry) =>
-        entry.type === "output_text" &&
-        entry.output.includes("invalid trailing JSON line"),
+        entry.type === "output_text" && entry.output.includes("invalid trailing JSON line"),
     ),
   );
 

@@ -8,7 +8,6 @@ import {
   writeFileSync,
 } from "node:fs";
 import { dirname, join, resolve } from "node:path";
-import { spawnSync } from "node:child_process";
 import { tmpdir } from "node:os";
 
 import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
@@ -754,7 +753,14 @@ async function runPiOnce(
       const elapsedSeconds = (Date.now() - startedAt) / 1000;
       const normalizedResults = normalizedResultSpool.load();
       normalizedResultSpool.cleanup();
-      resolvePromise({ state, normalizedResults, stderrTail, exitCode: code, timedOut, elapsedSeconds });
+      resolvePromise({
+        state,
+        normalizedResults,
+        stderrTail,
+        exitCode: code,
+        timedOut,
+        elapsedSeconds,
+      });
     });
   });
 }

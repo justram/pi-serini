@@ -399,7 +399,9 @@ class BenchDashboard implements Component {
       lines.push(
         pad(isSelected ? theme.selectedSecondary(secondaryText) : theme.dim(secondaryText), width),
       );
-      lines.push(pad(isSelected ? theme.selectedSecondary(tertiaryText) : theme.dim(tertiaryText), width));
+      lines.push(
+        pad(isSelected ? theme.selectedSecondary(tertiaryText) : theme.dim(tertiaryText), width),
+      );
     });
     return lines;
   }

@@ -152,12 +152,11 @@ function main(): void {
     benchmarkId: judgeInputs.benchmarkId,
     groundTruthConfigured: Boolean(judgeInputs.benchmarkConfig.groundTruthPath),
   });
+  const rawJudgeMode = args.judgeMode ?? readEnv("JUDGE_MODE");
   const judgeMode =
-    args.judgeMode ??
-    (readEnv("JUDGE_MODE") as BenchmarkJudgeEvalMode | undefined) ??
-    judgeEvaluation.defaultMode;
+    (rawJudgeMode as BenchmarkJudgeEvalMode | undefined) ?? judgeEvaluation.defaultMode;
   if (judgeMode !== "gold-answer" && judgeMode !== "reference-free") {
-    throw new Error(`Unsupported judge mode: ${judgeMode}`);
+    throw new Error(`Unsupported judge mode: ${String(rawJudgeMode)}`);
   }
   const supportedJudgeModes = judgeEvaluation.supportedModes;
   if (!supportedJudgeModes.includes(judgeMode)) {
@@ -231,8 +230,9 @@ function main(): void {
       judgeInputs.groundTruthPath
         ? judgeInputs.groundTruthPath
         : undefined,
-    QREL_EVIDENCE:
-      judgeInputs.includeQrelEvidenceOverride ? judgeInputs.qrelEvidencePath : undefined,
+    QREL_EVIDENCE: judgeInputs.includeQrelEvidenceOverride
+      ? judgeInputs.qrelEvidencePath
+      : undefined,
   });
   printCommandJson(command);
 

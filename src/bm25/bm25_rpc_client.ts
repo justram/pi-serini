@@ -16,7 +16,10 @@ export interface Bm25RpcClient {
   dispose?(): void;
 }
 
-export function createBm25RequestAbortError(commandType: string, phase: "before dispatch" | "during request"): Error {
+export function createBm25RequestAbortError(
+  commandType: string,
+  phase: "before dispatch" | "during request",
+): Error {
   return new Error(`BM25 helper request aborted ${phase} for ${commandType}.`);
 }
 

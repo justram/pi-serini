@@ -189,10 +189,7 @@ function parseArgs(argv: string[]): Args {
   return args;
 }
 
-function describeManagedStatus(state: {
-  status: string;
-  notes?: string;
-}): string {
+function describeManagedStatus(state: { status: string; notes?: string }): string {
   if (state.notes?.trim()) return state.notes.trim();
   switch (state.status) {
     case "queued":
@@ -279,9 +276,7 @@ function printManaged(args: Args): void {
     return;
   }
   for (const state of states) {
-    let resolvedPreset:
-      | ReturnType<typeof resolveManagedPreset>
-      | undefined;
+    let resolvedPreset: ReturnType<typeof resolveManagedPreset> | undefined;
     try {
       resolvedPreset = resolveManagedPreset(state.preset);
     } catch {
@@ -291,11 +286,15 @@ function printManaged(args: Args): void {
     console.log(`${state.id}`);
     console.log(`  preset: ${state.preset}`);
     console.log(`  benchmark: ${state.benchmarkId ?? resolvedPreset?.benchmark.id ?? "unknown"}`);
-    console.log(`  query set: ${state.querySetId ?? resolvedPreset?.preset.querySetId ?? "unknown"}`);
+    console.log(
+      `  query set: ${state.querySetId ?? resolvedPreset?.preset.querySetId ?? "unknown"}`,
+    );
     console.log(`  model:  ${state.model}`);
     console.log(`  status: ${state.status}`);
     console.log(`  detail: ${describeManagedStatus(state)}`);
-    console.log(`  launch: ${launch.preferredPackageScript.includes("sharded") ? "sharded-shared-bm25" : "shared-bm25"}`);
+    console.log(
+      `  launch: ${launch.preferredPackageScript.includes("sharded") ? "sharded-shared-bm25" : "shared-bm25"}`,
+    );
     console.log(`  script: ${launch.preferredPackageScript}`);
     console.log(`  entry:  ${launch.launcherScript}`);
     console.log(`  cmd:    ${launch.launcherCommandDisplay}`);
@@ -317,7 +316,9 @@ function printBenchmarkCatalog(): void {
     console.log(`  query sets: ${entry.querySetIds.join(", ")}`);
     console.log(`  setup steps: ${entry.setupSteps.join(", ") || "none"}`);
     console.log(`  preferred launch scripts: ${entry.preferredLaunchScripts.join(", ")}`);
-    console.log(`  retrieval backends: run-file=${entry.runFileRetrievalBackend}, run-dir=${entry.runDirRetrievalBackend}`);
+    console.log(
+      `  retrieval backends: run-file=${entry.runFileRetrievalBackend}, run-dir=${entry.runDirRetrievalBackend}`,
+    );
     console.log(`  judge modes: ${entry.judgeModes.join(", ") || "none"}`);
     console.log(`  default judge mode: ${entry.defaultJudgeMode ?? "none"}`);
     console.log(`  managed presets: ${entry.managedPresetDescriptions.join(", ") || "none"}`);

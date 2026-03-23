@@ -3,7 +3,7 @@ import test from "node:test";
 
 import { buildPiJsonCommandArgs, startPiProcessTimeout } from "../src/runtime/pi_process";
 
-test("buildPiJsonCommandArgs includes extension wiring only when provided", () => {
+void test("buildPiJsonCommandArgs includes extension wiring only when provided", () => {
   assert.deepEqual(
     buildPiJsonCommandArgs({
       model: "openai-codex/gpt-5.4-mini",
@@ -48,7 +48,7 @@ test("buildPiJsonCommandArgs includes extension wiring only when provided", () =
   );
 });
 
-test("startPiProcessTimeout sends SIGTERM immediately and SIGKILL after the grace period", async () => {
+void test("startPiProcessTimeout sends SIGTERM immediately and SIGKILL after the grace period", async () => {
   const signals: string[] = [];
   const fakeChild = {
     killed: false,
@@ -76,7 +76,7 @@ test("startPiProcessTimeout sends SIGTERM immediately and SIGKILL after the grac
   controller.clear();
 });
 
-test("startPiProcessTimeout does not escalate to SIGKILL after the child is marked killed", async () => {
+void test("startPiProcessTimeout does not escalate to SIGKILL after the child is marked killed", async () => {
   const signals: string[] = [];
   const fakeChildState = { killed: false };
   const fakeChild = {

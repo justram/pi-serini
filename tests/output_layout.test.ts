@@ -11,7 +11,7 @@ import {
 } from "../src/runtime/output_layout";
 import { buildAssetsDir } from "../src/report/report_markdown_utils";
 
-test("output layout preserves run-relative nesting for merged runs", () => {
+void test("output layout preserves run-relative nesting for merged runs", () => {
   const runDir = "/tmp/pi-serini/runs/managed/foo/run-123/merged";
 
   assert.deepEqual(getRunRelativeParts(runDir), ["managed", "foo", "run-123"]);
@@ -25,7 +25,7 @@ test("output layout preserves run-relative nesting for merged runs", () => {
   );
 });
 
-test("retrieval summaries preserve source-relative nesting and avoid basename collisions", () => {
+void test("retrieval summaries preserve source-relative nesting and avoid basename collisions", () => {
   assert.equal(
     resolveRetrievalEvalSummaryPath({
       benchmarkId: "msmarco-v1-passage",
@@ -48,7 +48,7 @@ test("retrieval summaries preserve source-relative nesting and avoid basename co
   );
 });
 
-test("shared BM25 log dirs are benchmark-aware", () => {
+void test("shared BM25 log dirs are benchmark-aware", () => {
   assert.equal(
     resolveBenchmarkAwareSharedLogDir("browsecomp-plus", "q9"),
     "runs/shared-bm25-browsecomp-plus-q9",
@@ -59,7 +59,7 @@ test("shared BM25 log dirs are benchmark-aware", () => {
   );
 });
 
-test("report assets are scoped to the report output path", () => {
+void test("report assets are scoped to the report output path", () => {
   assert.equal(
     buildAssetsDir("/tmp/pi-serini/runs/run-a/report.md"),
     "/tmp/pi-serini/runs/run-a/report_assets",
@@ -78,7 +78,7 @@ test("report assets are scoped to the report output path", () => {
   );
 });
 
-test("judge summary candidates check benchmark-namespaced locations before legacy fallback paths", () => {
+void test("judge summary candidates check benchmark-namespaced locations before legacy fallback paths", () => {
   const candidates = getJudgeEvalSummaryCandidates({
     runDir: "/tmp/pi-serini/runs/managed/foo/run-123/merged",
     benchmarkId: "benchmark-template",

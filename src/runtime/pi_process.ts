@@ -26,7 +26,15 @@ export function buildPiJsonCommandArgs(options: {
   if (options.extensionPath) {
     args.push("-e", options.extensionPath);
   }
-  args.push("--mode", "json", "--model", options.model, "--thinking", options.thinking, options.prompt);
+  args.push(
+    "--mode",
+    "json",
+    "--model",
+    options.model,
+    "--thinking",
+    options.thinking,
+    options.prompt,
+  );
   return args;
 }
 

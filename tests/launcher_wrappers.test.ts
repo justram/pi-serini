@@ -1,6 +1,13 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { accessSync, constants, mkdtempSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import {
+  accessSync,
+  constants,
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import test from "node:test";
@@ -77,7 +84,7 @@ function parseCommandJson(output: string): string[] {
   return JSON.parse(match[1]) as string[];
 }
 
-test("package scripts keep legacy run aliases on Node entrypoints instead of bash control-plane wrappers", () => {
+void test("package scripts keep legacy run aliases on Node entrypoints instead of bash control-plane wrappers", () => {
   const packageJson = JSON.parse(readFileSync("package.json", "utf8")) as {
     scripts: Record<string, string>;
   };
@@ -106,19 +113,21 @@ test("package scripts keep legacy run aliases on Node entrypoints instead of bas
   assert.equal(packageJson.scripts["compare:bm25"], "npx tsx src/evaluation/compare_bm25_runs.ts");
 });
 
-test("run_benchmark_query_set help lists supported benchmarks, query sets, and benchmark-scoped examples", () => {
-  const output = execFileSync(
-    "npx",
-    ["tsx", "src/orchestration/query_set.ts", "--help"],
-    {
-      cwd: process.cwd(),
-      env: process.env,
-      encoding: "utf8",
-    },
-  );
+void test("run_benchmark_query_set help lists supported benchmarks, query sets, and benchmark-scoped examples", () => {
+  const output = execFileSync("npx", ["tsx", "src/orchestration/query_set.ts", "--help"], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: "utf8",
+  });
 
-  assert.match(output, /Preferred package entrypoint: npm run run:benchmark:query-set -- \[options\]/);
-  assert.match(output, /Low-level direct command: npx tsx src\/orchestration\/query_set\.ts \[options\]/);
+  assert.match(
+    output,
+    /Preferred package entrypoint: npm run run:benchmark:query-set -- \[options\]/,
+  );
+  assert.match(
+    output,
+    /Low-level direct command: npx tsx src\/orchestration\/query_set\.ts \[options\]/,
+  );
   assert.match(output, /supported: browsecomp-plus, msmarco-v1-passage, benchmark-template/);
   assert.match(output, /Explicit override; wins over benchmark defaults/);
   assert.match(output, /browsecomp-plus: default query set q9; query sets q9, q100, q300, qfull/);
@@ -126,7 +135,7 @@ test("run_benchmark_query_set help lists supported benchmarks, query sets, and b
   assert.match(output, /BENCHMARK=benchmark-template QUERY_SET=test/);
 });
 
-test("query_set_shared_bm25 help prefers the clearer shared-bm25 package alias and keeps the old alias explicit", () => {
+void test("query_set_shared_bm25 help prefers the clearer shared-bm25 package alias and keeps the old alias explicit", () => {
   const output = execFileSync(
     "npx",
     ["tsx", "src/orchestration/query_set_shared_bm25.ts", "--help"],
@@ -137,12 +146,21 @@ test("query_set_shared_bm25 help prefers the clearer shared-bm25 package alias a
     },
   );
 
-  assert.match(output, /Preferred package entrypoint: npm run run:benchmark:query-set:shared-bm25 -- \[options\]/);
-  assert.match(output, /Compatibility alias: npm run run:benchmark:query-set:shared -- \[options\]/);
-  assert.match(output, /Low-level direct command: npx tsx src\/orchestration\/query_set_shared_bm25\.ts \[options\]/);
+  assert.match(
+    output,
+    /Preferred package entrypoint: npm run run:benchmark:query-set:shared-bm25 -- \[options\]/,
+  );
+  assert.match(
+    output,
+    /Compatibility alias: npm run run:benchmark:query-set:shared -- \[options\]/,
+  );
+  assert.match(
+    output,
+    /Low-level direct command: npx tsx src\/orchestration\/query_set_shared_bm25\.ts \[options\]/,
+  );
 });
 
-test("query_set_sharded_shared_bm25 help prefers the clearer sharded shared-bm25 package alias and keeps the old alias explicit", () => {
+void test("query_set_sharded_shared_bm25 help prefers the clearer sharded shared-bm25 package alias and keeps the old alias explicit", () => {
   const output = execFileSync(
     "npx",
     ["tsx", "src/orchestration/query_set_sharded_shared_bm25.ts", "--help"],
@@ -153,12 +171,21 @@ test("query_set_sharded_shared_bm25 help prefers the clearer sharded shared-bm25
     },
   );
 
-  assert.match(output, /Preferred package entrypoint: npm run run:benchmark:query-set:sharded-shared-bm25 -- \[options\]/);
-  assert.match(output, /Compatibility alias: npm run run:benchmark:query-set:sharded -- \[options\]/);
-  assert.match(output, /Low-level direct command: npx tsx src\/orchestration\/query_set_sharded_shared_bm25\.ts \[options\]/);
+  assert.match(
+    output,
+    /Preferred package entrypoint: npm run run:benchmark:query-set:sharded-shared-bm25 -- \[options\]/,
+  );
+  assert.match(
+    output,
+    /Compatibility alias: npm run run:benchmark:query-set:sharded -- \[options\]/,
+  );
+  assert.match(
+    output,
+    /Low-level direct command: npx tsx src\/orchestration\/query_set_sharded_shared_bm25\.ts \[options\]/,
+  );
 });
 
-test("setup_benchmark_entry help lists supported benchmarks, setup steps, and examples", () => {
+void test("setup_benchmark_entry help lists supported benchmarks, setup steps, and examples", () => {
   const output = execFileSync(
     "npx",
     ["tsx", "src/orchestration/setup_benchmark_entry.ts", "--help"],
@@ -170,14 +197,23 @@ test("setup_benchmark_entry help lists supported benchmarks, setup steps, and ex
   );
 
   assert.match(output, /Preferred package entrypoint: npm run setup:benchmark -- \[options\]/);
-  assert.match(output, /Low-level direct command: npx tsx src\/orchestration\/setup_benchmark_entry\.ts \[options\]/);
+  assert.match(
+    output,
+    /Low-level direct command: npx tsx src\/orchestration\/setup_benchmark_entry\.ts \[options\]/,
+  );
   assert.match(output, /supported: browsecomp-plus, msmarco-v1-passage, benchmark-template/);
-  assert.match(output, /browsecomp-plus: setup steps setup, ground-truth, query-slices; query sets q9, q100, q300, qfull/);
-  assert.match(output, /msmarco-v1-passage: setup steps setup, query-slices; query sets dl19, dl20/);
+  assert.match(
+    output,
+    /browsecomp-plus: setup steps setup, ground-truth, query-slices; query sets q9, q100, q300, qfull/,
+  );
+  assert.match(
+    output,
+    /msmarco-v1-passage: setup steps setup, query-slices; query sets dl19, dl20/,
+  );
   assert.match(output, /npm run setup:benchmark -- --benchmark benchmark-template --step setup/);
 });
 
-test("bench_tui help describes benchmark-aware qrels defaults instead of a BrowseComp-only path literal", () => {
+void test("bench_tui help describes benchmark-aware qrels defaults instead of a BrowseComp-only path literal", () => {
   const output = execFileSync("npx", ["tsx", "src/operator/bench_tui.ts", "--help"], {
     cwd: process.cwd(),
     env: process.env,
@@ -185,45 +221,62 @@ test("bench_tui help describes benchmark-aware qrels defaults instead of a Brows
   });
 
   assert.match(output, /Preferred package entrypoint: npm run bench:tui/);
-  assert.match(output, /Low-level direct command: npx tsx src\/operator\/bench_tui\.ts \[options\]/);
+  assert.match(
+    output,
+    /Low-level direct command: npx tsx src\/operator\/bench_tui\.ts \[options\]/,
+  );
   assert.match(output, /benchmark primary qrels for browsecomp-plus/);
   assert.doesNotMatch(output, /default: data\/browsecomp-plus\/qrels\/qrel_evidence\.txt/);
   assert.match(output, /benchmark_manifest_snapshot\.json/);
 });
 
-test("benchctl help, benchmark catalog, and status output surface benchmark-aware language", () => {
+void test("benchctl help, benchmark catalog, and status output surface benchmark-aware language", () => {
   const help = execFileSync("npx", ["tsx", "src/operator/benchctl.ts", "--help"], {
     cwd: process.cwd(),
     env: process.env,
     encoding: "utf8",
   });
   assert.match(help, /Preferred package entrypoint: npm run bench -- <command> \[options\]/);
-  assert.match(help, /Low-level direct command: npx tsx src\/operator\/benchctl\.ts <command> \[options\]/);
+  assert.match(
+    help,
+    /Low-level direct command: npx tsx src\/operator\/benchctl\.ts <command> \[options\]/,
+  );
   assert.match(help, /summary of runs with benchmark ids/);
   assert.match(help, /default benchmark browsecomp-plus/);
-  assert.match(help, /benchmarks\s+List registered benchmarks, query sets, preferred launch aliases, presets, compare defaults, and eval modes/);
-
-  const benchmarks = execFileSync(
-    "npx",
-    ["tsx", "src/operator/benchctl.ts", "benchmarks"],
-    {
-      cwd: process.cwd(),
-      env: process.env,
-      encoding: "utf8",
-    },
+  assert.match(
+    help,
+    /benchmarks\s+List registered benchmarks, query sets, preferred launch aliases, presets, compare defaults, and eval modes/,
   );
+
+  const benchmarks = execFileSync("npx", ["tsx", "src/operator/benchctl.ts", "benchmarks"], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: "utf8",
+  });
   assert.match(benchmarks, /browsecomp-plus — BrowseComp-Plus/);
   assert.match(benchmarks, /query sets: q9, q100, q300, qfull/);
   assert.match(benchmarks, /compare query set: qfull/);
-  assert.match(benchmarks, /preferred launch scripts: run:benchmark:query-set, run:benchmark:query-set:shared-bm25, run:benchmark:query-set:sharded-shared-bm25/);
+  assert.match(
+    benchmarks,
+    /preferred launch scripts: run:benchmark:query-set, run:benchmark:query-set:shared-bm25, run:benchmark:query-set:sharded-shared-bm25/,
+  );
   assert.match(benchmarks, /retrieval backends: run-file=internal, run-dir=internal/);
   assert.match(benchmarks, /msmarco-v1-passage — MS MARCO v1 Passage/);
   assert.match(benchmarks, /compare query set: dl20/);
-  assert.match(benchmarks, /compare baseline: data\/msmarco-v1-passage\/source\/bm25_pure\.dl20\.trec/);
+  assert.match(
+    benchmarks,
+    /compare baseline: data\/msmarco-v1-passage\/source\/bm25_pure\.dl20\.trec/,
+  );
   assert.match(benchmarks, /judge modes: reference-free/);
   assert.match(benchmarks, /default judge mode: reference-free/);
-  assert.match(benchmarks, /managed presets: q9_shared \(shared-bm25\), q100_sharded \(sharded-shared-bm25\), q300_sharded \(sharded-shared-bm25\), qfull_sharded \(sharded-shared-bm25\)/);
-  assert.match(benchmarks, /managed presets: dl19_shared \(shared-bm25\), dl20_shared \(shared-bm25\)/);
+  assert.match(
+    benchmarks,
+    /managed presets: q9_shared \(shared-bm25\), q100_sharded \(sharded-shared-bm25\), q300_sharded \(sharded-shared-bm25\), qfull_sharded \(sharded-shared-bm25\)/,
+  );
+  assert.match(
+    benchmarks,
+    /managed presets: dl19_shared \(shared-bm25\), dl20_shared \(shared-bm25\)/,
+  );
   assert.match(benchmarks, /benchmark-template — Benchmark Template Tiny Demo/);
   assert.match(benchmarks, /managed presets: none/);
 
@@ -335,8 +388,18 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
           "--query-set",
           "dev",
         ],
-        launcherStdoutPath: join(root, "runs", "shared-bm25-benchmark-template-dev", "launcher.stdout.log"),
-        launcherStderrPath: join(root, "runs", "shared-bm25-benchmark-template-dev", "launcher.stderr.log"),
+        launcherStdoutPath: join(
+          root,
+          "runs",
+          "shared-bm25-benchmark-template-dev",
+          "launcher.stdout.log",
+        ),
+        launcherStderrPath: join(
+          root,
+          "runs",
+          "shared-bm25-benchmark-template-dev",
+          "launcher.stderr.log",
+        ),
         status: "queued",
       },
       null,
@@ -362,7 +425,7 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
   );
 });
 
-test("node setup entrypoint resolves benchmark setup scripts from the registry", () => {
+void test("node setup entrypoint resolves benchmark setup scripts from the registry", () => {
   const output = execFileSync(
     "npx",
     [
@@ -389,7 +452,7 @@ test("node setup entrypoint resolves benchmark setup scripts from the registry",
   );
 });
 
-test("node setup entrypoint resolves MSMARCO setup scripts from the registry", () => {
+void test("node setup entrypoint resolves MSMARCO setup scripts from the registry", () => {
   const output = execFileSync(
     "npx",
     [
@@ -413,7 +476,7 @@ test("node setup entrypoint resolves MSMARCO setup scripts from the registry", (
   assert.match(output, /SCRIPT_PATH=scripts\/benchmarks\/msmarco_v1_passage\/setup\.sh/);
 });
 
-test("node setup entrypoint supports generic env-driven dispatch", () => {
+void test("node setup entrypoint supports generic env-driven dispatch", () => {
   const output = execFileSync(
     "npx",
     ["tsx", "src/orchestration/setup_benchmark_entry.ts", "--dry-run"],
@@ -436,7 +499,7 @@ test("node setup entrypoint supports generic env-driven dispatch", () => {
   );
 });
 
-test("node setup entrypoint fails cleanly when a benchmark does not support a setup step", () => {
+void test("node setup entrypoint fails cleanly when a benchmark does not support a setup step", () => {
   assert.throws(
     () =>
       execFileSync(
@@ -461,7 +524,7 @@ test("node setup entrypoint fails cleanly when a benchmark does not support a se
   );
 });
 
-test("node setup entrypoint rejects invalid setup steps before dispatch", () => {
+void test("node setup entrypoint rejects invalid setup steps before dispatch", () => {
   assert.throws(
     () =>
       execFileSync(
@@ -486,7 +549,7 @@ test("node setup entrypoint rejects invalid setup steps before dispatch", () => 
   );
 });
 
-test("benchmark setup scripts referenced by the registry are directly executable", () => {
+void test("benchmark setup scripts referenced by the registry are directly executable", () => {
   for (const scriptPath of [
     "scripts/benchmarks/browsecomp_plus/setup.sh",
     "scripts/benchmarks/browsecomp_plus/setup_ground_truth.sh",
@@ -501,7 +564,7 @@ test("benchmark setup scripts referenced by the registry are directly executable
   }
 });
 
-test("legacy BrowseComp setup wrapper remains a compatibility shim", () => {
+void test("legacy BrowseComp setup wrapper remains a compatibility shim", () => {
   const output = runScript("scripts/setup_ground_truth_browsecomp_plus.sh");
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
@@ -509,7 +572,7 @@ test("legacy BrowseComp setup wrapper remains a compatibility shim", () => {
   assert.match(output, /SCRIPT_PATH=scripts\/benchmarks\/browsecomp_plus\/setup_ground_truth\.sh/);
 });
 
-test("BrowseComp ground-truth setup script fails fast when the decryption secret is missing", () => {
+void test("BrowseComp ground-truth setup script fails fast when the decryption secret is missing", () => {
   assert.throws(
     () =>
       execFileSync("scripts/benchmarks/browsecomp_plus/setup_ground_truth.sh", [], {
@@ -521,16 +584,10 @@ test("BrowseComp ground-truth setup script fails fast when the decryption secret
   );
 });
 
-test("node low-level benchmark entrypoint resolves manifest-aligned defaults", () => {
+void test("node low-level benchmark entrypoint resolves manifest-aligned defaults", () => {
   const output = execFileSync(
     "npx",
-    [
-      "tsx",
-      "src/legacy/run_benchmark_entry.ts",
-      "--dry-run",
-      "--benchmark",
-      "benchmark-template",
-    ],
+    ["tsx", "src/legacy/run_benchmark_entry.ts", "--dry-run", "--benchmark", "benchmark-template"],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -573,7 +630,7 @@ test("node low-level benchmark entrypoint resolves manifest-aligned defaults", (
   ]);
 });
 
-test("legacy low-level benchmark shell wrapper remains a compatibility shim", () => {
+void test("legacy low-level benchmark shell wrapper remains a compatibility shim", () => {
   const output = runScript("scripts/run_benchmark.sh", {
     BENCHMARK: "benchmark-template",
   });
@@ -585,7 +642,7 @@ test("legacy low-level benchmark shell wrapper remains a compatibility shim", ()
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
 });
 
-test("legacy q9 single-run wrapper preserves historical q9 naming and prompt defaults", () => {
+void test("legacy q9 single-run wrapper preserves historical q9 naming and prompt defaults", () => {
   const output = runScript("scripts/run_q9_plain_minimal_excerpt.sh");
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
@@ -594,8 +651,14 @@ test("legacy q9 single-run wrapper preserves historical q9 naming and prompt def
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
-test("node BrowseComp compatibility entrypoint preserves historical q9 single-run naming", () => {
-  const output = runNpxTsx("src/legacy/browsecomp_compat_entry.ts", ["--mode", "run", "--slice", "q9", "--dry-run"]);
+void test("node BrowseComp compatibility entrypoint preserves historical q9 single-run naming", () => {
+  const output = runNpxTsx("src/legacy/browsecomp_compat_entry.ts", [
+    "--mode",
+    "run",
+    "--slice",
+    "q9",
+    "--dry-run",
+  ]);
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
   assert.match(output, /QUERY_SET=q9/);
@@ -603,7 +666,7 @@ test("node BrowseComp compatibility entrypoint preserves historical q9 single-ru
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
-test("legacy BrowseComp slice wrapper preserves slice-driven naming", () => {
+void test("legacy BrowseComp slice wrapper preserves slice-driven naming", () => {
   const output = runScript("scripts/run_browsecomp_plus_slice_plain_minimal_excerpt.sh", {
     SLICE: "q300",
   });
@@ -614,16 +677,10 @@ test("legacy BrowseComp slice wrapper preserves slice-driven naming", () => {
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q300_plain_minimal_excerpt/);
 });
 
-test("node low-level benchmark entrypoint resolves MSMARCO retrieval defaults", () => {
+void test("node low-level benchmark entrypoint resolves MSMARCO retrieval defaults", () => {
   const output = execFileSync(
     "npx",
-    [
-      "tsx",
-      "src/legacy/run_benchmark_entry.ts",
-      "--dry-run",
-      "--benchmark",
-      "msmarco-v1-passage",
-    ],
+    ["tsx", "src/legacy/run_benchmark_entry.ts", "--dry-run", "--benchmark", "msmarco-v1-passage"],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -639,7 +696,7 @@ test("node low-level benchmark entrypoint resolves MSMARCO retrieval defaults", 
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_msmarco-v1-passage_dl19_plain_minimal/);
 });
 
-test("generic benchmark query-set runner resolves manifest-aligned defaults", () => {
+void test("generic benchmark query-set runner resolves manifest-aligned defaults", () => {
   const output = runScript("scripts/run_benchmark_query_set.sh", {
     BENCHMARK: "benchmark-template",
   });
@@ -652,16 +709,10 @@ test("generic benchmark query-set runner resolves manifest-aligned defaults", ()
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_benchmark-template_dev_plain_minimal/);
 });
 
-test("node benchmark query-set entrypoint resolves manifest-aligned defaults", () => {
+void test("node benchmark query-set entrypoint resolves manifest-aligned defaults", () => {
   const output = execFileSync(
     "npx",
-    [
-      "tsx",
-      "src/orchestration/query_set.ts",
-      "--dry-run",
-      "--benchmark",
-      "benchmark-template",
-    ],
+    ["tsx", "src/orchestration/query_set.ts", "--dry-run", "--benchmark", "benchmark-template"],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -704,7 +755,7 @@ test("node benchmark query-set entrypoint resolves manifest-aligned defaults", (
   ]);
 });
 
-test("node low-level shared benchmark entrypoint resolves shared defaults", () => {
+void test("node low-level shared benchmark entrypoint resolves shared defaults", () => {
   const output = execFileSync(
     "npx",
     [
@@ -728,7 +779,7 @@ test("node low-level shared benchmark entrypoint resolves shared defaults", () =
   assert.match(output, /RUN_ENTRYPOINT=src\/legacy\/run_benchmark_entry.ts/);
 });
 
-test("legacy low-level shared shell wrapper remains a compatibility shim", () => {
+void test("legacy low-level shared shell wrapper remains a compatibility shim", () => {
   const output = runScript("scripts/launch_shared_bm25_benchmark.sh", {
     BENCHMARK: "benchmark-template",
   });
@@ -740,7 +791,7 @@ test("legacy low-level shared shell wrapper remains a compatibility shim", () =>
   assert.match(output, /RUN_ENTRYPOINT=src\/legacy\/run_benchmark_entry.ts/);
 });
 
-test("node shared benchmark entrypoint resolves benchmark-aware shared defaults", () => {
+void test("node shared benchmark entrypoint resolves benchmark-aware shared defaults", () => {
   const output = execFileSync(
     "npx",
     [
@@ -766,7 +817,7 @@ test("node shared benchmark entrypoint resolves benchmark-aware shared defaults"
   assert.match(output, /RUN_ENTRYPOINT=src\/orchestration\/query_set.ts/);
 });
 
-test("legacy BrowseComp shared wrapper preserves legacy output naming", () => {
+void test("legacy BrowseComp shared wrapper preserves legacy output naming", () => {
   const output = runScript(
     "scripts/launch_browsecomp_plus_slice_plain_minimal_excerpt_shared_server.sh",
     {
@@ -783,7 +834,7 @@ test("legacy BrowseComp shared wrapper preserves legacy output naming", () => {
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
-test("legacy q9 shared wrapper preserves historical q9 shared naming", () => {
+void test("legacy q9 shared wrapper preserves historical q9 shared naming", () => {
   const output = runScript("scripts/launch_q9_plain_minimal_excerpt_shared_server.sh");
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
@@ -792,8 +843,14 @@ test("legacy q9 shared wrapper preserves historical q9 shared naming", () => {
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
-test("node BrowseComp compatibility entrypoint preserves historical q9 shared naming", () => {
-  const output = runNpxTsx("src/legacy/browsecomp_compat_entry.ts", ["--mode", "shared", "--slice", "q9", "--dry-run"]);
+void test("node BrowseComp compatibility entrypoint preserves historical q9 shared naming", () => {
+  const output = runNpxTsx("src/legacy/browsecomp_compat_entry.ts", [
+    "--mode",
+    "shared",
+    "--slice",
+    "q9",
+    "--dry-run",
+  ]);
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
   assert.match(output, /QUERY_SET=q9/);
@@ -801,7 +858,7 @@ test("node BrowseComp compatibility entrypoint preserves historical q9 shared na
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
 });
 
-test("node sharded benchmark entrypoint resolves benchmark-aware output naming and forwards critical launch defaults", () => {
+void test("node sharded benchmark entrypoint resolves benchmark-aware output naming and forwards critical launch defaults", () => {
   const output = execFileSync(
     "npx",
     [
@@ -833,7 +890,7 @@ test("node sharded benchmark entrypoint resolves benchmark-aware output naming a
   );
 });
 
-test("shared benchmark entrypoint fails fast when the extension path does not exist", () => {
+void test("shared benchmark entrypoint fails fast when the extension path does not exist", () => {
   assert.throws(
     () =>
       execFileSync(
@@ -857,7 +914,7 @@ test("shared benchmark entrypoint fails fast when the extension path does not ex
   );
 });
 
-test("generic sharded launcher resolves benchmark-aware output naming", () => {
+void test("generic sharded launcher resolves benchmark-aware output naming", () => {
   const output = runScript("scripts/launch_benchmark_query_set_sharded_shared.sh", {
     BENCHMARK: "benchmark-template",
     SHARD_COUNT: "3",
@@ -877,21 +934,36 @@ test("generic sharded launcher resolves benchmark-aware output naming", () => {
   );
 });
 
-test("node BrowseComp compatibility entrypoint preserves historical sharded slice naming", () => {
-  const output = runNpxTsx("src/legacy/browsecomp_compat_entry.ts", ["--mode", "sharded", "--slice", "q300", "--dry-run"]);
+void test("node BrowseComp compatibility entrypoint preserves historical sharded slice naming", () => {
+  const output = runNpxTsx("src/legacy/browsecomp_compat_entry.ts", [
+    "--mode",
+    "sharded",
+    "--slice",
+    "q300",
+    "--dry-run",
+  ]);
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
   assert.match(output, /QUERY_SET=q300/);
   assert.match(output, /SHARD_COUNT=4/);
   assert.match(output, /MODEL=openai-codex\/gpt-5.4-mini/);
   assert.match(output, /PROMPT_VARIANT=plain_minimal/);
-  assert.match(output, /OUTPUT_ROOT=runs\/pi_bm25_q300_plain_minimal_excerpt_gpt54mini_shared4_\d{8}_\d{6}/);
+  assert.match(
+    output,
+    /OUTPUT_ROOT=runs\/pi_bm25_q300_plain_minimal_excerpt_gpt54mini_shared4_\d{8}_\d{6}/,
+  );
 });
 
-test("node tune entrypoint resolves benchmark-aware defaults", () => {
+void test("node tune entrypoint resolves benchmark-aware defaults", () => {
   const output = execFileSync(
     "npx",
-    ["tsx", "src/orchestration/tune_bm25_entry.ts", "--dry-run", "--benchmark", "benchmark-template"],
+    [
+      "tsx",
+      "src/orchestration/tune_bm25_entry.ts",
+      "--dry-run",
+      "--benchmark",
+      "benchmark-template",
+    ],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -913,7 +985,7 @@ test("node tune entrypoint resolves benchmark-aware defaults", () => {
   assert.ok(command.includes("dev"));
 });
 
-test("legacy tune shell wrapper remains a compatibility shim over the node entrypoint", () => {
+void test("legacy tune shell wrapper remains a compatibility shim over the node entrypoint", () => {
   const output = runScript("scripts/tune_bm25.sh", {
     BENCHMARK: "benchmark-template",
     QUERY_SET: "test",
@@ -935,7 +1007,7 @@ test("legacy tune shell wrapper remains a compatibility shim over the node entry
   assert.ok(command.includes("runs/custom-tuning-output"));
 });
 
-test("node summarize entrypoint prefers run-manifest defaults and auto-detects merged eval summary", () => {
+void test("node summarize entrypoint prefers run-manifest defaults and auto-detects merged eval summary", () => {
   const runRoot = writeManifestRunFixture("summarize-run");
   mkdirSync(join(runRoot, "merged"), { recursive: true });
   writeFileSync(join(runRoot, "merged", "evaluation_summary.json"), "{}\n");
@@ -958,7 +1030,7 @@ test("node summarize entrypoint prefers run-manifest defaults and auto-detects m
   assert.doesNotMatch(output, /--secondaryQrels/);
 });
 
-test("legacy summarize shell wrapper preserves manifest-default behavior", () => {
+void test("legacy summarize shell wrapper preserves manifest-default behavior", () => {
   const runRoot = writeManifestRunFixture("summarize-run-shell");
   mkdirSync(join(runRoot, "merged"), { recursive: true });
   writeFileSync(join(runRoot, "merged", "evaluation_summary.json"), "{}\n");
@@ -973,7 +1045,7 @@ test("legacy summarize shell wrapper preserves manifest-default behavior", () =>
   assert.doesNotMatch(output, /QRELS_FILE=/);
 });
 
-test("node retrieval entrypoint routes MSMARCO run-file evaluation through trec_eval", () => {
+void test("node retrieval entrypoint routes MSMARCO run-file evaluation through trec_eval", () => {
   const output = execFileSync(
     "npx",
     [
@@ -1011,12 +1083,14 @@ test("node retrieval entrypoint routes MSMARCO run-file evaluation through trec_
   assert.ok(command.includes("--summary-path"));
   assert.ok(
     command.some((value) =>
-      /evals\/retrieval\/msmarco-v1-passage\/data\/msmarco-v1-passage\/source\/bm25_pure\.dl20\.summary\.json$/.test(value),
+      value.endsWith(
+        "evals/retrieval/msmarco-v1-passage/data/msmarco-v1-passage/source/bm25_pure.dl20.summary.json",
+      ),
     ),
   );
 });
 
-test("node retrieval entrypoint omits qrels overrides when run manifest is present", () => {
+void test("node retrieval entrypoint omits qrels overrides when run manifest is present", () => {
   const runRoot = writeManifestRunFixture("retrieval-run");
 
   const output = execFileSync(
@@ -1043,7 +1117,7 @@ test("node retrieval entrypoint omits qrels overrides when run manifest is prese
   assert.ok(command.includes("--summary-path"));
 });
 
-test("node retrieval entrypoint resolves sharded run roots to merged for both source and summary paths", () => {
+void test("node retrieval entrypoint resolves sharded run roots to merged for both source and summary paths", () => {
   const runRoot = writeManifestRunFixture("retrieval-run-merged");
   mkdirSync(join(runRoot, "merged"), { recursive: true });
   writeFileSync(
@@ -1070,7 +1144,7 @@ test("node retrieval entrypoint resolves sharded run roots to merged for both so
   assert.match(command[runDirIndex + 1] ?? "", /\/merged$/);
 });
 
-test("legacy retrieval shell wrapper preserves manifest-default behavior", () => {
+void test("legacy retrieval shell wrapper preserves manifest-default behavior", () => {
   const runRoot = writeManifestRunFixture("retrieval-run-shell");
 
   const output = runScript("scripts/evaluate_retrieval.sh", {
@@ -1083,7 +1157,7 @@ test("legacy retrieval shell wrapper preserves manifest-default behavior", () =>
   assert.doesNotMatch(output, /--qrels/);
 });
 
-test("node retrieval entrypoint keeps explicit qrels overrides above manifest defaults", () => {
+void test("node retrieval entrypoint keeps explicit qrels overrides above manifest defaults", () => {
   const runRoot = writeManifestRunFixture("retrieval-run-explicit");
   const output = execFileSync(
     "npx",
@@ -1115,7 +1189,7 @@ test("node retrieval entrypoint keeps explicit qrels overrides above manifest de
   assert.ok(command.includes("data/custom/qrels_secondary.txt"));
 });
 
-test("node retrieval entrypoint prefers manifest query-set ids over benchmark defaults", () => {
+void test("node retrieval entrypoint prefers manifest query-set ids over benchmark defaults", () => {
   const runRoot = writeManifestRunFixture("retrieval-run-queryset", {
     query_set_id: "test",
     query_path: "data/benchmark-template/queries/test.tsv",
@@ -1139,7 +1213,7 @@ test("node retrieval entrypoint prefers manifest query-set ids over benchmark de
   assert.equal(command[querySetIndex + 1], "test");
 });
 
-test("node retrieval entrypoint resolves query-set-specific secondary qrels for non-manifest benchmark runs", () => {
+void test("node retrieval entrypoint resolves query-set-specific secondary qrels for non-manifest benchmark runs", () => {
   const output = execFileSync(
     "npx",
     [
@@ -1166,10 +1240,13 @@ test("node retrieval entrypoint resolves query-set-specific secondary qrels for 
   const command = parseCommandJson(output);
   assert.ok(command.includes("--secondaryQrels"));
   assert.ok(command.includes("data/browsecomp-plus/qrels/qrel_gold.txt"));
-  assert.doesNotMatch(output, /SECONDARY_QRELS_FILE=data\/benchmark-template\/qrels\/qrel_secondary.txt/);
+  assert.doesNotMatch(
+    output,
+    /SECONDARY_QRELS_FILE=data\/benchmark-template\/qrels\/qrel_secondary.txt/,
+  );
 });
 
-test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", () => {
+void test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", () => {
   const runRoot = writeManifestRunFixture("judge-run");
 
   const output = execFileSync(
@@ -1190,7 +1267,7 @@ test("node judge-eval entrypoint omits manifest-backed ground-truth overrides", 
   assert.doesNotMatch(output, /--qrelEvidence/);
 });
 
-test("legacy judge-eval shell wrapper preserves manifest-default behavior", () => {
+void test("legacy judge-eval shell wrapper preserves manifest-default behavior", () => {
   const runRoot = writeManifestRunFixture("judge-run-shell");
 
   const output = runScript("scripts/evaluate_run_with_pi.sh", {
@@ -1203,7 +1280,7 @@ test("legacy judge-eval shell wrapper preserves manifest-default behavior", () =
   assert.doesNotMatch(output, /QREL_EVIDENCE=/);
 });
 
-test("node judge-eval entrypoint keeps explicit ground-truth and qrel-evidence overrides above manifest defaults", () => {
+void test("node judge-eval entrypoint keeps explicit ground-truth and qrel-evidence overrides above manifest defaults", () => {
   const runRoot = writeManifestRunFixture("judge-run-explicit");
   const output = execFileSync(
     "npx",
@@ -1235,7 +1312,7 @@ test("node judge-eval entrypoint keeps explicit ground-truth and qrel-evidence o
   assert.ok(command.includes("data/custom/qrels.txt"));
 });
 
-test("node judge-eval entrypoint defaults MSMARCO to reference-free judge mode", () => {
+void test("node judge-eval entrypoint defaults MSMARCO to reference-free judge mode", () => {
   const output = execFileSync(
     "npx",
     [
@@ -1263,7 +1340,7 @@ test("node judge-eval entrypoint defaults MSMARCO to reference-free judge mode",
   assert.ok(command.includes("reference-free"));
 });
 
-test("node judge-eval entrypoint rejects unsupported gold-answer mode for MSMARCO", () => {
+void test("node judge-eval entrypoint rejects unsupported gold-answer mode for MSMARCO", () => {
   assert.throws(
     () =>
       execFileSync(
@@ -1290,7 +1367,7 @@ test("node judge-eval entrypoint rejects unsupported gold-answer mode for MSMARC
   );
 });
 
-test("node judge-eval entrypoint allows optional reference-free mode without ground truth on gold-answer benchmarks", () => {
+void test("node judge-eval entrypoint allows optional reference-free mode without ground truth on gold-answer benchmarks", () => {
   const output = execFileSync(
     "npx",
     [
@@ -1320,7 +1397,7 @@ test("node judge-eval entrypoint allows optional reference-free mode without gro
   assert.doesNotMatch(command.join(" "), /--groundTruth/);
 });
 
-test("judge eval ignores run_setup.json during per-query discovery", () => {
+void test("judge eval ignores run_setup.json during per-query discovery", () => {
   const root = mkdtempSync(join(tmpdir(), "judge-eval-run-"));
   const queryPath = join(root, "queries.tsv");
   const qrelsPath = join(root, "qrels.txt");
@@ -1377,7 +1454,14 @@ test("judge eval ignores run_setup.json during per-query discovery", () => {
 
   const output = execFileSync(
     "npx",
-    ["tsx", "src/evaluation/evaluate_run_with_pi.ts", "--inputDir", root, "--benchmark", "benchmark-template"],
+    [
+      "tsx",
+      "src/evaluation/evaluate_run_with_pi.ts",
+      "--inputDir",
+      root,
+      "--benchmark",
+      "benchmark-template",
+    ],
     {
       cwd: process.cwd(),
       env: process.env,
@@ -1389,7 +1473,7 @@ test("judge eval ignores run_setup.json during per-query discovery", () => {
   assert.doesNotMatch(output, /run_setup\.json/);
 });
 
-test("node report entrypoint omits qrels overrides when run manifest is present", () => {
+void test("node report entrypoint omits qrels overrides when run manifest is present", () => {
   const runRoot = writeManifestRunFixture("report-run");
 
   const output = execFileSync(
@@ -1409,7 +1493,7 @@ test("node report entrypoint omits qrels overrides when run manifest is present"
   assert.doesNotMatch(output, /--secondaryQrels/);
 });
 
-test("legacy report shell wrapper preserves manifest-default behavior", () => {
+void test("legacy report shell wrapper preserves manifest-default behavior", () => {
   const runRoot = writeManifestRunFixture("report-run-shell");
 
   const output = runScript("scripts/report_run_markdown.sh", {
@@ -1422,7 +1506,7 @@ test("legacy report shell wrapper preserves manifest-default behavior", () => {
   assert.doesNotMatch(output, /--qrels/);
 });
 
-test("node summarize and report entrypoints keep explicit overrides above manifest defaults", () => {
+void test("node summarize and report entrypoints keep explicit overrides above manifest defaults", () => {
   const summarizeRunRoot = writeManifestRunFixture("summarize-run-explicit");
   mkdirSync(join(summarizeRunRoot, "merged"), { recursive: true });
   writeFileSync(join(summarizeRunRoot, "merged", "evaluation_summary.json"), "{}\n");

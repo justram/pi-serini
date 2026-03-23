@@ -8,7 +8,7 @@ import test from "node:test";
 import { buildBuckets, resolveOverallMetrics } from "../src/evaluation/compare_bm25_runs";
 import type { Qrels, Rankings } from "../src/evaluation/retrieval_metrics";
 
-test("buildBuckets uses benchmark recall semantics for difficulty and gold buckets", () => {
+void test("buildBuckets uses benchmark recall semantics for difficulty and gold buckets", () => {
   const qrels: Qrels = new Map([
     [
       "1",
@@ -41,22 +41,17 @@ test("buildBuckets uses benchmark recall semantics for difficulty and gold bucke
   assert.deepEqual(trecLikeBuckets.strata, [{ label: "zero_small", queryIds: ["1"] }]);
 });
 
-test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () => {
-  const output = execFileSync(
-    "npx",
-    [
-      "tsx",
-      "src/evaluation/compare_bm25_runs.ts",
-      "--help",
-    ],
-    {
-      cwd: process.cwd(),
-      env: process.env,
-      encoding: "utf8",
-    },
-  );
+void test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () => {
+  const output = execFileSync("npx", ["tsx", "src/evaluation/compare_bm25_runs.ts", "--help"], {
+    cwd: process.cwd(),
+    env: process.env,
+    encoding: "utf8",
+  });
 
-  assert.match(output, /--querySet, --query-set\s+Query set id for benchmark-scoped compare defaults/);
+  assert.match(
+    output,
+    /--querySet, --query-set\s+Query set id for benchmark-scoped compare defaults/,
+  );
 
   const dl19Output = execFileSync(
     "npx",
@@ -68,9 +63,9 @@ test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () =>
       "--query-set",
       "dl19",
       "--candidateRun",
-      "data\/msmarco-v1-passage\/source\/bm25_pure.dl19.trec",
+      "data/msmarco-v1-passage/source/bm25_pure.dl19.trec",
       "--baselineRun",
-      "data\/msmarco-v1-passage\/source\/bm25_pure.dl19.trec",
+      "data/msmarco-v1-passage/source/bm25_pure.dl19.trec",
     ],
     {
       cwd: process.cwd(),
@@ -92,9 +87,9 @@ test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () =>
       "--query-set",
       "dl20",
       "--candidateRun",
-      "data\/msmarco-v1-passage\/source\/bm25_pure.dl20.trec",
+      "data/msmarco-v1-passage/source/bm25_pure.dl20.trec",
       "--baselineRun",
-      "data\/msmarco-v1-passage\/source\/bm25_pure.dl20.trec",
+      "data/msmarco-v1-passage/source/bm25_pure.dl20.trec",
     ],
     {
       cwd: process.cwd(),
@@ -107,7 +102,7 @@ test("compare_bm25_runs CLI resolves query-set-specific compare defaults", () =>
   assert.match(dl20Output, /Qrels: .*data\/msmarco-v1-passage\/qrels\/qrels\.dl20-passage\.txt/);
 });
 
-test("resolveOverallMetrics prefers matching normalized retrieval summaries", () => {
+void test("resolveOverallMetrics prefers matching normalized retrieval summaries", () => {
   const root = mkdtempSync(join(tmpdir(), "compare-bm25-runs-"));
   const cwd = process.cwd();
   const runPath = join(root, "candidate.trec");

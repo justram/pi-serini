@@ -16,7 +16,9 @@ function buildEcdfPolyline(
   xScale: (value: number) => number,
   yScale: (fraction: number) => number,
 ): string {
-  const sorted = [...values].filter((value) => Number.isFinite(value) && value >= 0).sort((a, b) => a - b);
+  const sorted = [...values]
+    .filter((value) => Number.isFinite(value) && value >= 0)
+    .sort((a, b) => a - b);
   const points: Array<{ x: number; y: number }> = [{ x: xScale(xMin), y: yScale(0) }];
   for (let index = 0; index < sorted.length; index += 1) {
     const value = sorted[index];
@@ -28,7 +30,9 @@ function buildEcdfPolyline(
   return points.map((point) => `${point.x.toFixed(1)},${point.y.toFixed(1)}`).join(" ");
 }
 
-export function renderEcdfPanelSvg(series: Array<{ title: string; values: number[]; accent: string }>): string {
+export function renderEcdfPanelSvg(
+  series: Array<{ title: string; values: number[]; accent: string }>,
+): string {
   const width = 900;
   const height = 584;
   const panelWidth = 374;
@@ -43,46 +47,50 @@ export function renderEcdfPanelSvg(series: Array<{ title: string; values: number
   const outerMarginTop = 50;
   const yTicks = [0, 0.5, 1];
 
-  const panels = series.map((item, index) => {
-    const col = index % 2;
-    const row = Math.floor(index / 2);
-    const originX = outerMarginLeft + col * (panelWidth + chartGapX);
-    const originY = outerMarginTop + row * (panelHeight + chartGapY);
-    const plotWidth = panelWidth - panelMarginLeft - panelMarginRight;
-    const plotHeight = panelHeight - panelMarginTop - panelMarginBottom;
-    const safeValues = item.values.filter((value) => Number.isFinite(value) && value >= 0);
-    const minValue = safeValues.length > 0 ? Math.min(...safeValues) : 0;
-    const maxValue = safeValues.length > 0 ? Math.max(...safeValues) : 1;
-    const xMin = Math.max(0, Math.floor(minValue));
-    const xMax = Math.max(xMin + 1, Math.ceil(maxValue));
-    const xScale = (value: number) => originX + panelMarginLeft + ((value - xMin) / (xMax - xMin)) * plotWidth;
-    const yScale = (fraction: number) => originY + panelMarginTop + (1 - fraction) * plotHeight;
-    const xTicks = [...new Set([xMin, Math.round((xMin + xMax) / 2), xMax])].sort((a, b) => a - b);
-    const gridLines = [
-      ...xTicks.map((tick) => {
-        const x = xScale(tick);
-        return `<line x1="${x.toFixed(1)}" y1="${originY + panelMarginTop}" x2="${x.toFixed(1)}" y2="${originY + panelMarginTop + plotHeight}" stroke="#e2e8f0" stroke-width="1" />`;
-      }),
-      ...yTicks.map((tick) => {
-        const y = yScale(tick);
-        return `<line x1="${originX + panelMarginLeft}" y1="${y.toFixed(1)}" x2="${originX + panelMarginLeft + plotWidth}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1" />`;
-      }),
-    ].join("\n");
-    const xLabels = xTicks
-      .map((tick) => {
-        const x = xScale(tick);
-        return `<text x="${x.toFixed(1)}" y="${originY + panelHeight - 14}" text-anchor="middle" font-size="10" fill="#64748b">${tick}</text>`;
-      })
-      .join("\n");
-    const yLabels = yTicks
-      .map((tick) => {
-        const y = yScale(tick);
-        return `<text x="${originX + panelMarginLeft - 10}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">${tick.toFixed(2)}</text>`;
-      })
-      .join("\n");
-    const polyline = buildEcdfPolyline(safeValues, xMin, xMax, xScale, yScale);
+  const panels = series
+    .map((item, index) => {
+      const col = index % 2;
+      const row = Math.floor(index / 2);
+      const originX = outerMarginLeft + col * (panelWidth + chartGapX);
+      const originY = outerMarginTop + row * (panelHeight + chartGapY);
+      const plotWidth = panelWidth - panelMarginLeft - panelMarginRight;
+      const plotHeight = panelHeight - panelMarginTop - panelMarginBottom;
+      const safeValues = item.values.filter((value) => Number.isFinite(value) && value >= 0);
+      const minValue = safeValues.length > 0 ? Math.min(...safeValues) : 0;
+      const maxValue = safeValues.length > 0 ? Math.max(...safeValues) : 1;
+      const xMin = Math.max(0, Math.floor(minValue));
+      const xMax = Math.max(xMin + 1, Math.ceil(maxValue));
+      const xScale = (value: number) =>
+        originX + panelMarginLeft + ((value - xMin) / (xMax - xMin)) * plotWidth;
+      const yScale = (fraction: number) => originY + panelMarginTop + (1 - fraction) * plotHeight;
+      const xTicks = [...new Set([xMin, Math.round((xMin + xMax) / 2), xMax])].sort(
+        (a, b) => a - b,
+      );
+      const gridLines = [
+        ...xTicks.map((tick) => {
+          const x = xScale(tick);
+          return `<line x1="${x.toFixed(1)}" y1="${originY + panelMarginTop}" x2="${x.toFixed(1)}" y2="${originY + panelMarginTop + plotHeight}" stroke="#e2e8f0" stroke-width="1" />`;
+        }),
+        ...yTicks.map((tick) => {
+          const y = yScale(tick);
+          return `<line x1="${originX + panelMarginLeft}" y1="${y.toFixed(1)}" x2="${originX + panelMarginLeft + plotWidth}" y2="${y.toFixed(1)}" stroke="#e2e8f0" stroke-width="1" />`;
+        }),
+      ].join("\n");
+      const xLabels = xTicks
+        .map((tick) => {
+          const x = xScale(tick);
+          return `<text x="${x.toFixed(1)}" y="${originY + panelHeight - 14}" text-anchor="middle" font-size="10" fill="#64748b">${tick}</text>`;
+        })
+        .join("\n");
+      const yLabels = yTicks
+        .map((tick) => {
+          const y = yScale(tick);
+          return `<text x="${originX + panelMarginLeft - 10}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">${tick.toFixed(2)}</text>`;
+        })
+        .join("\n");
+      const polyline = buildEcdfPolyline(safeValues, xMin, xMax, xScale, yScale);
 
-    return `<g>
+      return `<g>
       <text x="${originX + panelMarginLeft}" y="${originY + 20}" font-size="13" font-weight="700" fill="#0f172a">${escapeXml(item.title)}</text>
       ${gridLines}
       <line x1="${originX + panelMarginLeft}" y1="${originY + panelMarginTop + plotHeight}" x2="${originX + panelMarginLeft + plotWidth}" y2="${originY + panelMarginTop + plotHeight}" stroke="#94a3b8" stroke-width="1.1" />
@@ -91,7 +99,8 @@ export function renderEcdfPanelSvg(series: Array<{ title: string; values: number
       ${yLabels}
       <polyline fill="none" stroke="${item.accent}" stroke-width="2.5" points="${polyline}" />
     </g>`;
-  }).join("\n");
+    })
+    .join("\n");
 
   return `<?xml version="1.0" encoding="UTF-8"?>
 <svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}" role="img" aria-label="Tool-call ECDF panel">
@@ -203,7 +212,8 @@ export function renderBeeswarmPanelSvg(
   const transformedMin = xTransform(globalMin);
   const transformedMax = xTransform(globalMax);
   const domainSpan = Math.max(1e-6, transformedMax - transformedMin);
-  const xScale = (value: number) => marginLeft + ((xTransform(value) - transformedMin) / domainSpan) * plotWidth;
+  const xScale = (value: number) =>
+    marginLeft + ((xTransform(value) - transformedMin) / domainSpan) * plotWidth;
   const tickFormatter = options?.tickFormatter ?? ((value: number) => String(value));
   const pointRadius = options?.pointRadius ?? 2.8;
   const xTicks = options?.ticks ?? buildNiceTicks(globalMin, globalMax);
@@ -228,7 +238,10 @@ export function renderBeeswarmPanelSvg(
       const y = marginTop + index * rowHeight + rowHeight / 2;
       const points = computeBeeswarmPoints(item.values, xScale, y, pointRadius, 24);
       const pointElements = points
-        .map((point) => `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${pointRadius}" fill="${item.accent}" opacity="0.38" />`)
+        .map(
+          (point) =>
+            `<circle cx="${point.x.toFixed(1)}" cy="${point.y.toFixed(1)}" r="${pointRadius}" fill="${item.accent}" opacity="0.38" />`,
+        )
         .join("\n");
       return `<g>
         <text x="${marginLeft - 18}" y="${(y + 4).toFixed(1)}" text-anchor="end" font-size="11.5" fill="#0f172a">${escapeXml(item.label)}</text>
