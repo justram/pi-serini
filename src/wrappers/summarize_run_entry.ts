@@ -6,6 +6,7 @@ import {
   readEnv,
   resolveWrapperQrels,
 } from "./downstream_tool_wrappers";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 
 type Args = {
   benchmarkId?: string;
@@ -124,7 +125,7 @@ function main(): void {
       )
     : args.evalSummaryPath ?? readEnv("EVAL_SUMMARY");
 
-  const command = ["npx", "tsx", "src/evaluation/summarize_run.ts", "--benchmark", qrelsResolution.benchmarkId, "--runDir", runDir];
+  const command = buildNodeTsxCommand("src/evaluation/summarize_run.ts", ["--benchmark", qrelsResolution.benchmarkId, "--runDir", runDir]);
   if (qrelsResolution.includePrimaryQrelsOverride) {
     command.push("--qrels", qrelsResolution.qrelsPath);
   }

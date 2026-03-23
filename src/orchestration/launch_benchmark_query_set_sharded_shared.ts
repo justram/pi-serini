@@ -14,6 +14,7 @@ import net from "node:net";
 import { fileURLToPath } from "node:url";
 import { basename, dirname, join, resolve } from "node:path";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 import {
   parseInteger,
   readEnv,
@@ -532,36 +533,35 @@ function spawnShard(plan: ShardedLaunchPlan, shard: ShardFile, attempt: number):
   const shardOutputDir = `${plan.shardOutputRoot}/${shard.shardName}`;
   mkdirSync(resolve(REPO_ROOT, shardOutputDir), { recursive: true });
   const shardLogPath = resolve(REPO_ROOT, plan.logDir, `${shard.shardName}.log`);
+  const args = buildNodeTsxCommand("src/orchestration/run_benchmark_query_set.ts", [
+    "--benchmark",
+    plan.benchmarkId,
+    "--query-set",
+    plan.querySetId,
+    "--query-file",
+    shard.path,
+    "--output-dir",
+    shardOutputDir,
+    "--model",
+    plan.model,
+    "--thinking",
+    plan.thinking,
+    "--extension",
+    plan.extensionPath,
+    "--pi",
+    plan.piBin,
+    "--timeout-seconds",
+    String(plan.timeoutSeconds),
+    "--prompt-variant",
+    plan.promptVariant,
+    "--qrels",
+    plan.qrelsPath,
+    "--index-path",
+    plan.indexPath,
+  ]);
   const child = spawn(
-    "npx",
-    [
-      "tsx",
-      "src/orchestration/run_benchmark_query_set.ts",
-      "--benchmark",
-      plan.benchmarkId,
-      "--query-set",
-      plan.querySetId,
-      "--query-file",
-      shard.path,
-      "--output-dir",
-      shardOutputDir,
-      "--model",
-      plan.model,
-      "--thinking",
-      plan.thinking,
-      "--extension",
-      plan.extensionPath,
-      "--pi",
-      plan.piBin,
-      "--timeout-seconds",
-      String(plan.timeoutSeconds),
-      "--prompt-variant",
-      plan.promptVariant,
-      "--qrels",
-      plan.qrelsPath,
-      "--index-path",
-      plan.indexPath,
-    ],
+    args[0],
+    args.slice(1),
     {
       cwd: REPO_ROOT,
       stdio: ["ignore", "pipe", "pipe"],
@@ -638,20 +638,19 @@ async function waitForRetryApproval(
 
 async function runSummarize(plan: ShardedLaunchPlan): Promise<void> {
   const summarizeLog = resolve(REPO_ROOT, plan.logDir, "summarize.log");
-  const child = spawn(
-    "npx",
-    [
-      "tsx",
-      "src/evaluation/summarize_run.ts",
-      "--benchmark",
-      plan.benchmarkId,
-      "--runDir",
-      plan.outputRoot,
-      "--qrels",
-      plan.qrelsPath,
-    ],
-    { cwd: REPO_ROOT, stdio: ["ignore", "pipe", "pipe"], env: process.env },
-  );
+  const args = buildNodeTsxCommand("src/evaluation/summarize_run.ts", [
+    "--benchmark",
+    plan.benchmarkId,
+    "--runDir",
+    plan.outputRoot,
+    "--qrels",
+    plan.qrelsPath,
+  ]);
+  const child = spawn(args[0], args.slice(1), {
+    cwd: REPO_ROOT,
+    stdio: ["ignore", "pipe", "pipe"],
+    env: process.env,
+  });
   const stdout = child.stdout;
   const stderr = child.stderr;
   if (!stdout || !stderr) throw new Error("Failed to capture summarize output");
@@ -671,9 +670,7 @@ async function runSummarize(plan: ShardedLaunchPlan): Promise<void> {
 
 async function runEvaluate(plan: ShardedLaunchPlan): Promise<void> {
   const evaluateLog = resolve(REPO_ROOT, plan.logDir, "evaluate.log");
-  const args = [
-    "tsx",
-    "src/evaluation/evaluate_run_with_pi.ts",
+  const args = buildNodeTsxCommand("src/evaluation/evaluate_run_with_pi.ts", [
     "--benchmark",
     plan.benchmarkId,
     "--inputDir",
@@ -684,14 +681,14 @@ async function runEvaluate(plan: ShardedLaunchPlan): Promise<void> {
     plan.thinking,
     "--pi",
     plan.piBin,
-  ];
+  ]);
   if (plan.evaluateForce) {
     args.push("--force");
   }
   if (plan.evaluateLimit !== 0) {
     args.push("--limit", String(plan.evaluateLimit));
   }
-  const child = spawn("npx", args, {
+  const child = spawn(args[0], args.slice(1), {
     cwd: REPO_ROOT,
     stdio: ["ignore", "pipe", "pipe"],
     env: {

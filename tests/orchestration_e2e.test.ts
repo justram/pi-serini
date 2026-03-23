@@ -54,7 +54,8 @@ test("package run:benchmark:query-set script drives the active orchestration pat
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
 
   assert.deepEqual(parseCommandJson(output), [
-    "npx",
+    process.execPath,
+    "--import",
     "tsx",
     "src/orchestration/run_pi_benchmark.ts",
     "--benchmark",

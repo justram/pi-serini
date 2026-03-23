@@ -1,4 +1,5 @@
 import { spawnSync } from "node:child_process";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 
 type Mode = "run" | "shared" | "sharded";
 
@@ -133,16 +134,15 @@ function buildCompatibilityCommand(args: Args): CompatibilityCommand {
   ]);
   const userLogDir = readFlagValue(args.passthrough, ["--logDir", "--log-dir"]);
 
-  const command = ["npx", "tsx"];
   const env: NodeJS.ProcessEnv = { ...process.env };
 
-  if (args.mode === "run") {
-    command.push("src/orchestration/run_benchmark_query_set.ts");
-  } else if (args.mode === "shared") {
-    command.push("src/orchestration/launch_benchmark_query_set_shared.ts");
-  } else {
-    command.push("src/orchestration/launch_benchmark_query_set_sharded_shared.ts");
-  }
+  const scriptPath =
+    args.mode === "run"
+      ? "src/orchestration/run_benchmark_query_set.ts"
+      : args.mode === "shared"
+        ? "src/orchestration/launch_benchmark_query_set_shared.ts"
+        : "src/orchestration/launch_benchmark_query_set_sharded_shared.ts";
+  const command = buildNodeTsxCommand(scriptPath);
 
   if (!hasAnyFlag(args.passthrough, ["--benchmark"])) {
     command.push("--benchmark", benchmarkId);

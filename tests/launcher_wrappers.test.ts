@@ -407,7 +407,8 @@ test("node low-level benchmark entrypoint resolves manifest-aligned defaults", (
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_benchmark-template_dev_plain_minimal/);
   assert.deepEqual(parseCommandJson(output), [
-    "npx",
+    process.execPath,
+    "--import",
     "tsx",
     "src/orchestration/run_pi_benchmark.ts",
     "--benchmark",
@@ -540,7 +541,8 @@ test("node benchmark query-set entrypoint resolves manifest-aligned defaults", (
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_benchmark-template_dev_plain_minimal/);
   assert.deepEqual(parseCommandJson(output), [
-    "npx",
+    process.execPath,
+    "--import",
     "tsx",
     "src/orchestration/run_pi_benchmark.ts",
     "--benchmark",

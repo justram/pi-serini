@@ -6,6 +6,7 @@ import {
   listBenchmarks,
   resolveBenchmarkConfig,
 } from "../benchmarks/registry";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 import {
   printCommandJson,
   printCommandPlan,
@@ -89,7 +90,10 @@ function main(): void {
       ? benchmarkConfig.secondaryQrelsPath
       : undefined;
 
-  const command = ["npx", "tsx", "src/orchestration/tune_bm25.ts", ...argv.filter((arg) => arg !== "--dryRun" && arg !== "--dry-run")];
+  const command = buildNodeTsxCommand(
+    "src/orchestration/tune_bm25.ts",
+    argv.filter((arg) => arg !== "--dryRun" && arg !== "--dry-run"),
+  );
 
   if (!hasAnyFlag(argv, ["--benchmark"])) {
     command.push("--benchmark", benchmarkConfig.benchmark.id);

@@ -3,6 +3,7 @@ import {
   getDefaultBenchmarkId,
   resolveBenchmarkConfig,
 } from "../benchmarks/registry";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 
 export type BenchmarkQuerySetLaunchArgs = {
   benchmarkId?: string;
@@ -106,10 +107,7 @@ export function buildBenchmarkQuerySetLaunchEnv(
 }
 
 export function buildRunPiBenchmarkCommand(plan: BenchmarkQuerySetLaunchPlan): string[] {
-  return [
-    "npx",
-    "tsx",
-    "src/orchestration/run_pi_benchmark.ts",
+  return buildNodeTsxCommand("src/orchestration/run_pi_benchmark.ts", [
     "--benchmark",
     plan.benchmarkId,
     "--querySet",
@@ -132,7 +130,7 @@ export function buildRunPiBenchmarkCommand(plan: BenchmarkQuerySetLaunchPlan): s
     String(plan.timeoutSeconds),
     "--promptVariant",
     plan.promptVariant,
-  ];
+  ]);
 }
 
 export function printBenchmarkQuerySetLaunchPlan(plan: BenchmarkQuerySetLaunchPlan): void {

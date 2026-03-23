@@ -5,6 +5,7 @@ import {
   readEnv,
   resolveWrapperQrels,
 } from "./downstream_tool_wrappers";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 
 type Args = {
   benchmarkId?: string;
@@ -132,10 +133,7 @@ function main(): void {
     secondaryQrelsDisabled: args.secondaryQrelsDisabled,
   });
 
-  const command = [
-    "npx",
-    "tsx",
-    "src/report/report_run_markdown.ts",
+  const command = buildNodeTsxCommand("src/report/report_run_markdown.ts", [
     "--benchmark",
     qrelsResolution.benchmarkId,
     "--runDir",
@@ -146,7 +144,7 @@ function main(): void {
     args.ndcgCutoffs ?? readEnv("NDCG_CUTOFFS") ?? "10",
     "--mrrCutoffs",
     args.mrrCutoffs ?? readEnv("MRR_CUTOFFS") ?? "10",
-  ];
+  ]);
 
   if (qrelsResolution.includePrimaryQrelsOverride) {
     command.push("--qrels", qrelsResolution.qrelsPath);

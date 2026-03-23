@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { browsecompPlusBenchmark } from "./browsecomp_plus";
 import { msmarcoV1PassageBenchmark } from "./msmarco_v1_passage";
 import { templateBenchmark } from "./template_benchmark";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 import {
   BENCHMARK_SETUP_STEPS,
   type BenchmarkDefinition,
@@ -357,15 +358,10 @@ export function renderManagedPresetPaths(options: {
     outputDir,
   });
   const resolvedLogDir = resolve(options.rootDir, logDirRelative);
-  const launcherCommand = [
-    "npx",
-    "tsx",
+  const launcherCommand = buildNodeTsxCommand(
     resolveManagedPresetNodeEntrypoint(options.rootDir, preset.launchMode),
-    "--benchmark",
-    benchmark.id,
-    "--query-set",
-    preset.querySetId,
-  ];
+    ["--benchmark", benchmark.id, "--query-set", preset.querySetId],
+  );
   return {
     benchmark,
     preset,

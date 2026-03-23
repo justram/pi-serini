@@ -14,6 +14,7 @@ import { randomUUID } from "node:crypto";
 import net from "node:net";
 
 import { renderManagedPresetPaths, resolveManagedPreset } from "../benchmarks/registry";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 
 export type ManagedRunPreset =
   | "q9_shared"
@@ -175,7 +176,12 @@ function buildManagedRunLauncherCommand(state: Pick<ManagedRunState, "rootDir" |
     preset.launchMode === "shared"
       ? resolve(state.rootDir, "src/orchestration/launch_benchmark_query_set_shared.ts")
       : resolve(state.rootDir, "src/orchestration/launch_benchmark_query_set_sharded_shared.ts");
-  return ["npx", "tsx", entrypoint, "--benchmark", state.benchmarkId, "--query-set", state.querySetId];
+  return buildNodeTsxCommand(entrypoint, [
+    "--benchmark",
+    state.benchmarkId,
+    "--query-set",
+    state.querySetId,
+  ]);
 }
 
 function normalizeManagedRunState(state: ManagedRunState): ManagedRunState {

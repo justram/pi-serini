@@ -8,6 +8,7 @@ import {
 } from "./downstream_tool_wrappers";
 import type { BenchmarkJudgeEvalMode } from "../benchmarks/types";
 import { resolveBenchmarkJudgeEvaluation } from "../evaluation/benchmark_evaluation";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 
 type Args = {
   benchmarkId?: string;
@@ -175,10 +176,7 @@ function main(): void {
     );
   }
 
-  const command = [
-    "npx",
-    "tsx",
-    "src/evaluation/evaluate_run_with_pi.ts",
+  const command = buildNodeTsxCommand("src/evaluation/evaluate_run_with_pi.ts", [
     "--benchmark",
     judgeInputs.benchmarkId,
     "--inputDir",
@@ -200,7 +198,7 @@ function main(): void {
           ? parseInteger(readEnv("TIMEOUT_SECONDS") as string, "TIMEOUT_SECONDS")
           : 180),
     ),
-  ];
+  ]);
 
   if (
     judgeMode === "gold-answer" &&

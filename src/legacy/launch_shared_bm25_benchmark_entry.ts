@@ -2,6 +2,7 @@ import { createWriteStream } from "node:fs";
 import { spawn, type ChildProcess } from "node:child_process";
 import net from "node:net";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
+import { buildNodeTsxCommand } from "../runtime/node_tsx";
 import { resolveBenchmarkAwareSharedLogDir } from "../runtime/output_layout";
 import {
   buildBenchmarkQuerySetLaunchEnv,
@@ -154,7 +155,8 @@ async function main(): Promise<void> {
   console.log(`Shared BM25 RPC daemon ready. Log: ${bm25LogPath}`);
 
   try {
-    const child = spawn("npx", ["tsx", "src/legacy/run_benchmark_entry.ts"], {
+    const command = buildNodeTsxCommand("src/legacy/run_benchmark_entry.ts");
+    const child = spawn(command[0], command.slice(1), {
       stdio: ["ignore", "pipe", "pipe"],
       env: {
         ...buildBenchmarkQuerySetLaunchEnv(plan),
