@@ -446,6 +446,18 @@ class BenchDashboard implements Component {
     );
     lines.push(
       pad(
+        `${theme.label("script:")} ${truncateToWidth(run.preferredLaunchScript ?? "n/a", Math.max(1, width - 10), "")}`,
+        width,
+      ),
+    );
+    lines.push(
+      pad(
+        `${theme.label("command:")} ${truncateToWidth(run.launcherCommandDisplay ?? "n/a", Math.max(1, width - 11), "")}`,
+        width,
+      ),
+    );
+    lines.push(
+      pad(
         `${theme.label("elapsed:")} ${formatDuration(run.elapsedSeconds)}   ${theme.label("eta:")} ${formatDuration(run.estimatedRemainingSeconds)}`,
         width,
       ),

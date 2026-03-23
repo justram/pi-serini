@@ -278,6 +278,63 @@ test("benchctl help, benchmark catalog, and status output surface benchmark-awar
   assert.match(status, /benchmark:benchmark-template \(dev\)/);
   assert.match(status, /detail:\s+recent unmanaged activity detected/);
   assert.match(status, /launch:\s+single-worker/);
+  assert.match(status, /script:\s+n\/a/);
+  assert.match(status, /command:\s+n\/a/);
+
+  const stateDir = join(root, "runs", "_bench", "state");
+  mkdirSync(stateDir, { recursive: true });
+  writeFileSync(
+    join(stateDir, "managed.json"),
+    JSON.stringify(
+      {
+        id: "managed",
+        preset: "benchmark-template/dev_shared",
+        benchmarkId: "benchmark-template",
+        querySetId: "dev",
+        rootDir: root,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        model: "openai-codex/gpt-5.4-mini",
+        thinking: "medium",
+        timeoutSeconds: 300,
+        port: 50500,
+        outputDir: runDir,
+        logDir: join(root, "runs", "shared-bm25-benchmark-template-dev"),
+        launcherScript: "scripts/launch_benchmark_query_set_shared.sh",
+        launcherCommand: [
+          "npx",
+          "tsx",
+          join(root, "src", "orchestration", "query_set_shared_bm25.ts"),
+          "--benchmark",
+          "benchmark-template",
+          "--query-set",
+          "dev",
+        ],
+        launcherStdoutPath: join(root, "runs", "shared-bm25-benchmark-template-dev", "launcher.stdout.log"),
+        launcherStderrPath: join(root, "runs", "shared-bm25-benchmark-template-dev", "launcher.stderr.log"),
+        status: "queued",
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+
+  const managed = execFileSync(
+    "npx",
+    ["tsx", "src/operator/benchctl.ts", "managed", "--root-dir", root],
+    {
+      cwd: process.cwd(),
+      env: process.env,
+      encoding: "utf8",
+    },
+  );
+  assert.match(managed, /script:\s+run:benchmark:query-set:shared-bm25/);
+  assert.match(managed, /entry:\s+scripts\/launch_benchmark_query_set_shared\.sh/);
+  assert.match(
+    managed,
+    /cmd:\s+npx tsx .*src\/orchestration\/query_set_shared_bm25\.ts --benchmark benchmark-template --query-set dev/,
+  );
 });
 
 test("node setup entrypoint resolves benchmark setup scripts from the registry", () => {

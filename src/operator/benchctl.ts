@@ -6,6 +6,7 @@ import {
   resolveManagedPreset,
 } from "../benchmarks/registry";
 import {
+  getManagedRunLaunchProvenance,
   killManagedRun,
   launchManagedRun,
   listManagedRunStates,
@@ -240,6 +241,8 @@ function printStatus(args: Args): void {
     console.log(`  status:  ${run.status} (${run.stage})`);
     console.log(`  detail:  ${run.statusDetail}`);
     console.log(`  launch:  ${run.launchTopology}`);
+    console.log(`  script:  ${run.preferredLaunchScript ?? "n/a"}`);
+    console.log(`  command: ${run.launcherCommandDisplay ?? "n/a"}`);
     console.log(`  managed: ${run.managedRunId ?? "n/a"}`);
     console.log(`  pid:     ${run.supervisorPid ?? "n/a"}`);
     console.log(`  progress:${run.progressCompleted}/${run.progressTotal ?? "?"}`);
@@ -272,15 +275,26 @@ function printManaged(args: Args): void {
     return;
   }
   for (const state of states) {
-    const resolvedPreset = resolveManagedPreset(state.preset);
+    let resolvedPreset:
+      | ReturnType<typeof resolveManagedPreset>
+      | undefined;
+    try {
+      resolvedPreset = resolveManagedPreset(state.preset);
+    } catch {
+      resolvedPreset = undefined;
+    }
+    const launch = getManagedRunLaunchProvenance(state);
     console.log(`${state.id}`);
     console.log(`  preset: ${state.preset}`);
-    console.log(`  benchmark: ${state.benchmarkId ?? resolvedPreset.benchmark.id}`);
-    console.log(`  query set: ${state.querySetId ?? resolvedPreset.preset.querySetId}`);
+    console.log(`  benchmark: ${state.benchmarkId ?? resolvedPreset?.benchmark.id ?? "unknown"}`);
+    console.log(`  query set: ${state.querySetId ?? resolvedPreset?.preset.querySetId ?? "unknown"}`);
     console.log(`  model:  ${state.model}`);
     console.log(`  status: ${state.status}`);
     console.log(`  detail: ${describeManagedStatus(state)}`);
-    console.log(`  launch: ${resolvedPreset.preset.launchMode === "shared" ? "shared-bm25" : "sharded-shared-bm25"}`);
+    console.log(`  launch: ${launch.preferredPackageScript.includes("sharded") ? "sharded-shared-bm25" : "shared-bm25"}`);
+    console.log(`  script: ${launch.preferredPackageScript}`);
+    console.log(`  entry:  ${launch.launcherScript}`);
+    console.log(`  cmd:    ${launch.launcherCommandDisplay}`);
     console.log(`  pid:    ${state.pid ?? "n/a"}`);
     console.log(`  port:   ${state.port}`);
     console.log(`  shards: ${state.launcherEnv?.SHARD_COUNT ?? "n/a"}`);
@@ -349,6 +363,7 @@ async function main(): Promise<void> {
       shardCount: args.shardCount,
     });
     const resolvedPreset = resolveManagedPreset(state.preset);
+    const launch = getManagedRunLaunchProvenance(state);
     console.log(`Launched managed run: ${state.id}`);
     console.log(`  pid:      ${state.pid ?? "n/a"}`);
     console.log(`  preset:   ${state.preset}`);
@@ -356,6 +371,9 @@ async function main(): Promise<void> {
     console.log(`  query set:${state.querySetId ?? resolvedPreset.preset.querySetId}`);
     console.log(`  status:   ${state.status}`);
     console.log(`  model:    ${state.model}`);
+    console.log(`  script:   ${launch.preferredPackageScript}`);
+    console.log(`  entry:    ${launch.launcherScript}`);
+    console.log(`  cmd:      ${launch.launcherCommandDisplay}`);
     console.log(`  output:   ${state.outputDir}`);
     console.log(`  log:      ${state.logDir}`);
     console.log(`  port:     ${state.port}`);
@@ -369,11 +387,15 @@ async function main(): Promise<void> {
     }
     const state = await relaunchManagedRun(args.rootDir, args.id, { queue: args.queue });
     const resolvedPreset = resolveManagedPreset(state.preset);
+    const launch = getManagedRunLaunchProvenance(state);
     console.log(`Relaunched managed run as: ${state.id}`);
     console.log(`  status:   ${state.status}`);
     console.log(`  benchmark:${state.benchmarkId ?? resolvedPreset.benchmark.id}`);
     console.log(`  query set:${state.querySetId ?? resolvedPreset.preset.querySetId}`);
     console.log(`  model:    ${state.model}`);
+    console.log(`  script:   ${launch.preferredPackageScript}`);
+    console.log(`  entry:    ${launch.launcherScript}`);
+    console.log(`  cmd:      ${launch.launcherCommandDisplay}`);
     console.log(`  output:   ${state.outputDir}`);
     console.log(`  log:      ${state.logDir}`);
     console.log(`  port:     ${state.port}`);

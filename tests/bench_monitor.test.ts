@@ -216,6 +216,11 @@ test("loadBenchSnapshot infers BM25 listening from managed state and ready logs 
   assert.equal(snapshot.runs[0]?.bm25.listening, true);
   assert.equal(snapshot.runs[0]?.bm25.port, 50500);
   assert.equal(snapshot.runs[0]?.launchTopology, "shared-bm25");
+  assert.equal(snapshot.runs[0]?.preferredLaunchScript, "run:benchmark:query-set:shared-bm25");
+  assert.match(
+    snapshot.runs[0]?.launcherCommandDisplay ?? "",
+    /npx tsx .*src\/orchestration\/query_set_shared_bm25\.ts --benchmark benchmark-template --query-set dev/,
+  );
   assert.equal(snapshot.runs[0]?.statusDetail, "launcher process is alive");
 });
 

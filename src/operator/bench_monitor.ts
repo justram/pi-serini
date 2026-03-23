@@ -6,6 +6,7 @@ import type { BenchmarkManifestSnapshot } from "../benchmarks/types";
 import { detectBenchmarkManifestSnapshot } from "../benchmarks/run_manifest";
 import { getJudgeEvalSummaryCandidates } from "../runtime/output_layout";
 import {
+  getManagedRunLaunchProvenance,
   listManagedRunEvents,
   refreshAllManagedRunStates,
   startQueuedManagedRuns,
@@ -73,6 +74,9 @@ export type BenchRunSnapshot = {
   pendingRetryShards: string[];
   promptVariant?: string;
   launchTopology: "single-worker" | "shared-bm25" | "sharded-shared-bm25";
+  preferredLaunchScript?: string;
+  launcherScript?: string;
+  launcherCommandDisplay?: string;
   statusDetail: string;
   isSharded: boolean;
   shardCount: number;
@@ -959,6 +963,7 @@ function loadRunSnapshot(
     logDir: logInfo?.path ?? managedState?.logDir,
     managedState,
   });
+  const launchProvenance = managedState ? getManagedRunLaunchProvenance(managedState) : undefined;
   const statusDetail = describeRunStatusDetail({
     status,
     managedState,
@@ -977,6 +982,9 @@ function loadRunSnapshot(
     pendingRetryShards: pendingShardRetry.shards,
     promptVariant,
     launchTopology,
+    preferredLaunchScript: launchProvenance?.preferredPackageScript,
+    launcherScript: launchProvenance?.launcherScript,
+    launcherCommandDisplay: launchProvenance?.launcherCommandDisplay,
     statusDetail,
     isSharded,
     shardCount,

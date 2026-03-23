@@ -79,6 +79,12 @@ export type ManagedRunEvent = {
   payload?: Record<string, unknown>;
 };
 
+export type ManagedRunLaunchProvenance = {
+  preferredPackageScript: string;
+  launcherScript: string;
+  launcherCommandDisplay: string;
+};
+
 function ensureDir(path: string): void {
   mkdirSync(path, { recursive: true });
 }
@@ -182,6 +188,31 @@ function normalizeManagedRunState(state: ManagedRunState): ManagedRunState {
   return {
     ...state,
     launcherCommand: buildManagedRunLauncherCommand(state),
+  };
+}
+
+export function getManagedRunLaunchProvenance(
+  state: Pick<ManagedRunState, "preset" | "launcherScript" | "launcherCommand">,
+): ManagedRunLaunchProvenance {
+  const commandDisplay = state.launcherCommand.join(" ");
+  let preferredPackageScript: string;
+  try {
+    const { preset } = resolveManagedPreset(state.preset);
+    preferredPackageScript =
+      preset.launchMode === "shared"
+        ? "run:benchmark:query-set:shared-bm25"
+        : "run:benchmark:query-set:sharded-shared-bm25";
+  } catch {
+    preferredPackageScript =
+      commandDisplay.includes("query_set_sharded_shared_bm25.ts") ||
+      state.launcherScript.includes("sharded")
+        ? "run:benchmark:query-set:sharded-shared-bm25"
+        : "run:benchmark:query-set:shared-bm25";
+  }
+  return {
+    preferredPackageScript,
+    launcherScript: state.launcherScript,
+    launcherCommandDisplay: commandDisplay,
   };
 }
 
