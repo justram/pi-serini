@@ -337,7 +337,7 @@ function resolveShardedLaunchPlan(args: Args): ShardedLaunchPlan {
   const outputRoot =
     args.outputDir ??
     readEnv("OUTPUT_DIR") ??
-    `runs/pi_bm25_${benchmarkPlan.benchmarkId}_${benchmarkPlan.querySetId}_${benchmarkPlan.promptVariant}_${modelTag}_shared${shardCount}_${runStamp}`;
+    `runs/pi_bm25_${benchmarkPlan.benchmarkId}_${benchmarkPlan.querySetId}_${benchmarkPlan.piSearchPromptVariant}_${modelTag}_shared${shardCount}_${runStamp}`;
   const logDir = readEnv("LOG_DIR") ?? `${outputRoot}/logs`;
 
   return {
@@ -375,7 +375,7 @@ function resolveShardedLaunchPlan(args: Args): ShardedLaunchPlan {
 function printShardedLaunchPlan(plan: ShardedLaunchPlan): void {
   console.log(`BENCHMARK=${plan.benchmarkId}`);
   console.log(`QUERY_SET=${plan.querySetId}`);
-  console.log(`PROMPT_VARIANT=${plan.promptVariant}`);
+  console.log(`PROMPT_VARIANT=${plan.piSearchPromptVariant}`);
   console.log(`MODEL=${plan.model}`);
   console.log(`QUERY_FILE=${plan.queryPath}`);
   console.log(`QRELS_FILE=${plan.qrelsPath}`);
@@ -543,7 +543,7 @@ function spawnShard(plan: ShardedLaunchPlan, shard: ShardFile, attempt: number):
     "--timeout-seconds",
     String(plan.timeoutSeconds),
     "--prompt-variant",
-    plan.promptVariant,
+    plan.piSearchPromptVariant,
     "--qrels",
     plan.qrelsPath,
     "--index-path",
@@ -738,7 +738,7 @@ async function main(): Promise<void> {
   writeFileSync(resolve(REPO_ROOT, runLogPath), "", "utf8");
   logLine(runLogPath, `BENCHMARK=${plan.benchmarkId}`);
   logLine(runLogPath, `QUERY_SET=${plan.querySetId}`);
-  logLine(runLogPath, `PROMPT_VARIANT=${plan.promptVariant}`);
+  logLine(runLogPath, `PROMPT_VARIANT=${plan.piSearchPromptVariant}`);
   logLine(runLogPath, `MODEL=${plan.model}`);
   logLine(runLogPath, `QUERY_FILE=${plan.queryPath}`);
   logLine(runLogPath, `QRELS_FILE=${plan.qrelsPath}`);

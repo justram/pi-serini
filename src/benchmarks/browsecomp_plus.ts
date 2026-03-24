@@ -5,7 +5,7 @@ export const browsecompPlusBenchmark: BenchmarkDefinition = {
   aliases: ["browsecomp_plus", "browsecompplus"],
   displayName: "BrowseComp-Plus",
   datasetId: "browsecomp-plus",
-  promptVariant: "plain_minimal",
+  piSearchPromptVariant: "plain_minimal",
   defaultQuerySetId: "q9",
   defaultQueryPath: "data/browsecomp-plus/queries/q9.tsv",
   querySets: {

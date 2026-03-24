@@ -5,7 +5,7 @@ Confidence: {your confidence score between 0% and 100%}`;
 
 const SUBMIT_NOW_REMINDER = `If you later receive a user steer telling you to submit now, stop using tools immediately and answer right away with the exact final response format below. Do not do more research after that steer.`;
 
-export const BENCHMARK_QUERY_TEMPLATE_PLAIN_MINIMAL = `You are a deep research agent answering a question using only the provided tools.
+export const PI_SEARCH_QUERY_TEMPLATE_PLAIN_MINIMAL = `You are a deep research agent answering a question using only the provided tools.
 
 Workflow:
 1. Use search with a concise raw query string based on the original question.
@@ -22,11 +22,11 @@ Workflow:
 
 Question: {Question}`;
 
-export type BenchmarkPromptVariant = "plain_minimal";
+export type PiSearchPromptVariant = "plain_minimal";
 
-export function formatBenchmarkQueryPrompt(
+export function formatPiSearchPrompt(
   query: string,
-  _variant: BenchmarkPromptVariant = "plain_minimal",
+  _variant: PiSearchPromptVariant = "plain_minimal",
 ): string {
-  return BENCHMARK_QUERY_TEMPLATE_PLAIN_MINIMAL.replace("{Question}", query);
+  return PI_SEARCH_QUERY_TEMPLATE_PLAIN_MINIMAL.replace("{Question}", query);
 }

@@ -73,7 +73,7 @@ export type BenchRunSnapshot = {
   model: string;
   retryPending: boolean;
   pendingRetryShards: string[];
-  promptVariant?: string;
+  piSearchPromptVariant?: string;
   launchTopology: "single-worker" | "shared-bm25" | "sharded-shared-bm25";
   preferredLaunchScript?: string;
   launcherScript?: string;
@@ -962,7 +962,7 @@ function loadRunSnapshot(
   const activeShardCount = shards.filter((shard) => shard.status === "running").length;
 
   let model = "unknown";
-  let promptVariant: string | undefined;
+  let piSearchPromptVariant: string | undefined;
   let elapsedSeconds = 0;
   let toolCalls = 0;
   const statusCounts: Record<string, number> = {};
@@ -970,7 +970,7 @@ function loadRunSnapshot(
   for (const path of files) {
     const run = JSON.parse(readFileSync(path, "utf8")) as BenchmarkRun;
     model = run.metadata?.model ?? model;
-    promptVariant = run.metadata?.prompt_variant ?? promptVariant;
+    piSearchPromptVariant = run.metadata?.prompt_variant ?? piSearchPromptVariant;
     elapsedSeconds += run.stats?.elapsed_seconds ?? 0;
     toolCalls += run.stats?.tool_calls_total ?? 0;
     const status = run.status || "unknown";
@@ -1191,7 +1191,7 @@ function loadRunSnapshot(
     model,
     retryPending: pendingShardRetry.pending,
     pendingRetryShards: pendingShardRetry.shards,
-    promptVariant,
+    piSearchPromptVariant,
     launchTopology,
     preferredLaunchScript: launchProvenance?.preferredPackageScript,
     launcherScript: launchProvenance?.launcherScript,

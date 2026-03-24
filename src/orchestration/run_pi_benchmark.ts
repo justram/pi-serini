@@ -14,7 +14,7 @@ import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
 import { extractRetrievedDocidsFromPiSearchToolDetails } from "../pi-search/protocol/tool_result_details";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
 import { prepareIsolatedAgentDir } from "../runtime/pi_agent_dir";
-import { formatBenchmarkQueryPrompt, type BenchmarkPromptVariant } from "../runtime/prompt";
+import { formatPiSearchPrompt, type PiSearchPromptVariant } from "../pi-search/agent_prompt";
 import { resolveGitCommitProvenance } from "../runtime/git";
 import { startPiJsonProcess, startPiProcessTimeout } from "../runtime/pi_process";
 import { parsePiEventJsonLine, type PiEvent } from "../runtime/pi_json_protocol";
@@ -34,7 +34,7 @@ type BenchmarkRun = {
     model: string;
     output_dir: string;
     query: string;
-    prompt_variant: BenchmarkPromptVariant;
+    prompt_variant: PiSearchPromptVariant;
     bm25_search_tool_mode?: string;
     bm25_render_excerpts?: string;
   };
@@ -197,7 +197,7 @@ async function getBm25RpcConnection(cwd: string): Promise<Bm25RpcConnection> {
   };
 }
 
-const PROMPT_VARIANTS: BenchmarkPromptVariant[] = ["plain_minimal"];
+const PROMPT_VARIANTS: PiSearchPromptVariant[] = ["plain_minimal"];
 
 function parseArgs(argv: string[]) {
   const out: Record<string, string> = {
@@ -230,11 +230,11 @@ function parseArgs(argv: string[]) {
     qrelsPath: out.qrels,
     indexPath: process.env.PI_BM25_INDEX_PATH?.trim() || undefined,
   });
-  const promptVariant = (out.promptVariant ??
-    benchmarkConfig.benchmark.promptVariant) as BenchmarkPromptVariant;
-  if (!PROMPT_VARIANTS.includes(promptVariant)) {
+  const piSearchPromptVariant = (out.promptVariant ??
+    benchmarkConfig.benchmark.piSearchPromptVariant) as PiSearchPromptVariant;
+  if (!PROMPT_VARIANTS.includes(piSearchPromptVariant)) {
     throw new Error(
-      `Invalid --promptVariant ${promptVariant}. Expected one of: ${PROMPT_VARIANTS.join(", ")}`,
+      `Invalid --promptVariant ${piSearchPromptVariant}. Expected one of: ${PROMPT_VARIANTS.join(", ")}`,
     );
   }
 
@@ -251,7 +251,7 @@ function parseArgs(argv: string[]) {
     piBinary: out.pi,
     limit: Number.parseInt(out.limit, 10),
     timeoutSeconds: Number.parseInt(out.timeoutSeconds, 10),
-    promptVariant,
+    piSearchPromptVariant,
   };
 }
 
@@ -272,8 +272,8 @@ function readQueries(tsvPath: string): Array<{ queryId: string; query: string }>
     });
 }
 
-function formatPrompt(query: string, variant: BenchmarkPromptVariant): string {
-  return formatBenchmarkQueryPrompt(query, variant);
+function formatPrompt(query: string, variant: PiSearchPromptVariant): string {
+  return formatPiSearchPrompt(query, variant);
 }
 
 function readEvidenceQrels(path: string): EvidenceQrels {
@@ -796,7 +796,7 @@ function finalizeRun(
   querySetId: string,
   model: string,
   outputDir: string,
-  promptVariant: BenchmarkPromptVariant,
+  piSearchPromptVariant: PiSearchPromptVariant,
   state: QueryRunAccumulator,
   normalizedResults: NormalizedResult[],
   stderrTail: string,
@@ -838,7 +838,7 @@ function finalizeRun(
       model,
       output_dir: outputDir,
       query,
-      prompt_variant: promptVariant,
+      prompt_variant: piSearchPromptVariant,
     },
     query_id: queryId,
     tool_call_counts: state.toolCallCounts,
@@ -955,7 +955,7 @@ async function main() {
   console.log(`Using qrels=${args.qrelsPath}`);
   console.log(`Using indexPath=${args.indexPath}`);
   console.log(`Using timeoutSeconds=${args.timeoutSeconds}`);
-  console.log(`Using promptVariant=${args.promptVariant}`);
+  console.log(`Using promptVariant=${args.piSearchPromptVariant}`);
   if (benchmarkManifestSnapshot.git_commit_short) {
     console.log(`Using gitCommit=${benchmarkManifestSnapshot.git_commit_short}`);
   }
@@ -992,7 +992,7 @@ async function main() {
       totalQueries: queries.length,
       benchmarkId: args.benchmarkId,
       querySetId: args.querySetId,
-      promptVariant: args.promptVariant,
+      promptVariant: args.piSearchPromptVariant,
       timeoutSeconds: args.timeoutSeconds,
     },
   });
@@ -1058,7 +1058,7 @@ async function main() {
           model: args.model,
           thinking: args.thinking,
           extensionPath: args.extensionPath,
-          prompt: formatPrompt(query, args.promptVariant),
+          prompt: formatPrompt(query, args.piSearchPromptVariant),
           queryId,
           timeoutSeconds: args.timeoutSeconds,
           isolatedAgentDir,
@@ -1073,7 +1073,7 @@ async function main() {
           args.querySetId,
           args.model,
           args.outputDir,
-          args.promptVariant,
+          args.piSearchPromptVariant,
           phase.state,
           phase.normalizedResults,
           phase.stderrTail,
@@ -1094,7 +1094,7 @@ async function main() {
             args.querySetId,
             args.model,
             args.outputDir,
-            args.promptVariant,
+            args.piSearchPromptVariant,
             error.details.state,
             error.details.normalizedResults,
             message,
@@ -1110,7 +1110,7 @@ async function main() {
             args.querySetId,
             args.model,
             args.outputDir,
-            args.promptVariant,
+            args.piSearchPromptVariant,
             createQueryRunAccumulator(),
             [],
             message,

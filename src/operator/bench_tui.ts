@@ -490,7 +490,7 @@ class BenchDashboard implements Component {
         width,
       ),
     );
-    lines.push(pad(`${theme.label("prompt:")} ${run.promptVariant ?? "n/a"}`, width));
+    lines.push(pad(`${theme.label("prompt:")} ${run.piSearchPromptVariant ?? "n/a"}`, width));
     lines.push(
       pad(
         `${theme.label("run dir:")} ${truncateToWidth(run.runDir, Math.max(1, width - 10), "")}`,

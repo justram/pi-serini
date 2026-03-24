@@ -52,7 +52,7 @@ A benchmark definition must specify:
 - `aliases`
 - `displayName`
 - `datasetId`
-- `promptVariant`
+- `piSearchPromptVariant`
 - `defaultQuerySetId`
 - `defaultQueryPath`
 - `querySets`

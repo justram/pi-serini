@@ -186,7 +186,7 @@ void test("manifest snapshots capture benchmark identity and resolved paths", ()
   );
   assert.equal(snapshot.benchmark_id, "browsecomp-plus");
   assert.equal(snapshot.query_set_id, "q9");
-  assert.equal(snapshot.prompt_variant, getBenchmarkDefinition().promptVariant);
+  assert.equal(snapshot.prompt_variant, getBenchmarkDefinition().piSearchPromptVariant);
   assert.equal(snapshot.index_path, "indexes/browsecomp-plus-bm25-tevatron");
   assert.equal(snapshot.git_commit, "1234567890abcdef1234567890abcdef12345678");
   assert.equal(snapshot.git_commit_short, "123456");

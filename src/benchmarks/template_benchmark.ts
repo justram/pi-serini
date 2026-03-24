@@ -5,7 +5,7 @@ export const templateBenchmark: BenchmarkDefinition = {
   aliases: ["template-benchmark", "benchmark_template"],
   displayName: "Benchmark Template Tiny Demo",
   datasetId: "benchmark-template",
-  promptVariant: "plain_minimal",
+  piSearchPromptVariant: "plain_minimal",
   defaultQuerySetId: "dev",
   defaultQueryPath: "data/benchmark-template/queries/dev.tsv",
   querySets: {

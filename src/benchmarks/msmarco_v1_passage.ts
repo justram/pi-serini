@@ -5,7 +5,7 @@ export const msmarcoV1PassageBenchmark: BenchmarkDefinition = {
   aliases: ["msmarco_v1_passage", "msmarco-passage", "msmarco-v1"],
   displayName: "MS MARCO v1 Passage",
   datasetId: "msmarco-v1-passage",
-  promptVariant: "plain_minimal",
+  piSearchPromptVariant: "plain_minimal",
   defaultQuerySetId: "dl19",
   defaultQueryPath: "data/msmarco-v1-passage/queries/dl19.tsv",
   querySets: {

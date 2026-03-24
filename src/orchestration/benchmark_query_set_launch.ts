@@ -24,7 +24,7 @@ export type BenchmarkQuerySetLaunchPlan = {
   benchmarkId: string;
   querySetId: string;
   model: string;
-  promptVariant: string;
+  piSearchPromptVariant: string;
   outputDir: string;
   timeoutSeconds: number;
   thinking: string;
@@ -60,17 +60,18 @@ export function resolveBenchmarkQuerySetLaunchPlan(
     qrelsPath: args.qrelsPath ?? readEnv("QRELS_FILE"),
     indexPath: args.indexPath ?? readEnv("PI_BM25_INDEX_PATH"),
   });
-  const promptVariant = args.promptVariant ?? readEnv("PROMPT_VARIANT") ?? benchmark.promptVariant;
+  const piSearchPromptVariant =
+    args.promptVariant ?? readEnv("PROMPT_VARIANT") ?? benchmark.piSearchPromptVariant;
 
   return {
     benchmarkId: benchmark.id,
     querySetId: config.querySetId,
     model: args.model ?? readEnv("MODEL") ?? "openai-codex/gpt-5.4-mini",
-    promptVariant,
+    piSearchPromptVariant,
     outputDir:
       args.outputDir ??
       readEnv("OUTPUT_DIR") ??
-      `runs/pi_bm25_${benchmark.id}_${config.querySetId}_${promptVariant}`,
+      `runs/pi_bm25_${benchmark.id}_${config.querySetId}_${piSearchPromptVariant}`,
     timeoutSeconds:
       args.timeoutSeconds ??
       (readEnv("TIMEOUT_SECONDS")
@@ -102,7 +103,7 @@ export function buildBenchmarkQuerySetLaunchEnv(
     PI_BIN: plan.piBin,
     EXTENSION: plan.extensionPath,
     PI_BM25_INDEX_PATH: plan.indexPath,
-    PROMPT_VARIANT: plan.promptVariant,
+    PROMPT_VARIANT: plan.piSearchPromptVariant,
   };
 }
 
@@ -129,14 +130,14 @@ export function buildRunPiBenchmarkCommand(plan: BenchmarkQuerySetLaunchPlan): s
     "--timeoutSeconds",
     String(plan.timeoutSeconds),
     "--promptVariant",
-    plan.promptVariant,
+    plan.piSearchPromptVariant,
   ]);
 }
 
 export function printBenchmarkQuerySetLaunchPlan(plan: BenchmarkQuerySetLaunchPlan): void {
   console.log(`BENCHMARK=${plan.benchmarkId}`);
   console.log(`QUERY_SET=${plan.querySetId}`);
-  console.log(`PROMPT_VARIANT=${plan.promptVariant}`);
+  console.log(`PROMPT_VARIANT=${plan.piSearchPromptVariant}`);
   console.log(`MODEL=${plan.model}`);
   console.log(`QUERY_FILE=${plan.queryPath}`);
   console.log(`QRELS_FILE=${plan.qrelsPath}`);

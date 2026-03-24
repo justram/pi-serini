@@ -1,4 +1,4 @@
-import type { BenchmarkPromptVariant } from "../runtime/prompt";
+import type { PiSearchPromptVariant } from "../pi-search/agent_prompt";
 
 export type BenchmarkManagedPresetLaunchMode = "shared" | "sharded";
 
@@ -68,7 +68,7 @@ export type BenchmarkDefinition = {
   aliases: string[];
   displayName: string;
   datasetId: string;
-  promptVariant: BenchmarkPromptVariant;
+  piSearchPromptVariant: PiSearchPromptVariant;
   defaultQuerySetId: string;
   defaultQueryPath: string;
   querySets: Record<string, string | BenchmarkQuerySetDefinition>;
@@ -117,7 +117,7 @@ export type BenchmarkManifestSnapshot = {
   benchmark_display_name: string;
   dataset_id: string;
   query_set_id: string;
-  prompt_variant: BenchmarkPromptVariant;
+  prompt_variant: PiSearchPromptVariant;
   query_path: string;
   qrels_path: string;
   secondary_qrels_path?: string;

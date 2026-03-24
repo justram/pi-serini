@@ -257,7 +257,7 @@ export function createBenchmarkManifestSnapshot(
     benchmark_display_name: config.benchmark.displayName,
     dataset_id: config.benchmark.datasetId,
     query_set_id: config.querySetId,
-    prompt_variant: config.benchmark.promptVariant,
+    prompt_variant: config.benchmark.piSearchPromptVariant,
     query_path: config.queryPath,
     qrels_path: config.qrelsPath,
     secondary_qrels_path: config.secondaryQrelsPath,
