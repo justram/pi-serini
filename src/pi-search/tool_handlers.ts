@@ -1,4 +1,4 @@
-import type { PiSearchBackendRuntime } from "./backend_runtime";
+import type { PiSearchBackendRuntime } from "./searcher/runtime";
 import { PiSearchInvalidToolArgumentsError, PiSearchToolExecutionError } from "./protocol/errors";
 import type {
   PlainSearchParams,

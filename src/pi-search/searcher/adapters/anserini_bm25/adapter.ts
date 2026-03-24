@@ -1,13 +1,13 @@
-import type { Bm25RpcClient } from "../../../bm25/bm25_rpc_client";
-import { parseReadDocumentPayload, parseSearchPayload } from "../../protocol/parse";
-import type { PiSearchBackend } from "../../retrieval_contract/interface";
+import type { Bm25RpcClient } from "../../../../bm25/bm25_rpc_client";
+import { parseReadDocumentPayload, parseSearchPayload } from "../../../protocol/parse";
+import type { PiSearchBackend } from "../../contract/interface";
 import type {
   SearchBackendCapabilities,
   SearchBackendReadDocumentRequest,
   SearchBackendReadDocumentResponse,
   SearchBackendSearchRequest,
   SearchBackendSearchResponse,
-} from "../../retrieval_contract/types";
+} from "../../contract/types";
 
 const ANSERINI_BM25_CAPABILITIES: SearchBackendCapabilities = {
   backendId: "anserini-bm25",

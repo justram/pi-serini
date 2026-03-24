@@ -1,6 +1,6 @@
-import type { PiSearchBackend } from "./retrieval_contract/interface";
+import type { PiSearchBackend } from "./contract/interface";
 import { createPiSearchBackend, buildPiSearchBackendCacheKey } from "./adapters/create";
-import type { PiSearchExtensionConfig } from "./config";
+import type { PiSearchExtensionConfig } from "../config";
 
 export class PiSearchBackendRuntime {
   private readonly backendByKey = new Map<string, PiSearchBackend>();

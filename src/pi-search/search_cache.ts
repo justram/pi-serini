@@ -1,4 +1,4 @@
-import type { SearchBackendSearchHit } from "./retrieval_contract/types";
+import type { SearchBackendSearchHit } from "./searcher/contract/types";
 import type { CachedSearch, SearchPage, ToolTimingBreakdown } from "./tool_types";
 
 const MAX_CACHED_SEARCHES = 32;

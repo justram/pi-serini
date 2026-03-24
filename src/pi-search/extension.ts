@@ -1,6 +1,6 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { resolvePiSearchExtensionConfigFromEnv } from "./config";
-import { PiSearchBackendRuntime } from "./backend_runtime";
+import { PiSearchBackendRuntime } from "./searcher/runtime";
 import {
   BENCHMARK_TIMEOUT_SECONDS,
   dumpPromptSnapshot,

@@ -1,6 +1,6 @@
 import type { Static, TSchema } from "@sinclair/typebox";
 import type { ValidateFunction } from "ajv";
-import { piSearchAjv } from "../protocol/ajv";
+import { piSearchAjv } from "../../protocol/ajv";
 import { PiSearchBackendInvalidResponseError, PiSearchBackendMalformedJsonError } from "./errors";
 import {
   SearchBackendCapabilitiesSchema,
