@@ -31,6 +31,31 @@ const PiSearchLocalStdioBackendConfigSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const PiSearchHttpJsonBackendConfigSchema = Type.Object(
+  {
+    kind: Type.Literal("http-json"),
+    capabilities: Type.Object(
+      {
+        backendId: Type.String({ minLength: 1 }),
+        supportsScore: Type.Boolean(),
+        supportsSnippets: Type.Boolean(),
+        supportsExactTotalHits: Type.Boolean(),
+        maxPageSize: Type.Optional(Type.Number({ minimum: 1 })),
+        maxReadLimit: Type.Optional(Type.Number({ minimum: 1 })),
+      },
+      { additionalProperties: false },
+    ),
+    endpoints: Type.Object(
+      {
+        searchUrl: Type.String({ minLength: 1 }),
+        readDocumentUrl: Type.String({ minLength: 1 }),
+      },
+      { additionalProperties: false },
+    ),
+  },
+  { additionalProperties: false },
+);
+
 const PiSearchMockBackendConfigSchema = Type.Object(
   {
     kind: Type.Literal("mock"),
@@ -54,6 +79,7 @@ export const PiSearchExtensionConfigSchema = Type.Object(
     backend: Type.Union([
       PiSearchSharedRpcBackendConfigSchema,
       PiSearchLocalStdioBackendConfigSchema,
+      PiSearchHttpJsonBackendConfigSchema,
       PiSearchMockBackendConfigSchema,
     ]),
   },
@@ -103,6 +129,30 @@ export function buildAnseriniBm25StdioExtensionConfig(options: {
       transport: {
         kind: "stdio",
         indexPath: options.indexPath,
+      },
+    },
+  };
+}
+
+export function buildHttpJsonExtensionConfig(options: {
+  capabilities: {
+    backendId: string;
+    supportsScore: boolean;
+    supportsSnippets: boolean;
+    supportsExactTotalHits: boolean;
+    maxPageSize?: number;
+    maxReadLimit?: number;
+  };
+  searchUrl: string;
+  readDocumentUrl: string;
+}): PiSearchExtensionConfig {
+  return {
+    backend: {
+      kind: "http-json",
+      capabilities: options.capabilities,
+      endpoints: {
+        searchUrl: options.searchUrl,
+        readDocumentUrl: options.readDocumentUrl,
       },
     },
   };

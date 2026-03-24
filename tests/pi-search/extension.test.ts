@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildAnseriniBm25StdioExtensionConfig,
   buildAnseriniBm25TcpExtensionConfig,
+  buildHttpJsonExtensionConfig,
   buildMockExtensionConfig,
   parsePiSearchExtensionConfig,
   resolvePiSearchExtensionConfigFromEnv,
@@ -70,6 +71,27 @@ void test("resolvePiSearchExtensionConfigFromEnv parses stdio-backed config from
   }
 });
 
+void test("buildHttpJsonExtensionConfig produces a valid http-json backend config", () => {
+  const parsed = buildHttpJsonExtensionConfig({
+    capabilities: {
+      backendId: "http-json-test",
+      supportsScore: true,
+      supportsSnippets: true,
+      supportsExactTotalHits: true,
+      maxPageSize: 20,
+    },
+    searchUrl: "http://127.0.0.1:8080/search",
+    readDocumentUrl: "http://127.0.0.1:8080/read-document",
+  });
+
+  assert.equal(parsed.backend.kind, "http-json");
+  if (parsed.backend.kind === "http-json") {
+    assert.equal(parsed.backend.capabilities.backendId, "http-json-test");
+    assert.equal(parsed.backend.endpoints.searchUrl, "http://127.0.0.1:8080/search");
+    assert.equal(parsed.backend.endpoints.readDocumentUrl, "http://127.0.0.1:8080/read-document");
+  }
+});
+
 void test("buildMockExtensionConfig produces a valid mock backend config", () => {
   const parsed = buildMockExtensionConfig({
     documents: [
@@ -81,6 +103,18 @@ void test("buildMockExtensionConfig produces a valid mock backend config", () =>
   if (parsed.backend.kind === "mock") {
     assert.equal(parsed.backend.documents.length, 1);
     assert.equal(parsed.backend.documents[0].docid, "doc-1");
+  }
+});
+
+void test("parsePiSearchExtensionConfig accepts an http-json backend config", () => {
+  const parsed = parsePiSearchExtensionConfig(
+    '{"backend":{"kind":"http-json","capabilities":{"backendId":"http-json-test","supportsScore":true,"supportsSnippets":true,"supportsExactTotalHits":true},"endpoints":{"searchUrl":"http://127.0.0.1:8080/search","readDocumentUrl":"http://127.0.0.1:8080/read-document"}}}',
+  );
+
+  assert.equal(parsed.backend.kind, "http-json");
+  if (parsed.backend.kind === "http-json") {
+    assert.equal(parsed.backend.capabilities.backendId, "http-json-test");
+    assert.equal(parsed.backend.endpoints.searchUrl, "http://127.0.0.1:8080/search");
   }
 });
 
