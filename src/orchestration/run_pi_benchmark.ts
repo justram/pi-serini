@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
+import { extractRetrievedDocidsFromPiSearchToolDetails } from "../pi-search/protocol/tool_result_details";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
 import { prepareIsolatedAgentDir } from "../runtime/pi_agent_dir";
 import { formatBenchmarkQueryPrompt, type BenchmarkPromptVariant } from "../runtime/prompt";
@@ -53,6 +54,7 @@ type BenchmarkRun = {
     read_document_calls: number;
     search_rewrites_after_browse: number;
     search_rewrites_without_browse: number;
+    pi_search_failures: number;
     timed_out: boolean;
   };
   result: NormalizedResult[];
@@ -361,14 +363,13 @@ function collectDocidsFromToolResult(
 ): string[] {
   if (!toolName.toLowerCase().includes("search")) return [];
 
-  if (
-    typeof details === "object" &&
-    details !== null &&
-    Array.isArray((details as { retrievedDocids?: unknown[] }).retrievedDocids)
-  ) {
-    return ((details as { retrievedDocids: unknown[] }).retrievedDocids ?? []).map((item) =>
-      String(item),
-    );
+  const piSearchDocids = extractRetrievedDocidsFromPiSearchToolDetails(details);
+  if (piSearchDocids.length > 0) {
+    return piSearchDocids;
+  }
+
+  if (toolName === "search" || toolName === "read_search_results") {
+    return [];
   }
 
   const parsed = maybeParseJson(outputText) as
@@ -390,6 +391,17 @@ function summarizeScalar(value: unknown): string | undefined {
     return String(value);
   }
   return undefined;
+}
+
+function isPiSearchToolName(toolName: string): boolean {
+  return (
+    toolName === "search" || toolName === "read_search_results" || toolName === "read_document"
+  );
+}
+
+function summarizeToolFailureOutput(outputText: string): string {
+  const trimmed = outputText.trim();
+  return trimmed.length > 0 ? trimmed : "tool failed without text output.";
 }
 
 function summarizeToolArgs(args: unknown): string {
@@ -480,7 +492,8 @@ function logEventProgress(queryId: string, event: PiEvent, elapsedSeconds: numbe
       docids.length > 0
         ? ` docids=${docids.slice(0, 5).join(",")}${docids.length > 5 ? ",..." : ""}`
         : "";
-    console.log(`${prefix} tool_end ${toolName}${extra}`);
+    const suffix = event.isError ? " error=true" : "";
+    console.log(`${prefix} tool_end ${toolName}${extra}${suffix}`);
     return;
   }
 
@@ -513,6 +526,7 @@ type QueryRunAccumulator = {
   readDocumentCalls: number;
   searchRewritesAfterBrowse: number;
   searchRewritesWithoutBrowse: number;
+  piSearchFailures: number;
   openSearchSession: { sawBrowse: boolean } | null;
 };
 
@@ -529,6 +543,7 @@ function createQueryRunAccumulator(): QueryRunAccumulator {
     readDocumentCalls: 0,
     searchRewritesAfterBrowse: 0,
     searchRewritesWithoutBrowse: 0,
+    piSearchFailures: 0,
     openSearchSession: null,
   };
 }
@@ -575,6 +590,15 @@ function applyEventToAccumulator(
       arguments: state.toolArgsByCallId.get(String(event.toolCallId)) ?? null,
       output: outputText,
     });
+    if (event.isError && isPiSearchToolName(toolName)) {
+      state.piSearchFailures += 1;
+      normalizedResultSpool.append({
+        type: "output_text",
+        tool_name: null,
+        arguments: null,
+        output: `pi-search extension failure (${toolName}): ${summarizeToolFailureOutput(outputText)}`,
+      });
+    }
     state.toolArgsByCallId.delete(String(event.toolCallId));
     return;
   }
@@ -836,6 +860,7 @@ function finalizeRun(
       read_document_calls: state.readDocumentCalls,
       search_rewrites_after_browse: state.searchRewritesAfterBrowse,
       search_rewrites_without_browse: state.searchRewritesWithoutBrowse,
+      pi_search_failures: state.piSearchFailures,
       timed_out: timedOut,
     },
     result: finalizedResults,

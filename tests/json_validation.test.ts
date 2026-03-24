@@ -7,7 +7,7 @@ import {
   parseReadDocumentPayload,
   parseRenderSearchResultsPayload,
   parseSearchPayload,
-} from "../src/pi-search/extension";
+} from "../src/pi-search/protocol/parse";
 import { parsePiEventJsonLine } from "../src/runtime/pi_json_protocol";
 
 void test("BM25 helper response validation rejects non-object JSON payloads", () => {

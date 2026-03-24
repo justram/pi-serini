@@ -2,6 +2,24 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-03-23
+
+### Added
+
+- Added a dedicated `pi-search` protocol contract layer under `src/pi-search/protocol/`, including TypeBox-authored schemas, a shared Ajv runtime, explicit protocol error types, schema-backed payload parsers, and contract helpers for benchmark-harness consumers.
+- Added focused regression coverage for the extracted `pi-search` contract surface, including protocol parser tests, helper/spill module tests, repair-friendly tool failure tests, contract-detail extraction tests, and benchmark-runner integration coverage for recoverable extension failures.
+- Added maintainer-facing contract ownership documentation in `docs/pi-search-contract.md`, documenting that `pi-search` owns the standalone extension contract while `pi-serini` acts as the benchmark-backed validation harness around it.
+
+### Changed
+
+- Changed `src/pi-search/extension.ts` from a single mixed-responsibility module into a composition root over extracted `pi-search` subsystems for protocol validation, helper runtime ownership, prompt policy, spill management, cached search state, and tool handlers.
+- Changed `pi-serini` benchmark execution to consume `pi-search`-owned structured result details instead of re-deriving active `pi-search` search docids from rendered tool output, keeping extension contract knowledge under `src/pi-search/`.
+- Changed the benchmark runner to record recoverable `pi-search` tool failures as explicit benchmark evidence and to count them in per-query stats without collapsing successful agent recovery into a generic runtime crash.
+
+### Fixed
+
+- Fixed `pi-search` tool failure feedback to be more repairable in the agent loop by distinguishing malformed JSON, invalid tool-result shape, semantic argument mistakes, and tool execution failures for the initial search/read failure paths.
+
 ## [0.1.5] - 2026-03-23
 
 ### Fixed

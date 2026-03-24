@@ -1,14 +1,14 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import test from "node:test";
+import { resolveDefaultIndexPath } from "../../src/pi-search/helper_runtime";
 import {
   buildReadSpillFileName,
   buildSearchSpillFileName,
   ManagedTempSpillDir,
-  resolveDefaultIndexPath,
   truncateReadDocumentOutput,
   truncateSearchOutput,
-} from "../../src/pi-search/extension";
+} from "../../src/pi-search/spill";
 
 void test("resolveDefaultIndexPath follows the benchmark registry default", () => {
   assert.equal(resolveDefaultIndexPath({}), "indexes/browsecomp-plus-bm25-tevatron");
