@@ -5,12 +5,12 @@ import {
   PiSearchBackendCapabilityMismatchError,
   PiSearchBackendExecutionError,
   PiSearchBackendUnavailableError,
-} from "../../src/pi-search/backend/errors";
+} from "../../src/pi-search/retrieval_contract/errors";
 import {
   parseSearchBackendReadDocumentResponse,
   parseSearchBackendSearchResponse,
   validateSearchBackendCapabilities,
-} from "../../src/pi-search/backend/parse";
+} from "../../src/pi-search/retrieval_contract/parse";
 
 void test("backend contract accepts a valid search response with optional enrichments omitted", () => {
   const parsed = parseSearchBackendSearchResponse('{"hits":[{"docid":"d1"}],"hasMore":false}');

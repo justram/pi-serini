@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { PiSearchBackend } from "../../src/pi-search/backend/interface";
+import type { PiSearchBackend } from "../../src/pi-search/retrieval_contract/interface";
 import type { PiSearchBackendRuntime } from "../../src/pi-search/helper_runtime";
 import { SearchSessionStore } from "../../src/pi-search/search_cache";
 import { ManagedTempSpillDir } from "../../src/pi-search/spill";

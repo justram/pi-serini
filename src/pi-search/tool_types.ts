@@ -1,5 +1,5 @@
 import type { TruncationResult } from "@mariozechner/pi-coding-agent";
-import type { SearchBackendSearchHit } from "./backend/types";
+import type { SearchBackendSearchHit } from "./retrieval_contract/types";
 
 export type CachedSearch = {
   searchId: string;

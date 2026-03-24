@@ -2,7 +2,7 @@ import { resolve } from "node:path";
 import type { Bm25RpcClient } from "../../bm25/bm25_rpc_client";
 import { Bm25StdioRpcClient } from "../../bm25/bm25_stdio_rpc_client";
 import { Bm25TcpRpcClient } from "../../bm25/bm25_tcp_rpc_client";
-import type { PiSearchBackend } from "../backend/interface";
+import type { PiSearchBackend } from "../retrieval_contract/interface";
 import type { PiSearchExtensionConfig } from "../config";
 import { AnseriniBm25Backend } from "./anserini_bm25/adapter";
 
