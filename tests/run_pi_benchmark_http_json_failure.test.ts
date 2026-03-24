@@ -8,10 +8,11 @@ import test from "node:test";
 
 import { buildHttpJsonExtensionConfig } from "../src/pi-search/config";
 
-type HttpFailureMode = "http-503" | "malformed-json";
+type HttpBenchmarkMode = "http-503" | "malformed-json" | "success";
 
 type BenchmarkRunArtifact = {
   status: string;
+  retrieved_docids: string[];
   stats: { pi_search_failures: number };
   result: Array<{ type: string; tool_name: string | null; output: string }>;
 };
@@ -163,7 +164,7 @@ function execFileText(
   });
 }
 
-async function runBenchmarkWithHttpFailure(mode: HttpFailureMode): Promise<BenchmarkRunArtifact> {
+async function runBenchmarkWithHttpMode(mode: HttpBenchmarkMode): Promise<BenchmarkRunArtifact> {
   const root = mkdtempSync(join(tmpdir(), `run-pi-benchmark-http-json-${mode}-`));
   const queryPath = join(root, "queries.tsv");
   const qrelsPath = join(root, "qrels.txt");
@@ -180,8 +181,34 @@ async function runBenchmarkWithHttpFailure(mode: HttpFailureMode): Promise<Bench
       response.end(JSON.stringify({ error: "temporary outage" }));
       return;
     }
+    if (mode === "malformed-json") {
+      response.statusCode = 200;
+      response.end('{"hits":[');
+      return;
+    }
     response.statusCode = 200;
-    response.end('{"hits":[');
+    response.end(
+      JSON.stringify({
+        hits: [
+          {
+            docid: "d1",
+            score: 3.5,
+            title: "Ada Lovelace",
+            snippet: "Ada wrote about the analytical engine.",
+            snippetTruncated: false,
+          },
+          {
+            docid: "d2",
+            score: 2.1,
+            title: "Charles Babbage",
+            snippet: "Babbage designed the analytical engine.",
+            snippetTruncated: false,
+          },
+        ],
+        totalHits: 2,
+        hasMore: false,
+      }),
+    );
   });
 
   const port = await listen(server);
@@ -247,7 +274,7 @@ async function runBenchmarkWithHttpFailure(mode: HttpFailureMode): Promise<Bench
 }
 
 void test("run_pi_benchmark records recoverable http-json backend execution failures as pi-search benchmark evidence", async () => {
-  const run = await runBenchmarkWithHttpFailure("http-503");
+  const run = await runBenchmarkWithHttpMode("http-503");
 
   assert.equal(run.status, "completed");
   assert.equal(run.stats.pi_search_failures, 1);
@@ -271,7 +298,7 @@ void test("run_pi_benchmark records recoverable http-json backend execution fail
 });
 
 void test("run_pi_benchmark records malformed successful http-json responses as recoverable pi-search benchmark evidence", async () => {
-  const run = await runBenchmarkWithHttpFailure("malformed-json");
+  const run = await runBenchmarkWithHttpMode("malformed-json");
 
   assert.equal(run.status, "completed");
   assert.equal(run.stats.pi_search_failures, 1);
@@ -290,6 +317,23 @@ void test("run_pi_benchmark records malformed successful http-json responses as 
         entry.type === "tool_call" &&
         entry.tool_name === "search" &&
         entry.output.includes("Failed to parse pi-search backend search response"),
+    ),
+  );
+});
+
+void test("run_pi_benchmark persists retrieved docids from a successful http-json-backed search via structured pi-search details", async () => {
+  const run = await runBenchmarkWithHttpMode("success");
+
+  assert.equal(run.status, "completed");
+  assert.equal(run.stats.pi_search_failures, 0);
+  assert.deepEqual(run.retrieved_docids, ["d1", "d2"]);
+  assert.ok(
+    run.result.some(
+      (entry) =>
+        entry.type === "tool_call" &&
+        entry.tool_name === "search" &&
+        entry.output.includes('"docid":"d1"') &&
+        entry.output.includes('"docid":"d2"'),
     ),
   );
 });
