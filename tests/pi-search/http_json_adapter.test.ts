@@ -4,7 +4,11 @@ import test from "node:test";
 
 import { buildHttpJsonExtensionConfig } from "../../src/pi-search/config";
 import { createPiSearchBackend } from "../../src/pi-search/searcher/adapters/create";
-import { PiSearchBackendExecutionError } from "../../src/pi-search/searcher/contract/errors";
+import {
+  PiSearchBackendExecutionError,
+  PiSearchBackendInvalidResponseError,
+  PiSearchBackendMalformedJsonError,
+} from "../../src/pi-search/searcher/contract/errors";
 
 function listen(server: ReturnType<typeof createServer>): Promise<number> {
   return new Promise((resolve, reject) => {
@@ -154,6 +158,91 @@ void test("http-json adapter surfaces non-2xx backend responses as execution err
         assert.ok(error instanceof PiSearchBackendExecutionError);
         assert.match(error.message, /HTTP 503/);
         assert.match(error.message, /temporary outage/);
+        return true;
+      },
+    );
+  } finally {
+    await close(server);
+  }
+});
+
+void test("http-json adapter surfaces malformed successful search responses as malformed-json errors", async () => {
+  const server = createServer((_request, response) => {
+    response.statusCode = 200;
+    response.setHeader("content-type", "application/json");
+    response.end('{"hits":[');
+  });
+
+  const port = await listen(server);
+  try {
+    const backend = createPiSearchBackend(
+      process.cwd(),
+      buildHttpJsonExtensionConfig({
+        capabilities: {
+          backendId: "http-json-test",
+          supportsScore: true,
+          supportsSnippets: true,
+          supportsExactTotalHits: true,
+        },
+        searchUrl: `http://127.0.0.1:${port}/search`,
+        readDocumentUrl: `http://127.0.0.1:${port}/read-document`,
+      }),
+    );
+
+    await assert.rejects(
+      () => backend.search({ query: "ada", limit: 10 }),
+      (error: unknown) => {
+        assert.ok(error instanceof PiSearchBackendMalformedJsonError);
+        assert.match(error.message, /Failed to parse pi-search backend search response/);
+        return true;
+      },
+    );
+  } finally {
+    await close(server);
+  }
+});
+
+void test("http-json adapter surfaces schema-invalid successful readDocument responses as invalid-response errors", async () => {
+  const server = createServer((_request, response) => {
+    response.statusCode = 200;
+    response.setHeader("content-type", "application/json");
+    response.end(
+      JSON.stringify({
+        found: true,
+        docid: "doc-1",
+        text: "Ada Lovelace wrote notes on the analytical engine.",
+        offset: 1,
+        limit: 20,
+        totalUnits: "one",
+        returnedOffsetStart: 1,
+        returnedOffsetEnd: 1,
+        truncated: false,
+      }),
+    );
+  });
+
+  const port = await listen(server);
+  try {
+    const backend = createPiSearchBackend(
+      process.cwd(),
+      buildHttpJsonExtensionConfig({
+        capabilities: {
+          backendId: "http-json-test",
+          supportsScore: true,
+          supportsSnippets: true,
+          supportsExactTotalHits: true,
+        },
+        searchUrl: `http://127.0.0.1:${port}/search`,
+        readDocumentUrl: `http://127.0.0.1:${port}/read-document`,
+      }),
+    );
+
+    await assert.rejects(
+      () => backend.readDocument({ docid: "doc-1", offset: 1, limit: 20 }),
+      (error: unknown) => {
+        assert.ok(error instanceof PiSearchBackendInvalidResponseError);
+        assert.match(error.message, /Invalid pi-search backend readDocument response/);
+        assert.match(error.message, /totalUnits/);
         return true;
       },
     );

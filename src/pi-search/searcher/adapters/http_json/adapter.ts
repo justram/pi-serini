@@ -4,8 +4,8 @@ import {
 } from "../../contract/errors";
 import type { PiSearchBackend } from "../../contract/interface";
 import {
-  validateSearchBackendReadDocumentResponse,
-  validateSearchBackendSearchResponse,
+  parseSearchBackendReadDocumentResponse,
+  parseSearchBackendSearchResponse,
 } from "../../contract/parse";
 import type {
   SearchBackendReadDocumentRequest,
@@ -23,7 +23,7 @@ async function postJson(
   url: string,
   body: unknown,
   signal?: AbortSignal,
-): Promise<unknown> {
+): Promise<string> {
   let response: Response;
   try {
     response = await fetch(url, {
@@ -42,15 +42,14 @@ async function postJson(
   }
 
   const text = await response.text();
-  let value: unknown;
-  try {
-    value = JSON.parse(text);
-  } catch {
-    value = text;
-  }
 
   if (!response.ok) {
-    const detail = typeof value === "string" ? value : JSON.stringify(value);
+    let detail = text;
+    try {
+      detail = JSON.stringify(JSON.parse(text));
+    } catch {
+      // Keep raw response text when the backend fails without valid JSON.
+    }
     throw new PiSearchBackendExecutionError(
       backendId,
       operation,
@@ -58,7 +57,7 @@ async function postJson(
     );
   }
 
-  return value;
+  return text;
 }
 
 export class HttpJsonSearchBackend implements PiSearchBackend {
@@ -72,27 +71,27 @@ export class HttpJsonSearchBackend implements PiSearchBackend {
     request: SearchBackendSearchRequest,
     signal?: AbortSignal,
   ): Promise<SearchBackendSearchResponse> {
-    const value = await postJson(
+    const text = await postJson(
       this.capabilities.backendId,
       "search",
       this.config.endpoints.searchUrl,
       request,
       signal,
     );
-    return validateSearchBackendSearchResponse(value);
+    return parseSearchBackendSearchResponse(text);
   }
 
   async readDocument(
     request: SearchBackendReadDocumentRequest,
     signal?: AbortSignal,
   ): Promise<SearchBackendReadDocumentResponse> {
-    const value = await postJson(
+    const text = await postJson(
       this.capabilities.backendId,
       "readDocument",
       this.config.endpoints.readDocumentUrl,
       request,
       signal,
     );
-    return validateSearchBackendReadDocumentResponse(value);
+    return parseSearchBackendReadDocumentResponse(text);
   }
 }
