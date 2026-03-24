@@ -31,11 +31,30 @@ const PiSearchLocalStdioBackendConfigSchema = Type.Object(
   { additionalProperties: false },
 );
 
+const PiSearchMockBackendConfigSchema = Type.Object(
+  {
+    kind: Type.Literal("mock"),
+    documents: Type.Array(
+      Type.Object(
+        {
+          docid: Type.String({ minLength: 1 }),
+          title: Type.Optional(Type.String()),
+          snippet: Type.Optional(Type.String()),
+          text: Type.String(),
+        },
+        { additionalProperties: false },
+      ),
+    ),
+  },
+  { additionalProperties: false },
+);
+
 export const PiSearchExtensionConfigSchema = Type.Object(
   {
     backend: Type.Union([
       PiSearchSharedRpcBackendConfigSchema,
       PiSearchLocalStdioBackendConfigSchema,
+      PiSearchMockBackendConfigSchema,
     ]),
   },
   { additionalProperties: false },
@@ -85,6 +104,22 @@ export function buildAnseriniBm25StdioExtensionConfig(options: {
         kind: "stdio",
         indexPath: options.indexPath,
       },
+    },
+  };
+}
+
+export function buildMockExtensionConfig(options: {
+  documents: Array<{
+    docid: string;
+    title?: string;
+    snippet?: string;
+    text: string;
+  }>;
+}): PiSearchExtensionConfig {
+  return {
+    backend: {
+      kind: "mock",
+      documents: options.documents,
     },
   };
 }

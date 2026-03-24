@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   buildAnseriniBm25StdioExtensionConfig,
   buildAnseriniBm25TcpExtensionConfig,
+  buildMockExtensionConfig,
   parsePiSearchExtensionConfig,
   resolvePiSearchExtensionConfigFromEnv,
 } from "../../src/pi-search/config";
@@ -66,6 +67,32 @@ void test("resolvePiSearchExtensionConfigFromEnv parses stdio-backed config from
   assert.equal(parsed.backend.transport.kind, "stdio");
   if (parsed.backend.transport.kind === "stdio") {
     assert.equal(parsed.backend.transport.indexPath, "indexes/demo");
+  }
+});
+
+void test("buildMockExtensionConfig produces a valid mock backend config", () => {
+  const parsed = buildMockExtensionConfig({
+    documents: [
+      { docid: "doc-1", title: "Ada", snippet: "Analytical engine", text: "Ada\nLine 2" },
+    ],
+  });
+
+  assert.equal(parsed.backend.kind, "mock");
+  if (parsed.backend.kind === "mock") {
+    assert.equal(parsed.backend.documents.length, 1);
+    assert.equal(parsed.backend.documents[0].docid, "doc-1");
+  }
+});
+
+void test("parsePiSearchExtensionConfig accepts a mock backend config", () => {
+  const parsed = parsePiSearchExtensionConfig(
+    '{"backend":{"kind":"mock","documents":[{"docid":"doc-1","title":"Ada","snippet":"Analytical engine","text":"Ada\\nLine 2"}]}}',
+  );
+
+  assert.equal(parsed.backend.kind, "mock");
+  if (parsed.backend.kind === "mock") {
+    assert.equal(parsed.backend.documents.length, 1);
+    assert.equal(parsed.backend.documents[0].docid, "doc-1");
   }
 });
 
