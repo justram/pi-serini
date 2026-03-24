@@ -12,6 +12,8 @@ type HttpBenchmarkMode =
   | "http-503"
   | "malformed-json"
   | "success"
+  | "read-search-results-success"
+  | "read-search-results-unknown"
   | "read-document-not-found"
   | "read-document-success";
 
@@ -124,6 +126,75 @@ async function main(): Promise<void> {
           },
         });
       }
+    } else if (mode === "read-search-results-success") {
+      emit({
+        type: "tool_execution_start",
+        toolCallId: "1",
+        toolName: "search",
+        args: { reason: "initial search", query: "alpha query" },
+      });
+      const response = await backend.search({ query: "alpha query", limit: 1000 });
+      emit({
+        type: "tool_execution_end",
+        toolCallId: "1",
+        toolName: "search",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify(response),
+            },
+          ],
+        },
+      });
+      emit({
+        type: "tool_execution_start",
+        toolCallId: "2",
+        toolName: "read_search_results",
+        args: { reason: "browse deeper", search_id: "s1", offset: 2, limit: 1 },
+      });
+      emit({
+        type: "tool_execution_end",
+        toolCallId: "2",
+        toolName: "read_search_results",
+        result: {
+          content: [
+            {
+              type: "text",
+              text: JSON.stringify({
+                searchId: "s1",
+                offset: 2,
+                limit: 1,
+                results: response.hits.slice(1, 2),
+              }),
+            },
+          ],
+          details: {
+            retrievedDocids: response.hits.slice(1, 2).map((hit) => hit.docid),
+          },
+        },
+      });
+    } else if (mode === "read-search-results-unknown") {
+      emit({
+        type: "tool_execution_start",
+        toolCallId: "1",
+        toolName: "read_search_results",
+        args: { reason: "browse deeper", search_id: "missing", offset: 6, limit: 10 },
+      });
+      emit({
+        type: "tool_execution_end",
+        toolCallId: "1",
+        toolName: "read_search_results",
+        isError: true,
+        result: {
+          content: [
+            {
+              type: "text",
+              text: "Invalid read_search_results arguments: search_id 'missing' is unknown. Call search(...) first to create a result set.",
+            },
+          ],
+        },
+      });
     } else {
       emit({
         type: "tool_execution_start",
@@ -418,6 +489,47 @@ void test("run_pi_benchmark persists retrieved docids from a successful http-jso
         entry.tool_name === "search" &&
         entry.output.includes('"docid":"d1"') &&
         entry.output.includes('"docid":"d2"'),
+    ),
+  );
+});
+
+void test("run_pi_benchmark persists retrieved docids from http-backed read_search_results structured details even when the initial search event omits docid details", async () => {
+  const run = await runBenchmarkWithHttpMode("read-search-results-success");
+
+  assert.equal(run.status, "completed");
+  assert.equal(run.stats.pi_search_failures, 0);
+  assert.deepEqual(run.retrieved_docids, ["d2"]);
+  assert.ok(
+    run.result.some(
+      (entry) =>
+        entry.type === "tool_call" &&
+        entry.tool_name === "read_search_results" &&
+        entry.output.includes('"docid":"d2"'),
+    ),
+  );
+});
+
+void test("run_pi_benchmark records recoverable read_search_results argument failures as pi-search benchmark evidence", async () => {
+  const run = await runBenchmarkWithHttpMode("read-search-results-unknown");
+
+  assert.equal(run.status, "completed");
+  assert.equal(run.stats.pi_search_failures, 1);
+  assert.deepEqual(run.retrieved_docids, []);
+  assert.ok(
+    run.result.some(
+      (entry) =>
+        entry.type === "output_text" &&
+        entry.output.includes(
+          "pi-search extension failure (read_search_results): Invalid read_search_results arguments: search_id 'missing' is unknown.",
+        ),
+    ),
+  );
+  assert.ok(
+    run.result.some(
+      (entry) =>
+        entry.type === "tool_call" &&
+        entry.tool_name === "read_search_results" &&
+        entry.output.includes("search_id 'missing' is unknown"),
     ),
   );
 });
