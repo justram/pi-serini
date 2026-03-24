@@ -3,6 +3,7 @@ import { attachJsonlLineReader, serializeJsonLine } from "../pi-search/lib/jsonl
 import {
   createBm25RequestAbortError,
   parseBm25HelperResponse,
+  parseBm25PingResponse,
   resolveBm25HelperResponse,
   type Bm25RpcClient,
 } from "./bm25_rpc_client";
@@ -168,7 +169,7 @@ export class Bm25StdioRpcClient implements Bm25RpcClient {
     this.child = child;
     this.stopReadingStdout = stopReadingStdout;
     const pingOutput = await this.dispatchRequest("ping", {});
-    const ping = JSON.parse(pingOutput) as { ok?: boolean };
+    const ping = parseBm25PingResponse(pingOutput);
     if (!ping.ok) {
       throw new Error("BM25 helper daemon failed ping handshake.");
     }

@@ -5,12 +5,13 @@ import {
   truncateHead,
   type TruncationResult,
 } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
+import { Type, type Static } from "@sinclair/typebox";
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "../benchmarks/registry";
+import { createJsonValidator } from "../lib/json_validation";
 import { Bm25StdioRpcClient } from "../bm25/bm25_stdio_rpc_client";
 import { Bm25TcpRpcClient } from "../bm25/bm25_tcp_rpc_client";
 import type { Bm25RpcClient } from "../bm25/bm25_rpc_client";
@@ -67,55 +68,98 @@ const ReadDocumentParams = Type.Object({
   limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read." })),
 });
 
-type SearchResultLite = {
-  docid: string;
-  score: number;
-};
+const SearchResultLiteSchema = Type.Object(
+  {
+    docid: Type.String(),
+    score: Type.Number(),
+  },
+  { additionalProperties: true },
+);
 
-type SearchResultPreview = {
-  docid: string;
-  title?: string | null;
-  matched_terms?: string[];
-  excerpt: string;
-  excerpt_truncated: boolean;
-};
+const SearchResultPreviewSchema = Type.Object(
+  {
+    docid: Type.String(),
+    title: Type.Optional(Type.Union([Type.String(), Type.Null()])),
+    matched_terms: Type.Optional(Type.Array(Type.String())),
+    excerpt: Type.String(),
+    excerpt_truncated: Type.Boolean(),
+  },
+  { additionalProperties: true },
+);
 
-type RpcTimingMs = {
-  command?: number;
-  server_uptime?: number;
-  init?: number;
-};
+const RpcTimingMsSchema = Type.Object(
+  {
+    command: Type.Optional(Type.Number()),
+    server_uptime: Type.Optional(Type.Number()),
+    init: Type.Optional(Type.Number()),
+  },
+  { additionalProperties: true },
+);
 
-type SearchPayload = {
-  mode?: string;
-  query?: string;
-  query_mode?: string;
-  k?: number;
-  results?: SearchResultLite[];
-  timing_ms?: RpcTimingMs;
-};
+const SearchPayloadSchema = Type.Object(
+  {
+    mode: Type.Optional(Type.String()),
+    query: Type.Optional(Type.String()),
+    query_mode: Type.Optional(Type.String()),
+    k: Type.Optional(Type.Number()),
+    results: Type.Optional(Type.Array(SearchResultLiteSchema)),
+    timing_ms: Type.Optional(RpcTimingMsSchema),
+  },
+  { additionalProperties: true },
+);
 
-type RenderSearchResultsPayload = {
-  mode?: string;
-  docids?: string[];
-  results?: SearchResultPreview[];
-  timing_ms?: RpcTimingMs;
-};
+const RenderSearchResultsPayloadSchema = Type.Object(
+  {
+    mode: Type.Optional(Type.String()),
+    docids: Type.Optional(Type.Array(Type.String())),
+    results: Type.Optional(Type.Array(SearchResultPreviewSchema)),
+    timing_ms: Type.Optional(RpcTimingMsSchema),
+  },
+  { additionalProperties: true },
+);
 
-type ReadDocumentPayload = {
-  mode?: string;
-  docid?: string;
-  found?: boolean;
-  offset?: number;
-  limit?: number;
-  total_lines?: number;
-  returned_line_start?: number;
-  returned_line_end?: number;
-  truncated?: boolean;
-  next_offset?: number | null;
-  text?: string;
-  timing_ms?: RpcTimingMs;
-};
+const ReadDocumentPayloadSchema = Type.Object(
+  {
+    mode: Type.Optional(Type.String()),
+    docid: Type.Optional(Type.String()),
+    found: Type.Optional(Type.Boolean()),
+    offset: Type.Optional(Type.Number()),
+    limit: Type.Optional(Type.Number()),
+    total_lines: Type.Optional(Type.Number()),
+    returned_line_start: Type.Optional(Type.Number()),
+    returned_line_end: Type.Optional(Type.Number()),
+    truncated: Type.Optional(Type.Boolean()),
+    next_offset: Type.Optional(Type.Union([Type.Number(), Type.Null()])),
+    text: Type.Optional(Type.String()),
+    timing_ms: Type.Optional(RpcTimingMsSchema),
+  },
+  { additionalProperties: true },
+);
+
+const searchPayloadValidator = createJsonValidator(SearchPayloadSchema);
+const renderSearchResultsPayloadValidator = createJsonValidator(RenderSearchResultsPayloadSchema);
+const readDocumentPayloadValidator = createJsonValidator(ReadDocumentPayloadSchema);
+
+type SearchResultLite = Static<typeof SearchResultLiteSchema>;
+type SearchResultPreview = Static<typeof SearchResultPreviewSchema>;
+type SearchPayload = Static<typeof SearchPayloadSchema>;
+type RenderSearchResultsPayload = Static<typeof RenderSearchResultsPayloadSchema>;
+type ReadDocumentPayload = Static<typeof ReadDocumentPayloadSchema>;
+
+export function parseSearchPayload(text: string): SearchPayload {
+  return searchPayloadValidator.parse(text.trim(), "BM25 search response");
+}
+
+export function parseRenderSearchResultsPayload(text: string): RenderSearchResultsPayload {
+  return renderSearchResultsPayloadValidator.parse(
+    text.trim(),
+    "BM25 render_search_results response",
+  );
+}
+
+export function parseReadDocumentPayload(text: string): ReadDocumentPayload {
+  return readDocumentPayloadValidator.parse(text.trim(), "BM25 read_document response");
+}
 
 type CachedSearch = {
   searchId: string;
@@ -314,7 +358,7 @@ async function buildSearchPage(
       },
       signal,
     );
-    const parsed = JSON.parse(output) as RenderSearchResultsPayload;
+    const parsed = parseRenderSearchResultsPayload(output);
     renderTiming = {
       renderRpcMs: parsed.timing_ms?.command,
       serverInitMs: parsed.timing_ms?.init,
@@ -713,7 +757,7 @@ export default function (pi: ExtensionAPI) {
         signal,
       );
 
-      const parsed = JSON.parse(output) as SearchPayload;
+      const parsed = parseSearchPayload(output);
       const results = parsed.results ?? [];
       const searchTiming: ToolTimingBreakdown = {
         searchRpcMs: parsed.timing_ms?.command,
@@ -848,7 +892,7 @@ export default function (pi: ExtensionAPI) {
         signal,
       );
 
-      const parsed = JSON.parse(output) as ReadDocumentPayload;
+      const parsed = parseReadDocumentPayload(output);
       const readTiming: ToolTimingBreakdown = {
         readDocumentRpcMs: parsed.timing_ms?.command,
         serverInitMs: parsed.timing_ms?.init,

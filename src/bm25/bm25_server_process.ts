@@ -1,7 +1,9 @@
 import { createWriteStream, mkdirSync } from "node:fs";
 import { spawn, type ChildProcess, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { dirname, join } from "node:path";
+import { Type, type Static } from "@sinclair/typebox";
 import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
+import { createJsonValidator } from "../lib/json_validation";
 
 export type Bm25ServerReadyEndpoint = {
   host: string;
@@ -36,15 +38,27 @@ export type StartedBm25StdioServer = {
   stop: () => void;
 };
 
-type Bm25RpcReadyMessage = {
-  type?: string;
-  transport?: string;
-  host?: string;
-  port?: number;
-  timing_ms?: {
-    init?: number;
-  };
-};
+const Bm25RpcReadyMessageSchema = Type.Object(
+  {
+    type: Type.String(),
+    transport: Type.String(),
+    host: Type.String(),
+    port: Type.Number(),
+    timing_ms: Type.Optional(
+      Type.Object(
+        {
+          init: Type.Optional(Type.Number()),
+        },
+        { additionalProperties: true },
+      ),
+    ),
+  },
+  { additionalProperties: true },
+);
+
+const bm25RpcReadyMessageValidator = createJsonValidator(Bm25RpcReadyMessageSchema);
+
+type Bm25RpcReadyMessage = Static<typeof Bm25RpcReadyMessageSchema>;
 
 function getTuningArg(env: NodeJS.ProcessEnv, name: string, fallback: string): string {
   return env[name]?.trim() || fallback;
@@ -114,6 +128,10 @@ export function startBm25ServerStdio(
       }
     },
   };
+}
+
+export function parseBm25RpcReadyMessage(text: string, label: string): Bm25RpcReadyMessage {
+  return bm25RpcReadyMessageValidator.parse(text.trim(), label);
 }
 
 export async function startBm25ServerTcp(
@@ -187,23 +205,17 @@ export async function startBm25ServerTcp(
         if (!trimmed) return;
         let parsed: Bm25RpcReadyMessage;
         try {
-          parsed = JSON.parse(trimmed) as Bm25RpcReadyMessage;
-        } catch (error) {
-          finish(
-            new Error(
-              source === "trailing"
-                ? `BM25 RPC daemon stdout ended with an invalid trailing JSON line: ${trimmed}\n${String(error)}`
-                : `Failed to parse BM25 RPC daemon readiness line: ${trimmed}\n${String(error)}`,
-            ),
+          parsed = parseBm25RpcReadyMessage(
+            trimmed,
+            source === "trailing"
+              ? "BM25 RPC daemon trailing readiness line"
+              : "BM25 RPC daemon readiness line",
           );
+        } catch (error) {
+          finish(error instanceof Error ? error : new Error(String(error)));
           return;
         }
-        if (
-          parsed.type !== "server_ready" ||
-          parsed.transport !== "tcp" ||
-          typeof parsed.host !== "string" ||
-          typeof parsed.port !== "number"
-        ) {
+        if (parsed.type !== "server_ready" || parsed.transport !== "tcp") {
           finish(new Error(`Unexpected BM25 RPC daemon readiness payload: ${trimmed}`));
           return;
         }

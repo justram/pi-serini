@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-03-23
+
+### Fixed
+
+- Added Ajv-backed runtime JSON validation for untrusted process-boundary payloads while keeping TypeBox as the schema authoring layer, hardening BM25 RPC responses, BM25 readiness metadata, pi JSON event lines, and extension-side BM25 search/render/read payloads against malformed or shape-mismatched JSON.
+- Added focused regression coverage for malformed BM25, pi-event, and extension payloads so invalid JSON shapes now fail with explicit validation errors instead of relying on unchecked `JSON.parse(...) as T` casts.
+
 ## [0.1.4] - 2026-03-23
 
 ### Fixed

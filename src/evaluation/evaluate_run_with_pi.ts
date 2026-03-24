@@ -19,9 +19,8 @@ import { detectBenchmarkManifestSnapshot } from "../benchmarks/run_manifest";
 import { resolveJudgeEvalOutputDir } from "../runtime/output_layout";
 import { loadJudgeEvalRelevantDocids } from "./judge_eval_qrels";
 import { prepareIsolatedAgentDir } from "../runtime/pi_agent_dir";
+import { parsePiEventJsonLine, type PiEvent } from "../runtime/pi_json_protocol";
 import { startPiJsonProcess, startPiProcessTimeout } from "../runtime/pi_process";
-
-type PiEvent = { type: string; [key: string]: unknown };
 
 type GroundTruthEntry = {
   question: string;
@@ -575,11 +574,15 @@ async function runPiJudge(options: {
       if (!trimmed) return;
       let event: PiEvent;
       try {
-        event = JSON.parse(trimmed) as PiEvent;
+        event = parsePiEventJsonLine(trimmed, "pi JSON line");
       } catch (error) {
         timeout.clear();
         stopReadingStdout();
-        reject(new Error(`Failed to parse pi JSON line: ${trimmed}\n${String(error)}`));
+        reject(
+          new Error(
+            `Failed to parse pi JSON line: ${trimmed}\n${error instanceof Error ? error.message : String(error)}`,
+          ),
+        );
         return;
       }
       events.push(event);

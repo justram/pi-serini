@@ -16,14 +16,13 @@ import { prepareIsolatedAgentDir } from "../runtime/pi_agent_dir";
 import { formatBenchmarkQueryPrompt, type BenchmarkPromptVariant } from "../runtime/prompt";
 import { resolveGitCommitProvenance } from "../runtime/git";
 import { startPiJsonProcess, startPiProcessTimeout } from "../runtime/pi_process";
+import { parsePiEventJsonLine, type PiEvent } from "../runtime/pi_json_protocol";
 import { QueryResultSpool, type QueryNormalizedResult } from "./query_result_spool";
 import {
   createBenchmarkManifestSnapshot,
   getDefaultBenchmarkId,
   resolveBenchmarkConfig,
 } from "../benchmarks/registry";
-
-type PiEvent = { type: string; [key: string]: unknown };
 
 type NormalizedResult = QueryNormalizedResult;
 
@@ -697,13 +696,14 @@ async function runPiOnce(
       if (!trimmed) return;
       let event: PiEvent;
       try {
-        event = JSON.parse(trimmed) as PiEvent;
+        event = parsePiEventJsonLine(trimmed, "pi JSON line");
       } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
         fail(
           new Error(
             source === "trailing"
-              ? `Pi stdout ended with an invalid trailing JSON line: ${trimmed}\n${String(error)}`
-              : `Failed to parse pi JSON line: ${trimmed}\n${String(error)}`,
+              ? `Pi stdout ended with an invalid trailing JSON line: ${trimmed}\n${message}`
+              : `Failed to parse pi JSON line: ${trimmed}\n${message}`,
           ),
         );
         return;

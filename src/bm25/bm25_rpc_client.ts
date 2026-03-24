@@ -1,11 +1,30 @@
-export type Bm25HelperResponse = {
-  id?: number;
-  type?: string;
-  command?: string;
-  success?: boolean;
-  data?: unknown;
-  error?: string;
-};
+import { Type, type Static } from "@sinclair/typebox";
+import { createJsonValidator } from "../lib/json_validation";
+
+const Bm25HelperResponseSchema = Type.Object(
+  {
+    id: Type.Optional(Type.Number()),
+    type: Type.Optional(Type.String()),
+    command: Type.Optional(Type.String()),
+    success: Type.Optional(Type.Boolean()),
+    data: Type.Optional(Type.Unknown()),
+    error: Type.Optional(Type.String()),
+  },
+  { additionalProperties: true },
+);
+
+const PingResponseSchema = Type.Object(
+  {
+    ok: Type.Boolean(),
+  },
+  { additionalProperties: true },
+);
+
+const bm25HelperResponseValidator = createJsonValidator(Bm25HelperResponseSchema);
+const pingResponseValidator = createJsonValidator(PingResponseSchema);
+
+export type Bm25HelperResponse = Static<typeof Bm25HelperResponseSchema>;
+export type Bm25PingResponse = Static<typeof PingResponseSchema>;
 
 export interface Bm25RpcClient {
   request(
@@ -25,11 +44,12 @@ export function createBm25RequestAbortError(
 
 export function parseBm25HelperResponse(line: string): Bm25HelperResponse {
   const trimmed = line.trim();
-  try {
-    return JSON.parse(trimmed) as Bm25HelperResponse;
-  } catch (error) {
-    throw new Error(`Failed to parse BM25 helper RPC response: ${trimmed}\n${String(error)}`);
-  }
+  return bm25HelperResponseValidator.parse(trimmed, "BM25 helper RPC response");
+}
+
+export function parseBm25PingResponse(text: string): Bm25PingResponse {
+  const trimmed = text.trim();
+  return pingResponseValidator.parse(trimmed, "BM25 helper ping response");
 }
 
 export function resolveBm25HelperResponse(
