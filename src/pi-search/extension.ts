@@ -1,5 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Bm25HelperRuntime } from "./helper_runtime";
+import { PiSearchBackendRuntime } from "./helper_runtime";
 import {
   BENCHMARK_TIMEOUT_SECONDS,
   dumpPromptSnapshot,
@@ -23,7 +23,7 @@ import {
 
 export default function (pi: ExtensionAPI) {
   const searchStore = new SearchSessionStore();
-  const helperRuntime = new Bm25HelperRuntime();
+  const backendRuntime = new PiSearchBackendRuntime();
   const spillDir = new ManagedTempSpillDir("pi-bm25-extension-");
   const submitNowDelayMs = getSubmitNowDelayMs();
   let spillSequence = 0;
@@ -33,7 +33,7 @@ export default function (pi: ExtensionAPI) {
   let spillCleanupRegistered = false;
 
   const cleanupSpillDir = () => {
-    helperRuntime.dispose();
+    backendRuntime.dispose();
     spillDir.cleanup();
   };
 
@@ -51,7 +51,7 @@ export default function (pi: ExtensionAPI) {
   };
 
   const toolDeps = {
-    helperRuntime,
+    backendRuntime,
     searchStore,
     spillDir,
     nextSpillSequence,

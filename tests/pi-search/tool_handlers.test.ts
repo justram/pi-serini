@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import type { Bm25HelperRuntime } from "../../src/pi-search/helper_runtime";
+import type { PiSearchBackend } from "../../src/pi-search/backend/interface";
+import type { PiSearchBackendRuntime } from "../../src/pi-search/helper_runtime";
 import { SearchSessionStore } from "../../src/pi-search/search_cache";
 import { ManagedTempSpillDir } from "../../src/pi-search/spill";
 import {
@@ -10,20 +11,17 @@ import {
   executeSearchTool,
 } from "../../src/pi-search/tool_handlers";
 
-type MockHelper = {
-  request: (command: string, params: Record<string, unknown>) => Promise<string>;
-  dispose?: () => void;
-};
+type MockBackend = PiSearchBackend;
 
-function createDeps(helper: MockHelper) {
+function createDeps(backend: MockBackend) {
   const spillDir = new ManagedTempSpillDir("pi-bm25-extension-test-");
   let spillSequence = 0;
   return {
     deps: {
-      helperRuntime: {
-        getHelper: () => helper,
+      backendRuntime: {
+        getBackend: () => backend,
         dispose: () => {},
-      } as unknown as Bm25HelperRuntime,
+      } as unknown as PiSearchBackendRuntime,
       searchStore: new SearchSessionStore(),
       spillDir,
       nextSpillSequence: () => {
@@ -37,7 +35,16 @@ function createDeps(helper: MockHelper) {
 
 void test("search rejects empty query with agent-repair-friendly argument feedback", async () => {
   const { deps, cleanup } = createDeps({
-    request: async () => {
+    capabilities: {
+      backendId: "mock",
+      supportsScore: true,
+      supportsSnippets: false,
+      supportsExactTotalHits: false,
+    },
+    search: async () => {
+      throw new Error("should not be called");
+    },
+    readDocument: async () => {
       throw new Error("should not be called");
     },
   });
@@ -53,7 +60,16 @@ void test("search rejects empty query with agent-repair-friendly argument feedba
 
 void test("read_search_results rejects unknown search_id with repair guidance", async () => {
   const { deps, cleanup } = createDeps({
-    request: async () => {
+    capabilities: {
+      backendId: "mock",
+      supportsScore: true,
+      supportsSnippets: false,
+      supportsExactTotalHits: false,
+    },
+    search: async () => {
+      throw new Error("should not be called");
+    },
+    readDocument: async () => {
       throw new Error("should not be called");
     },
   });
@@ -74,10 +90,20 @@ void test("read_search_results rejects unknown search_id with repair guidance", 
 
 void test("read_document reports missing docids as tool execution failures instead of generic errors", async () => {
   const { deps, cleanup } = createDeps({
-    request: async (command) => {
-      assert.equal(command, "read_document");
-      return JSON.stringify({ docid: "doc-404", found: false, timing_ms: { command: 1 } });
+    capabilities: {
+      backendId: "mock",
+      supportsScore: true,
+      supportsSnippets: false,
+      supportsExactTotalHits: false,
     },
+    search: async () => {
+      throw new Error("should not be called");
+    },
+    readDocument: async () => ({
+      found: false,
+      docid: "doc-404",
+      timingMs: { request: 1 },
+    }),
   });
 
   await assert.rejects(

@@ -1,6 +1,5 @@
-import type { Bm25HelperRuntime } from "./helper_runtime";
+import type { PiSearchBackendRuntime } from "./helper_runtime";
 import { PiSearchInvalidToolArgumentsError, PiSearchToolExecutionError } from "./protocol/errors";
-import { parseReadDocumentPayload, parseSearchPayload } from "./protocol/parse";
 import type {
   PlainSearchParams,
   ReadDocumentParams,
@@ -35,32 +34,35 @@ type SpillSequence = () => number;
 type ToolExecutionContext = { cwd: string };
 
 type ToolHandlerDeps = {
-  helperRuntime: Bm25HelperRuntime;
+  backendRuntime: PiSearchBackendRuntime;
   searchStore: SearchSessionStore;
   spillDir: ManagedTempSpillDir;
   nextSpillSequence: SpillSequence;
 };
 
-function formatReadDocumentText(parsed: ReturnType<typeof parseReadDocumentPayload>): string {
-  if (parsed.found === false) {
-    return `Document with docid '${parsed.docid ?? "unknown"}' not found.`;
-  }
-
-  const docid = parsed.docid ?? "unknown";
-  const totalLines = parsed.total_lines ?? 0;
-  const returnedLineStart = parsed.returned_line_start ?? 0;
-  const returnedLineEnd = parsed.returned_line_end ?? 0;
-  const text = parsed.text ?? "";
+function formatReadDocumentText(parsed: {
+  docid: string;
+  totalUnits?: number;
+  returnedOffsetStart?: number;
+  returnedOffsetEnd?: number;
+  text: string;
+  truncated: boolean;
+  nextOffset?: number;
+  limit: number;
+}): string {
+  const totalLines = parsed.totalUnits ?? 0;
+  const returnedLineStart = parsed.returnedOffsetStart ?? 0;
+  const returnedLineEnd = parsed.returnedOffsetEnd ?? 0;
   const lines = [
-    `[docid=${docid} lines ${returnedLineStart}-${returnedLineEnd} of ${totalLines}]`,
+    `[docid=${parsed.docid} lines ${returnedLineStart}-${returnedLineEnd} of ${totalLines}]`,
     "",
-    text,
+    parsed.text,
   ];
 
-  if (parsed.truncated && parsed.next_offset) {
+  if (parsed.truncated && parsed.nextOffset) {
     lines.push("");
     lines.push(
-      `[Document truncated. Continue with read_document({"docid":"${docid}","offset":${parsed.next_offset},"limit":${parsed.limit ?? 200}}).]`,
+      `[Document truncated. Continue with read_document({"docid":"${parsed.docid}","offset":${parsed.nextOffset},"limit":${parsed.limit}}).]`,
     );
   }
 
@@ -73,7 +75,7 @@ export async function executeSearchTool(
   ctx: ToolExecutionContext,
   deps: ToolHandlerDeps,
 ) {
-  const helper = deps.helperRuntime.getHelper(ctx.cwd);
+  const backend = deps.backendRuntime.getBackend(ctx.cwd);
   const rawQuery = String(params.query ?? "").trim();
   if (!rawQuery) {
     throw new PiSearchInvalidToolArgumentsError(
@@ -82,26 +84,21 @@ export async function executeSearchTool(
     );
   }
   const queryMode = SEARCH_QUERY_MODE;
-  const output = await helper.request(
-    "search",
+  const response = await backend.search(
     {
       query: rawQuery,
-      query_mode: queryMode,
-      k: SEARCH_CACHE_K,
-      rerank_clues: [],
+      limit: SEARCH_CACHE_K,
     },
     signal,
   );
 
-  const parsed = parseSearchPayload(output);
-  const results = parsed.results ?? [];
   const searchTiming: ToolTimingBreakdown = {
-    searchRpcMs: parsed.timing_ms?.command,
-    serverInitMs: parsed.timing_ms?.init,
-    serverUptimeMs: parsed.timing_ms?.server_uptime,
+    searchRpcMs: response.timingMs?.request,
+    serverInitMs: response.timingMs?.backendInit,
+    serverUptimeMs: response.timingMs?.backendUptime,
   };
-  const cached = deps.searchStore.createSearch(rawQuery, parsed.query_mode ?? queryMode, results);
-  const page = await buildSearchPage(helper, cached, 1, SEARCH_FIRST_PAGE_LIMIT, signal);
+  const cached = deps.searchStore.createSearch(rawQuery, queryMode, response.hits);
+  const page = buildSearchPage(cached, 1, SEARCH_FIRST_PAGE_LIMIT, searchTiming);
   const fullPageJson = JSON.stringify(page, null, 2);
   const rendered = truncateSearchOutput(
     deps.spillDir,
@@ -122,10 +119,7 @@ export async function executeSearchTool(
       returnedRankEnd: page.returnedRankEnd,
       nextOffset: page.nextOffset,
       retrievedDocids: cached.results.map((item) => item.docid),
-      timingMs: {
-        ...searchTiming,
-        ...page.timingMs,
-      },
+      timingMs: page.timingMs,
       truncation: rendered.truncation,
       fullOutputPath: rendered.fullOutputPath,
     } satisfies SearchDetails,
@@ -134,11 +128,10 @@ export async function executeSearchTool(
 
 export async function executeReadSearchResultsTool(
   params: ReadSearchResultsParams,
-  signal: AbortSignal | undefined,
-  ctx: ToolExecutionContext,
+  _signal: AbortSignal | undefined,
+  _ctx: ToolExecutionContext,
   deps: ToolHandlerDeps,
 ) {
-  const helper = deps.helperRuntime.getHelper(ctx.cwd);
   const offset = normalizePositiveInteger(params.offset, SEARCH_FIRST_PAGE_LIMIT + 1);
   const limit = normalizePositiveInteger(params.limit, SEARCH_RESULTS_DEFAULT_LIMIT);
   const cached = deps.searchStore.getSearch(params.search_id);
@@ -149,7 +142,7 @@ export async function executeReadSearchResultsTool(
     );
   }
 
-  const page = await buildSearchPage(helper, cached, offset, limit, signal);
+  const page = buildSearchPage(cached, offset, limit);
   const fullPageJson = JSON.stringify(page, null, 2);
   const rendered = truncateSearchOutput(
     deps.spillDir,
@@ -184,11 +177,10 @@ export async function executeReadDocumentTool(
   ctx: ToolExecutionContext,
   deps: ToolHandlerDeps,
 ) {
-  const helper = deps.helperRuntime.getHelper(ctx.cwd);
+  const backend = deps.backendRuntime.getBackend(ctx.cwd);
   const offset = normalizePositiveInteger(params.offset, 1);
   const limit = normalizePositiveInteger(params.limit, 200);
-  const output = await helper.request(
-    "read_document",
+  const response = await backend.readDocument(
     {
       docid: params.docid,
       offset,
@@ -197,26 +189,45 @@ export async function executeReadDocumentTool(
     signal,
   );
 
-  const parsed = parseReadDocumentPayload(output);
   const readTiming: ToolTimingBreakdown = {
-    readDocumentRpcMs: parsed.timing_ms?.command,
-    serverInitMs: parsed.timing_ms?.init,
-    serverUptimeMs: parsed.timing_ms?.server_uptime,
+    readDocumentRpcMs: response.timingMs?.request,
+    serverInitMs: response.timingMs?.backendInit,
+    serverUptimeMs: response.timingMs?.backendUptime,
   };
-  if (parsed.found === false) {
+  if (!response.found) {
     throw new PiSearchToolExecutionError(
       "read_document",
       `docid '${params.docid}' was not found. Choose a docid returned by search(...) or read_search_results(...).`,
     );
   }
 
-  const formatted = formatReadDocumentText(parsed);
+  const formatted = formatReadDocumentText({
+    docid: response.docid,
+    totalUnits: response.totalUnits,
+    returnedOffsetStart: response.returnedOffsetStart,
+    returnedOffsetEnd: response.returnedOffsetEnd,
+    text: response.text,
+    truncated: response.truncated,
+    nextOffset: response.nextOffset,
+    limit: response.limit,
+  });
+  const spillPayload = {
+    docid: response.docid,
+    offset: response.offset,
+    limit: response.limit,
+    returned_line_start: response.returnedOffsetStart,
+    returned_line_end: response.returnedOffsetEnd,
+  };
   const rendered = truncateReadDocumentOutput(
     deps.spillDir,
-    buildReadSpillFileName(parsed, deps.nextSpillSequence()),
+    buildReadSpillFileName(spillPayload, deps.nextSpillSequence()),
     formatted,
     formatted,
-    parsed,
+    {
+      ...spillPayload,
+      truncated: response.truncated,
+      next_offset: response.nextOffset,
+    },
   );
 
   return {
@@ -225,11 +236,11 @@ export async function executeReadDocumentTool(
       docid: params.docid,
       offset,
       limit,
-      totalLines: parsed.total_lines ?? 0,
-      returnedLineStart: parsed.returned_line_start ?? 0,
-      returnedLineEnd: parsed.returned_line_end ?? 0,
-      truncated: parsed.truncated ?? false,
-      nextOffset: parsed.next_offset ?? undefined,
+      totalLines: response.totalUnits ?? 0,
+      returnedLineStart: response.returnedOffsetStart ?? 0,
+      returnedLineEnd: response.returnedOffsetEnd ?? 0,
+      truncated: response.truncated,
+      nextOffset: response.nextOffset,
       timingMs: readTiming,
       outputTruncation: rendered.truncation,
       fullOutputPath: rendered.fullOutputPath,

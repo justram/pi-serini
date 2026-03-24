@@ -1,16 +1,11 @@
 import type { TruncationResult } from "@mariozechner/pi-coding-agent";
-import type {
-  ReadDocumentPayload,
-  SearchResultLite,
-  SearchResultPreview,
-} from "./protocol/schemas";
+import type { SearchBackendSearchHit } from "./backend/types";
 
 export type CachedSearch = {
   searchId: string;
   rawQuery: string;
   queryMode: string;
-  results: SearchResultLite[];
-  previewCache: Map<string, SearchResultPreview>;
+  results: SearchBackendSearchHit[];
   createdAt: number;
 };
 
@@ -33,7 +28,7 @@ export type SearchPage = {
   returnedRankEnd: number;
   nextOffset?: number;
   timingMs?: ToolTimingBreakdown;
-  results: Array<(SearchResultLite & SearchResultPreview) & { rank: number }>;
+  results: Array<SearchBackendSearchHit & { rank: number }>;
 };
 
 export type SearchDetails = {
@@ -80,5 +75,3 @@ export type ReadDocumentDetails = {
   outputTruncation?: TruncationResult;
   fullOutputPath?: string;
 };
-
-export type ReadDocumentFormatterInput = ReadDocumentPayload;

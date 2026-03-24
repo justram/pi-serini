@@ -1,11 +1,8 @@
-import type { Bm25RpcClient } from "../bm25/bm25_rpc_client";
-import { parseRenderSearchResultsPayload } from "./protocol/parse";
-import type { SearchResultLite, SearchResultPreview } from "./protocol/schemas";
+import type { SearchBackendSearchHit } from "./backend/types";
 import type { CachedSearch, SearchPage, ToolTimingBreakdown } from "./tool_types";
 
 const MAX_CACHED_SEARCHES = 32;
 const SEARCH_RESULTS_DEFAULT_LIMIT = 10;
-const SEARCH_SNIPPET_MAX_CHARS = 220;
 
 export function normalizePositiveInteger(value: number | undefined, fallback: number): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
@@ -20,7 +17,11 @@ export class SearchSessionStore {
   private readonly searchCache = new Map<string, CachedSearch>();
   private searchCounter = 0;
 
-  createSearch(rawQuery: string, queryMode: string, results: SearchResultLite[]): CachedSearch {
+  createSearch(
+    rawQuery: string,
+    queryMode: string,
+    results: SearchBackendSearchHit[],
+  ): CachedSearch {
     this.searchCounter += 1;
     const searchId = `s${this.searchCounter}`;
     const cached: CachedSearch = {
@@ -28,7 +29,6 @@ export class SearchSessionStore {
       rawQuery,
       queryMode,
       results,
-      previewCache: new Map<string, SearchResultPreview>(),
       createdAt: Date.now(),
     };
     this.searchCache.set(searchId, cached);
@@ -51,54 +51,19 @@ export class SearchSessionStore {
   }
 }
 
-export async function buildSearchPage(
-  helper: Bm25RpcClient,
+export function buildSearchPage(
   cached: CachedSearch,
   offset: number,
   limit: number,
-  signal?: AbortSignal,
-): Promise<SearchPage> {
+  timingMs?: ToolTimingBreakdown,
+): SearchPage {
   const normalizedOffset = normalizePositiveInteger(offset, 1);
   const normalizedLimit = normalizePositiveInteger(limit, SEARCH_RESULTS_DEFAULT_LIMIT);
   const totalCached = cached.results.length;
   const startIndex = Math.min(normalizedOffset - 1, totalCached);
   const endIndex = Math.min(startIndex + normalizedLimit, totalCached);
-  const pageLiteResults = cached.results.slice(startIndex, endIndex);
-  const missingDocids = pageLiteResults
-    .map((result) => result.docid)
-    .filter((docid) => !cached.previewCache.has(docid));
-
-  let renderTiming: ToolTimingBreakdown | undefined;
-  if (missingDocids.length > 0) {
-    const output = await helper.request(
-      "render_search_results",
-      {
-        docids: missingDocids,
-        snippet_max_chars: SEARCH_SNIPPET_MAX_CHARS,
-        highlight_clues: [],
-        inline_highlights: false,
-      },
-      signal,
-    );
-    const parsed = parseRenderSearchResultsPayload(output);
-    renderTiming = {
-      renderRpcMs: parsed.timing_ms?.command,
-      serverInitMs: parsed.timing_ms?.init,
-      serverUptimeMs: parsed.timing_ms?.server_uptime,
-    };
-    for (const preview of parsed.results ?? []) {
-      cached.previewCache.set(preview.docid, preview);
-    }
-  }
-
-  const pageResults = pageLiteResults.map((result, index) => ({
+  const pageResults = cached.results.slice(startIndex, endIndex).map((result, index) => ({
     ...result,
-    ...(cached.previewCache.get(result.docid) ?? {
-      title: undefined,
-      matched_terms: [],
-      excerpt: "",
-      excerpt_truncated: false,
-    }),
     rank: startIndex + index + 1,
   }));
   const returnedRankStart = pageResults.length > 0 ? pageResults[0].rank : 0;
@@ -115,7 +80,7 @@ export async function buildSearchPage(
     returnedRankStart,
     returnedRankEnd,
     nextOffset,
-    timingMs: renderTiming,
+    timingMs,
     results: pageResults,
   };
 }
@@ -136,13 +101,20 @@ export function formatSearchPageText(page: SearchPage): string {
     "",
   ];
   for (const result of page.results) {
-    lines.push(`${result.rank}. docid=${result.docid} score=${result.score.toFixed(4)}`);
+    const scoreText = typeof result.score === "number" ? ` score=${result.score.toFixed(4)}` : "";
+    lines.push(`${result.rank}. docid=${result.docid}${scoreText}`);
     if (result.title) {
       lines.push(`   Title: ${result.title}`);
     }
-    lines.push(`   Excerpt: ${result.excerpt}`);
-    if (result.excerpt_truncated) {
-      lines.push("   Excerpt preview truncated.");
+    if (result.snippet) {
+      lines.push(`   Excerpt: ${result.snippet}`);
+      if (result.snippetTruncated) {
+        lines.push("   Excerpt preview truncated.");
+      }
+    } else {
+      lines.push(
+        "   Excerpt: (No snippet available from this backend. Use read_document(docid) to inspect the document.)",
+      );
     }
     lines.push("");
   }
