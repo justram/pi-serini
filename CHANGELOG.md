@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+### Changed
+
+- Changed prompt ownership to live under `src/pi-search/` by moving the agent prompt module from `src/runtime/prompt.ts` to `src/pi-search/agent_prompt.ts`, and renamed internal benchmark/orchestration/operator prompt-variant types and fields to `pi-search`-owned names while keeping compatibility-facing CLI flags, environment variables, and persisted artifact keys unchanged.
+
 ## [0.2.0] - 2026-03-23
 
 ### Added
