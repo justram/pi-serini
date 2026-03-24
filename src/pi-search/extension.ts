@@ -1,4 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
+import { resolvePiSearchExtensionConfigFromEnv } from "./config";
 import { PiSearchBackendRuntime } from "./helper_runtime";
 import {
   BENCHMARK_TIMEOUT_SECONDS,
@@ -22,8 +23,9 @@ import {
 } from "./tool_handlers";
 
 export default function (pi: ExtensionAPI) {
+  const extensionConfig = resolvePiSearchExtensionConfigFromEnv();
   const searchStore = new SearchSessionStore();
-  const backendRuntime = new PiSearchBackendRuntime();
+  const backendRuntime = new PiSearchBackendRuntime(extensionConfig);
   const spillDir = new ManagedTempSpillDir("pi-bm25-extension-");
   const submitNowDelayMs = getSubmitNowDelayMs();
   let spillSequence = 0;

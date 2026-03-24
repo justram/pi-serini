@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
+import { buildAnseriniBm25TcpExtensionConfig } from "../pi-search/config";
 import { extractRetrievedDocidsFromPiSearchToolDetails } from "../pi-search/protocol/tool_result_details";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
 import { prepareIsolatedAgentDir } from "../runtime/pi_agent_dir";
@@ -1053,6 +1054,10 @@ async function main() {
       const queryStartedAt = Date.now();
       let run: BenchmarkRun;
       try {
+        const piSearchExtensionConfig = buildAnseriniBm25TcpExtensionConfig({
+          host: bm25RpcEndpoint.host,
+          port: bm25RpcEndpoint.port,
+        });
         const phase = await runPiOnce({
           piBinary: args.piBinary,
           model: args.model,
@@ -1062,7 +1067,10 @@ async function main() {
           queryId,
           timeoutSeconds: args.timeoutSeconds,
           isolatedAgentDir,
-          extraEnv: bm25RpcEnv,
+          extraEnv: {
+            ...bm25RpcEnv,
+            PI_SEARCH_EXTENSION_CONFIG: JSON.stringify(piSearchExtensionConfig),
+          },
           rawEventsPath,
           stderrPath,
         });

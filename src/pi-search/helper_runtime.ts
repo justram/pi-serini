@@ -1,61 +1,50 @@
 import { resolve } from "node:path";
-import { getDefaultBenchmarkId, resolveBenchmarkConfig } from "../benchmarks/registry";
 import { Bm25StdioRpcClient } from "../bm25/bm25_stdio_rpc_client";
 import { Bm25TcpRpcClient } from "../bm25/bm25_tcp_rpc_client";
 import type { Bm25RpcClient } from "../bm25/bm25_rpc_client";
 import type { PiSearchBackend } from "./backend/interface";
 import { AnseriniBm25Backend } from "./backends/anserini_bm25/adapter";
+import type { PiSearchExtensionConfig } from "./config";
 
-export function resolveDefaultIndexPath(env: NodeJS.ProcessEnv = process.env): string {
-  return resolveBenchmarkConfig({
-    benchmarkId: env.BENCHMARK ?? getDefaultBenchmarkId(),
-  }).indexPath;
-}
-
-function getHelperPaths(cwd: string, env: NodeJS.ProcessEnv = process.env) {
-  return {
-    indexPath: resolve(cwd, env.PI_BM25_INDEX_PATH ?? resolveDefaultIndexPath(env)),
-  };
-}
-
-function getSharedHelperEndpoint(env: NodeJS.ProcessEnv = process.env): {
-  host: string;
-  port: number;
-} | null {
-  const host = env.PI_BM25_RPC_HOST?.trim();
-  const rawPort = env.PI_BM25_RPC_PORT?.trim();
-  if (!host || !rawPort) {
-    return null;
+function createBm25Helper(cwd: string, config: PiSearchExtensionConfig): Bm25RpcClient {
+  const backend = config.backend;
+  if (backend.kind !== "anserini-bm25") {
+    throw new Error(`Unsupported pi-search backend kind: ${String(backend.kind)}`);
   }
-  const port = Number.parseInt(rawPort, 10);
-  if (!Number.isFinite(port) || port <= 0) {
-    throw new Error(`Invalid PI_BM25_RPC_PORT=${rawPort}`);
+  if (backend.transport.kind === "tcp") {
+    return new Bm25TcpRpcClient({
+      host: backend.transport.host,
+      port: backend.transport.port,
+    });
   }
-  return { host, port };
+  return new Bm25StdioRpcClient({
+    cwd,
+    indexPath: resolve(cwd, backend.transport.indexPath),
+    env: process.env,
+  });
 }
 
-function createBm25Helper(cwd: string): Bm25RpcClient {
-  const sharedEndpoint = getSharedHelperEndpoint();
-  return sharedEndpoint
-    ? new Bm25TcpRpcClient({ host: sharedEndpoint.host, port: sharedEndpoint.port })
-    : new Bm25StdioRpcClient({
-        cwd,
-        indexPath: getHelperPaths(cwd).indexPath,
-        env: process.env,
-      });
+function buildBackendCacheKey(cwd: string, config: PiSearchExtensionConfig): string {
+  const backend = config.backend;
+  if (backend.kind !== "anserini-bm25") {
+    throw new Error(`Unsupported pi-search backend kind: ${String(backend.kind)}`);
+  }
+  if (backend.transport.kind === "tcp") {
+    return `anserini-bm25:tcp:${backend.transport.host}:${backend.transport.port}`;
+  }
+  return `anserini-bm25:stdio:${resolve(cwd, backend.transport.indexPath)}`;
 }
 
 export class PiSearchBackendRuntime {
   private readonly backendByKey = new Map<string, PiSearchBackend>();
 
+  constructor(private readonly config: PiSearchExtensionConfig) {}
+
   getBackend(cwd: string): PiSearchBackend {
-    const sharedEndpoint = getSharedHelperEndpoint();
-    const key = sharedEndpoint
-      ? `rpc:${sharedEndpoint.host}:${sharedEndpoint.port}`
-      : `local:${cwd}`;
+    const key = buildBackendCacheKey(cwd, this.config);
     let backend = this.backendByKey.get(key);
     if (!backend) {
-      backend = new AnseriniBm25Backend(createBm25Helper(cwd));
+      backend = new AnseriniBm25Backend(createBm25Helper(cwd, this.config));
       this.backendByKey.set(key, backend);
     }
     return backend;

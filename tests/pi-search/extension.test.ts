@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import test from "node:test";
-import { resolveDefaultIndexPath } from "../../src/pi-search/helper_runtime";
+import {
+  buildAnseriniBm25StdioExtensionConfig,
+  buildAnseriniBm25TcpExtensionConfig,
+  parsePiSearchExtensionConfig,
+  resolvePiSearchExtensionConfigFromEnv,
+} from "../../src/pi-search/config";
 import {
   buildReadSpillFileName,
   buildSearchSpillFileName,
@@ -10,15 +15,58 @@ import {
   truncateSearchOutput,
 } from "../../src/pi-search/spill";
 
-void test("resolveDefaultIndexPath follows the benchmark registry default", () => {
-  assert.equal(resolveDefaultIndexPath({}), "indexes/browsecomp-plus-bm25-tevatron");
+void test("buildAnseriniBm25TcpExtensionConfig produces a valid tcp-backed config", () => {
+  const parsed = buildAnseriniBm25TcpExtensionConfig({ host: "127.0.0.1", port: 9000 });
+
+  assert.equal(parsed.backend.kind, "anserini-bm25");
+  assert.equal(parsed.backend.transport.kind, "tcp");
+  if (parsed.backend.transport.kind === "tcp") {
+    assert.equal(parsed.backend.transport.host, "127.0.0.1");
+    assert.equal(parsed.backend.transport.port, 9000);
+  }
 });
 
-void test("resolveDefaultIndexPath respects BENCHMARK overrides", () => {
-  assert.equal(
-    resolveDefaultIndexPath({ BENCHMARK: "benchmark-template" }),
-    "indexes/benchmark-template-bm25",
+void test("parsePiSearchExtensionConfig accepts a tcp-backed Anserini config", () => {
+  const parsed = parsePiSearchExtensionConfig(
+    '{"backend":{"kind":"anserini-bm25","transport":{"kind":"tcp","host":"127.0.0.1","port":9000}}}',
   );
+
+  assert.equal(parsed.backend.kind, "anserini-bm25");
+  assert.equal(parsed.backend.transport.kind, "tcp");
+  if (parsed.backend.transport.kind === "tcp") {
+    assert.equal(parsed.backend.transport.host, "127.0.0.1");
+    assert.equal(parsed.backend.transport.port, 9000);
+  }
+});
+
+void test("resolvePiSearchExtensionConfigFromEnv rejects missing explicit extension config", () => {
+  assert.throws(
+    () => resolvePiSearchExtensionConfigFromEnv({}),
+    /Missing PI_SEARCH_EXTENSION_CONFIG/,
+  );
+});
+
+void test("buildAnseriniBm25StdioExtensionConfig produces a valid stdio-backed config", () => {
+  const parsed = buildAnseriniBm25StdioExtensionConfig({ indexPath: "indexes/demo" });
+
+  assert.equal(parsed.backend.kind, "anserini-bm25");
+  assert.equal(parsed.backend.transport.kind, "stdio");
+  if (parsed.backend.transport.kind === "stdio") {
+    assert.equal(parsed.backend.transport.indexPath, "indexes/demo");
+  }
+});
+
+void test("resolvePiSearchExtensionConfigFromEnv parses stdio-backed config from env", () => {
+  const parsed = resolvePiSearchExtensionConfigFromEnv({
+    PI_SEARCH_EXTENSION_CONFIG:
+      '{"backend":{"kind":"anserini-bm25","transport":{"kind":"stdio","indexPath":"indexes/demo"}}}',
+  });
+
+  assert.equal(parsed.backend.kind, "anserini-bm25");
+  assert.equal(parsed.backend.transport.kind, "stdio");
+  if (parsed.backend.transport.kind === "stdio") {
+    assert.equal(parsed.backend.transport.indexPath, "indexes/demo");
+  }
 });
 
 void test("ManagedTempSpillDir writes spills under a dedicated temp root and cleans them up", () => {
@@ -52,8 +100,8 @@ void test("buildSearchSpillFileName includes search identity, rank range, and sp
           rank: 1,
           docid: "doc-1",
           score: 1,
-          excerpt: "excerpt",
-          excerpt_truncated: false,
+          snippet: "excerpt",
+          snippetTruncated: false,
         },
       ],
     },
