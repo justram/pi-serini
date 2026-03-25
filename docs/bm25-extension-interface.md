@@ -12,6 +12,10 @@ For that broader package boundary, see:
 
 - `docs/pi-search-contract.md`
 
+For the local package-level directory map and entrypoints, see:
+
+- `../src/pi-search/README.md`
+
 ## Why this document exists
 
 `pi-search` is now intentionally split into two layers:

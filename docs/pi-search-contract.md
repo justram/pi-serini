@@ -4,6 +4,10 @@ This document defines the `v0.2.0` ownership boundary between the standalone `pi
 
 ## Why this exists
 
+For a local directory-level maintainer entrypoint and module map, start with:
+
+- `../src/pi-search/README.md`
+
 `pi-search` is intended to be shippable as a standalone extension. That means its tool/protocol contract must be owned inside `src/pi-search/`, not scattered across benchmark runner code.
 
 `pi-serini` then acts as the benchmark-backed validation loop around that contract:
