@@ -62,7 +62,7 @@ It is also responsible for:
 - repair-friendly error messages
 - prompt shaping and time-budget steering
 
-Critically, `src/pi-search/extension.ts` is now package-owned again and does **not** import `src/bm25/*` directly.
+Critically, `src/pi-search/extension.ts` is now package-owned again and does **not** import `src/search-providers/anserini/*` directly.
 
 ### Repo-local BM25 integration layer
 
@@ -72,14 +72,14 @@ Main repo wrapper:
 
 Repo-local BM25 backend factory:
 
-- `src/bm25/pi_search_backend_factory.ts`
+- `src/search-providers/anserini/pi_search_backend_factory.ts`
 
 BM25 transport/client modules:
 
-- `src/bm25/bm25_rpc_client.ts`
-- `src/bm25/bm25_stdio_rpc_client.ts`
-- `src/bm25/bm25_tcp_rpc_client.ts`
-- `src/bm25/bm25_server_process.ts`
+- `src/search-providers/anserini/bm25_rpc_client.ts`
+- `src/search-providers/anserini/bm25_stdio_rpc_client.ts`
+- `src/search-providers/anserini/bm25_tcp_rpc_client.ts`
+- `src/search-providers/anserini/bm25_server_process.ts`
 
 Anserini BM25 adapter:
 
@@ -112,11 +112,11 @@ There are now four distinct layers:
 3. **Repo-local backend construction**
    - repo-owned
    - `src/extensions/pi_search.ts`
-   - `src/bm25/pi_search_backend_factory.ts`
+   - `src/search-providers/anserini/pi_search_backend_factory.ts`
    - injects the in-repo BM25 transport/runtime implementation into package-owned `pi-search`
 
 4. **Backend retrieval service**
-   - current in-repo implementation is the Anserini BM25 helper stack under `src/bm25/` plus the JVM server
+   - current in-repo implementation is the Anserini BM25 helper stack under `src/search-providers/anserini/` plus the JVM server
    - this may be local stdio or a remote TCP service depending on config
 
 That means BM25 no longer owns the whole extension surface.
@@ -143,7 +143,7 @@ Conceptually, the package-owned layer says:
 
 Its job is:
 
-- import `createRepoPiSearchBackend` from `src/bm25/pi_search_backend_factory.ts`
+- import `createRepoPiSearchBackend` from `src/search-providers/anserini/pi_search_backend_factory.ts`
 - call `registerPiSearchExtension(pi, { createBackend: createRepoPiSearchBackend })`
 
 So this file is no longer the real home of extension logic.
@@ -152,7 +152,7 @@ It is just the repository-specific composition point.
 
 ### 3. Repo-local BM25 factory chooses transport details
 
-`src/bm25/pi_search_backend_factory.ts` owns the in-repo Anserini BM25 wiring.
+`src/search-providers/anserini/pi_search_backend_factory.ts` owns the in-repo Anserini BM25 wiring.
 
 If the configured backend is not `anserini-bm25`, it delegates to the generic package-owned backend factory.
 
@@ -244,7 +244,7 @@ The repo constructs a local BM25 helper process and communicates over stdin/stdo
 
 Relevant module:
 
-- `src/bm25/bm25_stdio_rpc_client.ts`
+- `src/search-providers/anserini/bm25_stdio_rpc_client.ts`
 
 This path is responsible for:
 
@@ -259,7 +259,7 @@ The repo connects to an already-running BM25 helper endpoint.
 
 Relevant module:
 
-- `src/bm25/bm25_tcp_rpc_client.ts`
+- `src/search-providers/anserini/bm25_tcp_rpc_client.ts`
 
 This path is responsible for:
 
@@ -309,9 +309,9 @@ Those topics belong in:
 
 If BM25 integration changes again, keep these rules true:
 
-1. `src/pi-search/extension.ts` must stay free of direct `src/bm25/*` imports.
+1. `src/pi-search/extension.ts` must stay free of direct `src/search-providers/anserini/*` imports.
 2. `src/extensions/pi_search.ts` should remain a thin repo-local wrapper.
-3. Repo-local transport/process construction should stay in `src/bm25/pi_search_backend_factory.ts` or an equivalent repo-owned integration layer.
+3. Repo-local transport/process construction should stay in `src/search-providers/anserini/pi_search_backend_factory.ts` or an equivalent repo-owned integration layer.
 4. BM25-specific request/response handling should stay behind the Anserini adapter boundary.
 5. Package-owned `pi-search` logic should continue to depend on the normalized `PiSearchBackend` contract, not BM25 helper details.
 

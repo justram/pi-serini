@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { parseBm25HelperResponse, parseBm25PingResponse } from "../src/bm25/bm25_rpc_client";
-import { parseBm25RpcReadyMessage } from "../src/bm25/bm25_server_process";
+import {
+  parseBm25HelperResponse,
+  parseBm25PingResponse,
+} from "../src/search-providers/anserini/bm25_rpc_client";
+import { parseBm25RpcReadyMessage } from "../src/search-providers/anserini/bm25_server_process";
 import {
   PiSearchInvalidToolResultError,
   PiSearchMalformedJsonError,

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { createServer } from "node:net";
 import test from "node:test";
 
-import { Bm25TcpRpcClient } from "../src/bm25/bm25_tcp_rpc_client";
+import { Bm25TcpRpcClient } from "../src/search-providers/anserini/bm25_tcp_rpc_client";
 import { attachJsonlLineReader, serializeJsonLine } from "../src/runtime/jsonl";
 
 async function withJsonlServer(

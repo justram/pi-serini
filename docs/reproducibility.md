@@ -161,7 +161,7 @@ and launched by:
 
 - `scripts/bm25_server.sh`
 
-The important architectural boundary is that BM25 launch semantics are owned in typed TypeScript under `src/bm25/bm25_server_process.ts`, which decides transport mode, tuning args, readiness handling, and endpoint discovery. The shell script remains only a thin JVM/bootstrap implementation detail so the runtime stays independent of `pyserini`.
+The important architectural boundary is that Anserini BM25 launch semantics are owned in typed TypeScript under `src/search-providers/anserini/bm25_server_process.ts`, which decides transport mode, tuning args, readiness handling, and endpoint discovery. The shell script remains only a thin JVM/bootstrap implementation detail so the runtime stays independent of `pyserini`.
 
 ## Index and dataset reuse
 

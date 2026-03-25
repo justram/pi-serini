@@ -1,6 +1,6 @@
 import { createWriteStream } from "node:fs";
 import net from "node:net";
-import { startBm25ServerTcp } from "../bm25/bm25_server_process";
+import { startBm25ServerTcp } from "../search-providers/anserini/bm25_server_process";
 import { spawnPipedCommand, waitForChildExit } from "../runtime/process";
 import { buildTsxCommand } from "../runtime/tsx";
 import { resolveBenchmarkAwareSharedLogDir } from "../runtime/output_layout";

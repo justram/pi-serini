@@ -1,5 +1,5 @@
 import { Type, type Static } from "@sinclair/typebox";
-import { createJsonValidator } from "../lib/json_validation";
+import { createJsonValidator } from "../../lib/json_validation";
 
 const Bm25HelperResponseSchema = Type.Object(
   {

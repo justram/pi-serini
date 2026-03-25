@@ -13,7 +13,7 @@ import type { ChildProcess } from "node:child_process";
 import net from "node:net";
 import { fileURLToPath } from "node:url";
 import { dirname, join, resolve } from "node:path";
-import { startBm25ServerTcp } from "../bm25/bm25_server_process";
+import { startBm25ServerTcp } from "../search-providers/anserini/bm25_server_process";
 import { spawnPipedCommand, waitForChildExit } from "../runtime/process";
 import { buildTsxCommand } from "../runtime/tsx";
 import {

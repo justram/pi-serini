@@ -69,7 +69,7 @@ That includes:
 Current main consumers / wrappers:
 
 - `src/extensions/pi_search.ts`
-  - thin repo-local wrapper that injects `src/bm25/pi_search_backend_factory.ts` into the package-owned `src/pi-search/extension.ts`
+  - thin repo-local wrapper that injects `src/search-providers/anserini/pi_search_backend_factory.ts` into the package-owned `src/pi-search/extension.ts`
 - `src/orchestration/run_pi_benchmark.ts`
 - `src/evaluation/evaluate_run_with_pi.ts`
 - downstream summarize/evaluate/report modules

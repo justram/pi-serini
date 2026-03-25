@@ -240,5 +240,5 @@ The intended steady state is:
 - compatibility-only TypeScript entrypoints live under `src/legacy/`
 - shared runtime helpers live under `src/runtime/`
 - benchmark setup scripts remain benchmark-scoped subprocess implementations unless they become genuinely generic enough to migrate cleanly
-- the BM25 JVM helper remains callable through `scripts/bm25_server.sh`, but BM25 launch semantics are owned in typed TypeScript under `src/bm25/`
+- the BM25 JVM helper remains callable through `scripts/bm25_server.sh`, but Anserini-provider launch semantics are owned in typed TypeScript under `src/search-providers/anserini/`
 - shell is a compatibility or subprocess boundary, not the control plane

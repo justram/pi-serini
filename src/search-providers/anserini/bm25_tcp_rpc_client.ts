@@ -1,5 +1,5 @@
 import { connect } from "node:net";
-import { attachJsonlLineReader, serializeJsonLine } from "../runtime/jsonl";
+import { attachJsonlLineReader, serializeJsonLine } from "../../runtime/jsonl";
 import {
   createBm25RequestAbortError,
   parseBm25HelperResponse,

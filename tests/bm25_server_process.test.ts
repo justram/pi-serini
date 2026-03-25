@@ -1,7 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { buildBm25ServerStdioArgs, buildBm25ServerTcpArgs } from "../src/bm25/bm25_server_process";
+import {
+  buildBm25ServerStdioArgs,
+  buildBm25ServerTcpArgs,
+} from "../src/search-providers/anserini/bm25_server_process";
 
 void test("buildBm25ServerStdioArgs uses default tuning values when env is unset", () => {
   const args = buildBm25ServerStdioArgs("indexes/demo", {});

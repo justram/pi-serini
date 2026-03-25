@@ -1,11 +1,11 @@
 import { resolve } from "node:path";
 import { Bm25StdioRpcClient } from "./bm25_stdio_rpc_client";
 import { Bm25TcpRpcClient } from "./bm25_tcp_rpc_client";
-import type { PiSearchExtensionConfig } from "../pi-search/config";
-import type { PiSearchBackend } from "../pi-search/searcher/contract/interface";
-import { createPiSearchBackend } from "../pi-search/searcher/adapters/create";
-import { AnseriniBm25Backend } from "../pi-search/searcher/adapters/anserini_bm25/adapter";
-import type { AnseriniBm25HelperTransport } from "../pi-search/searcher/adapters/anserini_bm25/helper_transport";
+import type { PiSearchExtensionConfig } from "../../pi-search/config";
+import type { PiSearchBackend } from "../../pi-search/searcher/contract/interface";
+import { createPiSearchBackend } from "../../pi-search/searcher/adapters/create";
+import { AnseriniBm25Backend } from "../../pi-search/searcher/adapters/anserini_bm25/adapter";
+import type { AnseriniBm25HelperTransport } from "../../pi-search/searcher/adapters/anserini_bm25/helper_transport";
 
 function createAnseriniBm25Helper(
   cwd: string,

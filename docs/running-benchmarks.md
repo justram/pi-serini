@@ -32,7 +32,7 @@ There are two intentional subprocess boundaries in the current architecture:
 - benchmark-specific setup implementations under `scripts/benchmarks/<benchmark>/...`
 - the thin JVM bootstrap script `scripts/bm25_server.sh`
 
-That split is deliberate. Setup internals are dataset-specific bootstrap work, while BM25 launch semantics such as tuning args, transport selection, readiness parsing, and endpoint discovery are owned in typed TypeScript under `src/bm25/`.
+That split is deliberate. Setup internals are dataset-specific bootstrap work, while Anserini BM25 launch semantics such as tuning args, transport selection, readiness parsing, and endpoint discovery are owned in typed TypeScript under `src/search-providers/anserini/`.
 
 ## Supported benchmarks
 
@@ -153,7 +153,7 @@ PI_BM25_RPC_PORT=50455 \
 npm run run:benchmark:query-set:shared-bm25
 ```
 
-The active orchestration layer starts BM25 through typed helpers in `src/bm25/bm25_server_process.ts`. Those helpers still invoke `scripts/bm25_server.sh`, but only as a thin JVM/bootstrap boundary. Shell no longer owns BM25 orchestration semantics.
+The active orchestration layer starts BM25 through typed helpers in `src/search-providers/anserini/bm25_server_process.ts`. Those helpers still invoke `scripts/bm25_server.sh`, but only as a thin JVM/bootstrap boundary. Shell no longer owns BM25 orchestration semantics.
 
 ### Sharded shared-daemon run
 

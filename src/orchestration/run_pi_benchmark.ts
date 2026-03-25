@@ -16,7 +16,7 @@ import {
   extractPiSearchFailureMetadata,
   extractRetrievedDocidsFromPiSearchToolDetails,
 } from "../pi-search/protocol/tool_result_details";
-import { startBm25ServerTcp } from "../bm25/bm25_server_process";
+import { startBm25ServerTcp } from "../search-providers/anserini/bm25_server_process";
 import { prepareIsolatedAgentDir } from "../runtime/pi_agent_dir";
 import { formatPiSearchPrompt, type PiSearchPromptVariant } from "../pi-search/agent_prompt";
 import { resolveGitCommitProvenance } from "../runtime/git";

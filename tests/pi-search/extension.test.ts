@@ -69,20 +69,20 @@ void test("generic pi-search backend creation rejects Anserini transport ownersh
   );
 });
 
-void test("package-owned pi-search extension module stays free of repo-local BM25 imports", () => {
+void test("package-owned pi-search extension module stays free of repo-local provider imports", () => {
   const extensionSource = readFileSync("src/pi-search/extension.ts", "utf8");
 
-  assert.doesNotMatch(extensionSource, /from\s+["']\.\.\/bm25\//);
+  assert.doesNotMatch(extensionSource, /from\s+["']\.\.\/(?:bm25|search-providers)\//);
   assert.match(extensionSource, /registerPiSearchExtension/);
 });
 
-void test("package-owned anserini adapter stays free of repo-local BM25 imports", () => {
+void test("package-owned anserini adapter stays free of repo-local provider imports", () => {
   const adapterSource = readFileSync(
     "src/pi-search/searcher/adapters/anserini_bm25/adapter.ts",
     "utf8",
   );
 
-  assert.doesNotMatch(adapterSource, /from\s+["']\.\.\.\.\/\.\.\.\.\/bm25\//);
+  assert.doesNotMatch(adapterSource, /from\s+["']\.\.\.\.\/\.\.\.\/(?:bm25|search-providers)\//);
   assert.match(adapterSource, /AnseriniBm25HelperTransport/);
 });
 
@@ -104,7 +104,7 @@ function collectTypeScriptFiles(rootDir: string): string[] {
 void test("package-owned pi-search tree stays free of repo-local src imports", () => {
   const piSearchFiles = collectTypeScriptFiles("src/pi-search");
   const forbiddenImportPattern =
-    /from\s+["'][^"']*(?:\.\.\/)*(?:bm25|orchestration|evaluation|operator|benchmarks|extensions)\//;
+    /from\s+["'][^"']*(?:\.\.\/)*(?:bm25|search-providers|orchestration|evaluation|operator|benchmarks|extensions)\//;
 
   assert.ok(piSearchFiles.length > 0, "expected pi-search source files to exist");
   for (const filePath of piSearchFiles) {

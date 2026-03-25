@@ -4,7 +4,10 @@ import { EventEmitter } from "node:events";
 import test from "node:test";
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
 
-import { Bm25StdioRpcClient, type Bm25StdioRpcLauncher } from "../src/bm25/bm25_stdio_rpc_client";
+import {
+  Bm25StdioRpcClient,
+  type Bm25StdioRpcLauncher,
+} from "../src/search-providers/anserini/bm25_stdio_rpc_client";
 import { attachJsonlLineReader, serializeJsonLine } from "../src/runtime/jsonl";
 
 function createFakeLauncher(
