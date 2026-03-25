@@ -5,6 +5,7 @@
 ### Added
 
 - Added small stable machine-readable metadata to `pi-search` protocol errors under `src/pi-search/protocol/errors.ts`, including `code`, `toolName`, `target`, `schemaName`, and `fieldPath`, while keeping the existing repair-friendly human-readable error messages intact. (commit `8b921cd`)
+- Added structured `pi-search` failure metadata extraction and benchmark-harness artifact support so recoverable extension failures can carry machine-readable classification alongside the existing human-readable benchmark evidence text when metadata is present. (commit `6055b5f`)
 
 ### Changed
 
