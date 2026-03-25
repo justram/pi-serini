@@ -2,10 +2,15 @@
 
 ## [Unreleased]
 
+### Added
+
+- Added small stable machine-readable metadata to `pi-search` protocol errors under `src/pi-search/protocol/errors.ts`, including `code`, `toolName`, `target`, `schemaName`, and `fieldPath`, while keeping the existing repair-friendly human-readable error messages intact. (commit `8b921cd`)
+
 ### Changed
 
 - Restored `src/pi-search/extension.ts` as the package-owned `pi-search` extension registration layer and moved the repo-local BM25 composition seam into the thin wrapper `src/extensions/pi_search.ts`, so standalone `pi-search` ownership no longer depends directly on in-repo BM25 transport wiring. (commit `068c468`)
 - Moved the shared JSONL stream helper from fake `pi-search` ownership to `src/runtime/jsonl.ts`, keeping BM25 transport code and orchestration readers on a neutral runtime primitive instead of a future package boundary. (commit `068c468`)
+- Changed `src/pi-search/protocol/parse.ts` to attach structured protocol error metadata for malformed JSON and schema-invalid payloads, so future harness or package consumers can classify failures without parsing prose. (commit `8b921cd`)
 
 ### Fixed
 
