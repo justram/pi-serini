@@ -1,4 +1,4 @@
-import type { Bm25RpcClient } from "../../../../bm25/bm25_rpc_client";
+import type { AnseriniBm25HelperTransport } from "./helper_transport";
 import { parseReadDocumentPayload, parseSearchPayload } from "../../../protocol/parse";
 import type { PiSearchBackend } from "../../contract/interface";
 import type {
@@ -19,7 +19,7 @@ const ANSERINI_BM25_CAPABILITIES: SearchBackendCapabilities = {
 export class AnseriniBm25Backend implements PiSearchBackend {
   readonly capabilities = ANSERINI_BM25_CAPABILITIES;
 
-  constructor(private readonly helper: Bm25RpcClient) {}
+  constructor(private readonly helper: AnseriniBm25HelperTransport) {}
 
   async search(
     request: SearchBackendSearchRequest,

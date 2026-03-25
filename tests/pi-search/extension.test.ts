@@ -75,6 +75,16 @@ void test("package-owned pi-search extension module stays free of repo-local BM2
   assert.match(extensionSource, /registerPiSearchExtension/);
 });
 
+void test("package-owned anserini adapter stays free of repo-local BM25 imports", () => {
+  const adapterSource = readFileSync(
+    "src/pi-search/searcher/adapters/anserini_bm25/adapter.ts",
+    "utf8",
+  );
+
+  assert.doesNotMatch(adapterSource, /from\s+["']\.\.\.\.\/\.\.\.\.\/bm25\//);
+  assert.match(adapterSource, /AnseriniBm25HelperTransport/);
+});
+
 void test("resolvePiSearchExtensionConfigFromEnv parses stdio-backed config from env", () => {
   const parsed = resolvePiSearchExtensionConfigFromEnv({
     PI_SEARCH_EXTENSION_CONFIG:
