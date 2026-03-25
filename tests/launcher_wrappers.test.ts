@@ -620,7 +620,7 @@ void test("node low-level benchmark entrypoint resolves manifest-aligned default
     "--thinking",
     "medium",
     "--extension",
-    "src/pi-search/extension.ts",
+    "src/extensions/pi_search.ts",
     "--pi",
     "pi",
     "--timeoutSeconds",
@@ -745,7 +745,7 @@ void test("node benchmark query-set entrypoint resolves manifest-aligned default
     "--thinking",
     "medium",
     "--extension",
-    "src/pi-search/extension.ts",
+    "src/extensions/pi_search.ts",
     "--pi",
     "pi",
     "--timeoutSeconds",
@@ -810,7 +810,7 @@ void test("node shared benchmark entrypoint resolves benchmark-aware shared defa
 
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=dev/);
-  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
+  assert.match(output, /EXTENSION=src\/extensions\/pi_search.ts/);
   assert.match(output, /BM25_THREADS=7/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_benchmark-template_dev_plain_minimal/);
   assert.match(output, /LOG_DIR=runs\/shared-bm25-benchmark-template-dev/);
@@ -828,7 +828,7 @@ void test("legacy BrowseComp shared wrapper preserves legacy output naming", () 
 
   assert.match(output, /BENCHMARK=browsecomp-plus/);
   assert.match(output, /QUERY_SET=q9/);
-  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
+  assert.match(output, /EXTENSION=src\/extensions\/pi_search.ts/);
   assert.match(output, /BM25_THREADS=7/);
   assert.match(output, /LOG_DIR=runs\/shared-bm25-q9/);
   assert.match(output, /OUTPUT_DIR=runs\/pi_bm25_q9_plain_minimal_excerpt/);
@@ -880,7 +880,7 @@ void test("node sharded benchmark entrypoint resolves benchmark-aware output nam
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=dev/);
   assert.match(output, /QRELS_FILE=data\/benchmark-template\/qrels\/qrel_primary.txt/);
-  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
+  assert.match(output, /EXTENSION=src\/extensions\/pi_search.ts/);
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   assert.match(output, /SHARD_COUNT=3/);
   assert.match(output, /BM25_THREADS=7/);
@@ -924,7 +924,7 @@ void test("generic sharded launcher resolves benchmark-aware output naming", () 
   assert.match(output, /BENCHMARK=benchmark-template/);
   assert.match(output, /QUERY_SET=dev/);
   assert.match(output, /QRELS_FILE=data\/benchmark-template\/qrels\/qrel_primary.txt/);
-  assert.match(output, /EXTENSION=src\/pi-search\/extension.ts/);
+  assert.match(output, /EXTENSION=src\/extensions\/pi_search.ts/);
   assert.match(output, /INDEX_PATH=indexes\/benchmark-template-bm25/);
   assert.match(output, /SHARD_COUNT=3/);
   assert.match(output, /BM25_THREADS=7/);

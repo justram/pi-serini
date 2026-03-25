@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 import {
   buildAnseriniBm25StdioExtensionConfig,
@@ -16,6 +16,7 @@ import {
   truncateReadDocumentOutput,
   truncateSearchOutput,
 } from "../../src/pi-search/spill";
+import { createPiSearchBackend } from "../../src/pi-search/searcher/adapters/create";
 
 void test("buildAnseriniBm25TcpExtensionConfig produces a valid tcp-backed config", () => {
   const parsed = buildAnseriniBm25TcpExtensionConfig({ host: "127.0.0.1", port: 9000 });
@@ -56,6 +57,22 @@ void test("buildAnseriniBm25StdioExtensionConfig produces a valid stdio-backed c
   if (parsed.backend.transport.kind === "stdio") {
     assert.equal(parsed.backend.transport.indexPath, "indexes/demo");
   }
+});
+
+void test("generic pi-search backend creation rejects Anserini transport ownership without caller injection", () => {
+  const config = buildAnseriniBm25StdioExtensionConfig({ indexPath: "indexes/demo" });
+
+  assert.throws(
+    () => createPiSearchBackend(process.cwd(), config),
+    /Anserini BM25 backend creation now requires caller-owned transport integration/,
+  );
+});
+
+void test("package-owned pi-search extension module stays free of repo-local BM25 imports", () => {
+  const extensionSource = readFileSync("src/pi-search/extension.ts", "utf8");
+
+  assert.doesNotMatch(extensionSource, /from\s+["']\.\.\/bm25\//);
+  assert.match(extensionSource, /registerPiSearchExtension/);
 });
 
 void test("resolvePiSearchExtensionConfigFromEnv parses stdio-backed config from env", () => {

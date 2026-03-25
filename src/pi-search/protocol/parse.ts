@@ -33,13 +33,16 @@ const parseRenderSearchResultsPayloadText = createProtocolParser(RenderSearchRes
 const parseReadDocumentPayloadText = createProtocolParser(ReadDocumentPayloadSchema);
 
 export function parseSearchPayload(text: string) {
-  return parseSearchPayloadText(text.trim(), "BM25 search response");
+  return parseSearchPayloadText(text.trim(), "pi-search search response");
 }
 
 export function parseRenderSearchResultsPayload(text: string) {
-  return parseRenderSearchResultsPayloadText(text.trim(), "BM25 render_search_results response");
+  return parseRenderSearchResultsPayloadText(
+    text.trim(),
+    "pi-search render_search_results response",
+  );
 }
 
 export function parseReadDocumentPayload(text: string) {
-  return parseReadDocumentPayloadText(text.trim(), "BM25 read_document response");
+  return parseReadDocumentPayloadText(text.trim(), "pi-search read_document response");
 }

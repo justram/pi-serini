@@ -1,29 +1,8 @@
 import { resolve } from "node:path";
-import type { Bm25RpcClient } from "../../../bm25/bm25_rpc_client";
-import { Bm25StdioRpcClient } from "../../../bm25/bm25_stdio_rpc_client";
-import { Bm25TcpRpcClient } from "../../../bm25/bm25_tcp_rpc_client";
 import type { PiSearchBackend } from "../contract/interface";
 import type { PiSearchExtensionConfig } from "../../config";
-import { AnseriniBm25Backend } from "./anserini_bm25/adapter";
 import { HttpJsonSearchBackend } from "./http_json/adapter";
 import { MockSearchBackend } from "./mock/adapter";
-
-function createAnseriniBm25Helper(cwd: string, config: PiSearchExtensionConfig): Bm25RpcClient {
-  if (config.backend.kind !== "anserini-bm25") {
-    throw new Error(`Unsupported pi-search backend kind: ${String(config.backend.kind)}`);
-  }
-  if (config.backend.transport.kind === "tcp") {
-    return new Bm25TcpRpcClient({
-      host: config.backend.transport.host,
-      port: config.backend.transport.port,
-    });
-  }
-  return new Bm25StdioRpcClient({
-    cwd,
-    indexPath: resolve(cwd, config.backend.transport.indexPath),
-    env: process.env,
-  });
-}
 
 export function buildPiSearchBackendCacheKey(cwd: string, config: PiSearchExtensionConfig): string {
   if (config.backend.kind === "mock") {
@@ -39,7 +18,7 @@ export function buildPiSearchBackendCacheKey(cwd: string, config: PiSearchExtens
 }
 
 export function createPiSearchBackend(
-  cwd: string,
+  _cwd: string,
   config: PiSearchExtensionConfig,
 ): PiSearchBackend {
   if (config.backend.kind === "mock") {
@@ -48,5 +27,7 @@ export function createPiSearchBackend(
   if (config.backend.kind === "http-json") {
     return new HttpJsonSearchBackend(config.backend);
   }
-  return new AnseriniBm25Backend(createAnseriniBm25Helper(cwd, config));
+  throw new Error(
+    "Anserini BM25 backend creation now requires caller-owned transport integration. Inject a repo-local backend factory from the caller instead of constructing BM25 runtime details inside pi-search.",
+  );
 }

@@ -39,23 +39,23 @@ void test("Pi event validation requires a top-level type string", () => {
   );
 });
 
-void test("BM25 search payload validation rejects malformed results", () => {
+void test("pi-search search payload validation rejects malformed results", () => {
   assert.throws(
     () => parseSearchPayload('{"results":[{"docid":"d1","score":"high"}]}'),
-    /Invalid BM25 search response/,
+    /Invalid pi-search search response/,
   );
 });
 
-void test("BM25 render payload validation rejects malformed preview results", () => {
+void test("pi-search render payload validation rejects malformed preview results", () => {
   assert.throws(
     () => parseRenderSearchResultsPayload('{"results":[{"docid":"d1","excerpt":"x"}]}'),
-    /Invalid BM25 render_search_results response/,
+    /Invalid pi-search render_search_results response/,
   );
 });
 
-void test("BM25 read_document payload validation rejects malformed truncation metadata", () => {
+void test("pi-search read_document payload validation rejects malformed truncation metadata", () => {
   assert.throws(
     () => parseReadDocumentPayload('{"docid":"d1","truncated":true,"next_offset":"later"}'),
-    /Invalid BM25 read_document response/,
+    /Invalid pi-search read_document response/,
   );
 });

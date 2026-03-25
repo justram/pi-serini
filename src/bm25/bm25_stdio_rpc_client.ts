@@ -1,5 +1,5 @@
 import type { ChildProcessWithoutNullStreams } from "node:child_process";
-import { attachJsonlLineReader, serializeJsonLine } from "../pi-search/lib/jsonl";
+import { attachJsonlLineReader, serializeJsonLine } from "../runtime/jsonl";
 import {
   createBm25RequestAbortError,
   parseBm25HelperResponse,

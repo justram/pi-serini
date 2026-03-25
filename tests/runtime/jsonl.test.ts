@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { PassThrough } from "node:stream";
-import { attachJsonlLineReader } from "./jsonl";
+import { attachJsonlLineReader } from "../../src/runtime/jsonl";
 
 void test("attachJsonlLineReader routes an unterminated trailing line to onTrailingLine", async () => {
   const stream = new PassThrough();

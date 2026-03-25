@@ -77,7 +77,7 @@ void test("package run:benchmark:query-set script drives the active orchestratio
     "--thinking",
     "medium",
     "--extension",
-    "src/pi-search/extension.ts",
+    "src/extensions/pi_search.ts",
     "--pi",
     "pi",
     "--timeoutSeconds",

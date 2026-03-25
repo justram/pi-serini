@@ -3,7 +3,7 @@ import { createServer } from "node:net";
 import test from "node:test";
 
 import { Bm25TcpRpcClient } from "../src/bm25/bm25_tcp_rpc_client";
-import { attachJsonlLineReader, serializeJsonLine } from "../src/pi-search/lib/jsonl";
+import { attachJsonlLineReader, serializeJsonLine } from "../src/runtime/jsonl";
 
 async function withJsonlServer(
   handler: (message: Record<string, unknown>, socket: import("node:net").Socket) => void,

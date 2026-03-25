@@ -1,651 +1,318 @@
-# BM25 extension architecture and backend interface
+# BM25 integration architecture for `pi-search`
 
-This document describes the contract between `pi-serini`'s retrieval extension and the backend BM25 service.
+This document explains the **BM25-specific integration seam** inside `pi-serini`.
 
-It is intended for users who want to keep the `pi` retrieval-agent workflow but replace:
+It is for maintainers or backend integrators who want to understand one narrow question:
 
-- the prebuilt Lucene index under `indexes/...`
-- the bundled Anserini/JVM server
-- or both
+- how the in-repo Anserini BM25 path plugs into the backend-agnostic `pi-search` extension
 
-with their own retrieval stack.
+It is **not** the source of truth for the full `pi-search` extension contract.
+
+For that broader package boundary, see:
+
+- `docs/pi-search-contract.md`
+
+## Why this document exists
+
+`pi-search` is now intentionally split into two layers:
+
+1. **package-owned `pi-search` extension logic**
+   - lives under `src/pi-search/`
+   - owns tool registration, tool behavior, protocol validation, search-session state, spill handling, and prompt/runtime policy
+2. **repo-local BM25 integration glue**
+   - lives outside `src/pi-search/`
+   - owns how this repository constructs the Anserini BM25 backend over stdio or TCP
+
+That means the question "how does BM25 work here?" is no longer the same as "how does the `pi-search` extension work?"
+
+The BM25 path is now just one backend integration for `pi-search`.
+
+## Current ownership split
+
+### Package-owned `pi-search` layer
+
+Main package-owned entrypoint:
+
+- `src/pi-search/extension.ts`
+
+Important supporting modules:
+
+- `src/pi-search/config.ts`
+- `src/pi-search/protocol/`
+- `src/pi-search/searcher/contract/`
+- `src/pi-search/searcher/adapters/`
+- `src/pi-search/searcher/runtime.ts`
+- `src/pi-search/search_cache.ts`
+- `src/pi-search/tool_handlers.ts`
+- `src/pi-search/spill.ts`
+- `src/pi-search/prompt_policy.ts`
+
+This layer is responsible for the agent-facing tool surface:
+
+- `search`
+- `read_search_results`
+- `read_document`
+
+It is also responsible for:
+
+- validating extension config
+- validating tool arguments and tool results
+- caching ranked results behind `search_id`
+- pagination behavior for result browsing and document reading
+- repair-friendly error messages
+- prompt shaping and time-budget steering
+
+Critically, `src/pi-search/extension.ts` is now package-owned again and does **not** import `src/bm25/*` directly.
+
+### Repo-local BM25 integration layer
+
+Main repo wrapper:
+
+- `src/extensions/pi_search.ts`
+
+Repo-local BM25 backend factory:
+
+- `src/bm25/pi_search_backend_factory.ts`
+
+BM25 transport/client modules:
+
+- `src/bm25/bm25_rpc_client.ts`
+- `src/bm25/bm25_stdio_rpc_client.ts`
+- `src/bm25/bm25_tcp_rpc_client.ts`
+- `src/bm25/bm25_server_process.ts`
+
+Anserini BM25 adapter:
+
+- `src/pi-search/searcher/adapters/anserini_bm25/adapter.ts`
+
+This layer is responsible for turning repo-local BM25 runtime details into a `PiSearchBackend` instance.
+
+That includes:
+
+- choosing stdio vs TCP transport
+- resolving stdio index paths relative to the repo working directory
+- passing `process.env` into the BM25 helper process path
+- constructing the BM25 RPC client
+- wrapping that client in the Anserini BM25 searcher adapter
 
 ## Big picture
 
-There are three layers:
+There are now four distinct layers:
 
-1. **Agent-facing extension**
-   - file: `src/pi-search/extension.ts`
-   - exposes the tools the model sees:
-     - `search`
-     - `read_search_results`
-     - `read_document`
+1. **Agent-facing extension surface**
+   - package-owned
+   - `src/pi-search/extension.ts`
+   - registers the `search`, `read_search_results`, and `read_document` tools
 
-2. **Transport/helper layer**
-   - also inside `src/pi-search/extension.ts`
-   - talks to a backend either:
-     - by launching `scripts/bm25_server.sh` locally over stdio
-     - or by connecting to an already-running TCP service via:
-       - `PI_BM25_RPC_HOST`
-       - `PI_BM25_RPC_PORT`
+2. **Searcher contract and adapter normalization**
+   - package-owned
+   - `src/pi-search/searcher/`
+   - defines the backend-agnostic `PiSearchBackend` contract
 
-3. **Backend retrieval service**
-   - current implementation: `jvm/src/main/java/dev/jhy/piserini/Bm25Server.java`
-   - may be replaced by any other service that implements the same JSON-line protocol
+3. **Repo-local backend construction**
+   - repo-owned
+   - `src/extensions/pi_search.ts`
+   - `src/bm25/pi_search_backend_factory.ts`
+   - injects the in-repo BM25 transport/runtime implementation into package-owned `pi-search`
 
-The key design point is:
+4. **Backend retrieval service**
+   - current in-repo implementation is the Anserini BM25 helper stack under `src/bm25/` plus the JVM server
+   - this may be local stdio or a remote TCP service depending on config
 
-- the **tool contract is owned by the extension**
-- the **backend contract is much smaller and lower-level**
+That means BM25 no longer owns the whole extension surface.
 
-So if you want to swap out Anserini, you do **not** need to reimplement the extension's tool UX exactly inside your backend. You only need to satisfy the backend RPC contract described below.
+It owns only one backend implementation path.
 
-## What the model sees vs what the backend sees
+## How the layers connect
 
-### Model-facing tools
+### 1. Package-owned extension registration
 
-The model sees three tools:
+`src/pi-search/extension.ts` exports:
 
-- `search(reason, query)`
-- `read_search_results(reason, search_id, offset?, limit?)`
-- `read_document(reason, docid, offset?, limit?)`
+- `registerPiSearchExtension(...)`
 
-Important:
+That function owns tool registration and runtime behavior, but accepts injected backend creation.
 
-- `search_id` caching and pagination are implemented in the extension, not in the backend
-- the backend does **not** need to understand `search_id`
-- the backend does **not** need to store search sessions
+Conceptually, the package-owned layer says:
 
-The extension handles:
+- "give me a way to create a `PiSearchBackend`, and I will provide the `pi-search` tool UX"
 
-- issuing the initial retrieval
-- caching top-`k` hits for a search
-- rendering first-page and later-page result views
-- prompt shaping and tool descriptions
-- timeout steering / retrieval blocking near budget exhaustion
-- prompt cleanup for benchmark turns
+### 2. Repo-local wrapper injects BM25 backend creation
 
-### Backend-facing RPC
+`src/extensions/pi_search.ts` is intentionally thin.
 
-The backend only needs to support these low-level commands:
+Its job is:
 
-- `search`
-- `render_search_results`
-- `read_document`
-- optionally `ping`
+- import `createRepoPiSearchBackend` from `src/bm25/pi_search_backend_factory.ts`
+- call `registerPiSearchExtension(pi, { createBackend: createRepoPiSearchBackend })`
 
-That is the actual replacement surface.
+So this file is no longer the real home of extension logic.
 
-## Transport contract
+It is just the repository-specific composition point.
 
-The extension supports two backend modes.
+### 3. Repo-local BM25 factory chooses transport details
 
-### 1. Local process over stdio
+`src/bm25/pi_search_backend_factory.ts` owns the in-repo Anserini BM25 wiring.
 
-If no external RPC host/port is provided, the extension launches:
+If the configured backend is not `anserini-bm25`, it delegates to the generic package-owned backend factory.
 
-- `scripts/bm25_server.sh`
+If the configured backend **is** `anserini-bm25`, it does the repo-local work needed for this repository's helper model:
 
-and communicates using newline-delimited JSON over stdin/stdout.
+- TCP transport:
+  - construct `Bm25TcpRpcClient`
+- stdio transport:
+  - resolve `indexPath` relative to `cwd`
+  - construct `Bm25StdioRpcClient`
+  - pass `process.env`
 
-### 2. External service over TCP
+Then it returns:
 
-If these are set:
+- `new AnseriniBm25Backend(...)`
 
-- `PI_BM25_RPC_HOST`
-- `PI_BM25_RPC_PORT`
+### 4. The Anserini adapter normalizes BM25 behavior into the shared contract
 
-the extension connects to that TCP endpoint and sends the same newline-delimited JSON protocol.
+`src/pi-search/searcher/adapters/anserini_bm25/adapter.ts` translates BM25 helper behavior into the backend-agnostic `PiSearchBackend` interface.
 
-### Message framing
+That means the top-level `pi-search` layer does not need to know BM25 transport details.
 
-Every request and response is exactly one JSON object per line.
+It only consumes the normalized backend contract.
 
-- encoding: UTF-8
-- framing: newline-delimited JSON (JSONL)
-- no binary framing
-- no HTTP required
+## What BM25 still owns
 
-## Lifecycle contract
+BM25-specific code should remain responsible for things that are honestly BM25/Anserini/runtime-specific, such as:
 
-### TCP readiness message
+- helper process launch details
+- TCP connection details
+- JSONL request/response transport
+- helper readiness behavior
+- JVM/Anserini-specific request and response semantics
+- mapping BM25 helper payloads into normalized `pi-search` backend responses
 
-When running in TCP mode, the server must print one readiness line to stdout before it starts serving requests:
+This is why the following still live in BM25-shaped modules:
 
-```json
-{
-  "type": "server_ready",
-  "transport": "tcp",
-  "host": "127.0.0.1",
-  "port": 50455,
-  "timing_ms": { "init": 123.456 }
-}
-```
-
-Required fields:
-
-- `type`: must be `"server_ready"`
-- `transport`: must be `"tcp"`
-- `host`: string
-- `port`: number
-
-Optional but used for diagnostics:
-
-- `timing_ms.init`
-
-In stdio mode, no readiness line is required.
-
-## Request/response envelope
-
-The extension sends requests in this shape:
-
-```json
-{"id":1,"type":"search",...command_specific_fields...}
-```
+- RPC clients
+- server-process management
+- the repo-local backend factory
+- the Anserini BM25 adapter
 
-The backend must return exactly one response line:
+## What BM25 no longer owns
 
-```json
-{"id":1,"type":"response","command":"search","success":true,"data":{...payload...}}
-```
-
-On failure:
-
-```json
-{ "id": 1, "type": "response", "command": "search", "success": false, "error": "...message..." }
-```
-
-Required envelope fields:
-
-- `id`: echo back the request id
-- `type`: must be `"response"`
-- `command`: command name
-- `success`: boolean
-- exactly one of:
-  - `data`
-  - `error`
-
-## Command contract
-
-## 1. `search`
-
-### Request
-
-```json
-{
-  "id": 1,
-  "type": "search",
-  "query": "example lexical query",
-  "query_mode": "plain",
-  "k": 1000,
-  "rerank_clues": []
-}
-```
-
-Fields:
-
-- `query` required string
-- `query_mode` string
-  - current extension uses only `"plain"`
-  - current JVM server also supports `"lucene"`, but the cleaned repo preset does not depend on it
-- `k` positive integer
-- `rerank_clues` array
-  - current extension sends `[]`
-  - replacement backends may safely ignore it
-
-### Successful payload
-
-```json
-{
-  "mode": "search",
-  "query": "example lexical query",
-  "query_mode": "plain",
-  "k": 1000,
-  "results": [
-    { "docid": "123", "score": 42.17 },
-    { "docid": "456", "score": 39.02 }
-  ],
-  "timing_ms": {
-    "command": 12.3,
-    "server_uptime": 456.7,
-    "init": 123.4
-  }
-}
-```
-
-Required payload fields for compatibility:
-
-- `results`: array of objects with:
-  - `docid`: string
-  - `score`: number
-
-Recommended fields:
-
-- `mode`
-- `query`
-- `query_mode`
-- `k`
-- `timing_ms`
-
-### Behavioral expectations
-
-- return the top `k` documents in ranked order
-- ranking can be BM25 or any compatible lexical retrieval strategy
-- docids must be stable and usable in later `render_search_results` and `read_document` calls
-
-## 2. `render_search_results`
-
-This command turns ranked docids into model-readable snippets.
-
-The extension uses this after `search` to render first-page and later-page ranking views.
-
-### Request
-
-```json
-{
-  "id": 2,
-  "type": "render_search_results",
-  "docids": ["123", "456"],
-  "snippet_max_chars": 220,
-  "highlight_clues": [],
-  "inline_highlights": false
-}
-```
-
-Fields:
-
-- `docids` required array of strings
-- `snippet_max_chars` positive integer
-- `highlight_clues` array
-  - current extension sends `[]`
-  - replacement backends may ignore it
-- `inline_highlights` boolean
-  - current extension sends `false`
-  - replacement backends may ignore it
-
-### Successful payload
-
-```json
-{
-  "mode": "render_search_results",
-  "docids": ["123", "456"],
-  "results": [
-    {
-      "docid": "123",
-      "title": "Document title",
-      "matched_terms": [],
-      "excerpt": "Short preview text...",
-      "excerpt_truncated": true
-    },
-    {
-      "docid": "456",
-      "title": null,
-      "matched_terms": [],
-      "excerpt": "Another preview...",
-      "excerpt_truncated": false
-    }
-  ],
-  "timing_ms": {
-    "command": 4.2,
-    "server_uptime": 460.1,
-    "init": 123.4
-  }
-}
-```
-
-Required per-result fields for compatibility:
-
-- `docid`: string
-- `excerpt`: string
-- `excerpt_truncated`: boolean
-
-Recommended per-result fields:
-
-- `title`: string or null
-- `matched_terms`: array of strings
-
-### Behavioral expectations
-
-- preserve result order matching the input `docids`
-- return one rendered preview per requested docid
-- if a docid is missing, return a placeholder row rather than crashing the whole request when possible
-
-## 3. `read_document`
-
-This command returns a line-oriented chunk of a document.
-
-### Request
-
-```json
-{
-  "id": 3,
-  "type": "read_document",
-  "docid": "123",
-  "offset": 1,
-  "limit": 200
-}
-```
-
-Fields:
-
-- `docid` required string
-- `offset` positive integer, 1-indexed line number
-- `limit` positive integer
-
-### Successful payload
-
-```json
-{
-  "mode": "read_document",
-  "docid": "123",
-  "found": true,
-  "offset": 1,
-  "limit": 200,
-  "total_lines": 780,
-  "returned_line_start": 1,
-  "returned_line_end": 200,
-  "truncated": true,
-  "next_offset": 201,
-  "text": "...document text chunk...",
-  "timing_ms": {
-    "command": 3.8,
-    "server_uptime": 463.9,
-    "init": 123.4
-  }
-}
-```
-
-If the document does not exist:
-
-```json
-{
-  "mode": "read_document",
-  "docid": "123",
-  "found": false,
-  "error": "Document with docid '123' not found"
-}
-```
-
-Required payload fields when found:
-
-- `found`: boolean
-- `text`: string
-- `total_lines`: number
-- `returned_line_start`: number
-- `returned_line_end`: number
-- `truncated`: boolean
-- `next_offset`: number or null
-
-### Behavioral expectations
-
-- interpret `offset` as 1-indexed line offset
-- paginate deterministically
-- preserve stable line boundaries for the same stored document text
-
-## 4. `ping` (optional)
-
-### Request
-
-```json
-{ "id": 4, "type": "ping" }
-```
+BM25 should **not** own the package-level extension surface anymore.
 
-### Response
+That includes:
 
-```json
-{ "id": 4, "type": "response", "command": "ping", "success": true, "data": { "ok": true } }
-```
-
-The current extension does not depend on `ping` in the critical benchmark path, but it is useful for debugging.
-
-## Minimal backend you need to implement
-
-If you want to replace the bundled Anserini server, the minimum viable backend is:
-
-- accept JSONL requests over stdio or TCP
-- support:
-  - `search`
-  - `render_search_results`
-  - `read_document`
-- return response envelopes exactly as described above
-- use stable `docid` values across commands
-
-That is enough to preserve the extension and agent workflow.
-
-## What you are free to change behind the interface
-
-You may replace all of the following without changing the extension:
-
-- index format
-- retrieval engine
-- ranking formula
-- snippet generation strategy
-- document storage layer
-- server language/runtime
-- process model
-
-For example, your replacement could be:
-
-- another Lucene server
-- Elasticsearch or OpenSearch behind a thin adapter
-- Tantivy behind a JSONL bridge
-- a custom Rust/Go/Java/Python lexical retriever
-
-As long as it satisfies the command contract, the extension does not care.
-
-## What is currently hard-coded in the extension
-
-The cleaned extension is intentionally narrow.
-
-Current assumptions:
-
-- search mode used by the extension: `plain`
-- preview rendering expected: simple excerpt rendering
-- no structured search grammar
-- no extension-side highlight-clue generation
-- no extension-side inline highlighting mode
-
-So replacement backends only need to support the plain-path contract.
-
-## Environment variables relevant to backend replacement
-
-### External backend reuse
-
-- `PI_BM25_RPC_HOST`
-- `PI_BM25_RPC_PORT`
-
-If both are set, the extension uses the external TCP service instead of launching `scripts/bm25_server.sh`.
-
-### Local backend pathing
-
-If the bundled local launcher is used, the default index path is controlled by:
-
-- `PI_BM25_INDEX_PATH`
-
-Default value in this repo:
-
-- `indexes/browsecomp-plus-bm25-tevatron`
-
-## Recommended migration strategy for custom backends
-
-1. Keep `src/pi-search/extension.ts` unchanged.
-2. Stand up a tiny adapter service that implements this JSONL protocol.
-3. Point the benchmark at it with:
-   - `PI_BM25_RPC_HOST`
-   - `PI_BM25_RPC_PORT`
-4. Verify command-by-command:
-   - `search`
-   - `render_search_results`
-   - `read_document`
-5. Only after protocol compatibility is stable, swap the default launcher/scripts if desired.
-
-This keeps replacement work isolated to the backend boundary.
-
-## Example JSONL transcripts
-
-The examples below show the actual wire shape a replacement backend should support.
-
-### Example 1: `search`
-
-Request line:
-
-```json
-{
-  "id": 1,
-  "type": "search",
-  "query": "grammy winner school dismissed military addiction spouse died 1997",
-  "query_mode": "plain",
-  "k": 5,
-  "rerank_clues": []
-}
-```
-
-Response line:
-
-```json
-{
-  "id": 1,
-  "type": "response",
-  "command": "search",
-  "success": true,
-  "data": {
-    "mode": "search",
-    "query": "grammy winner school dismissed military addiction spouse died 1997",
-    "query_mode": "plain",
-    "k": 5,
-    "results": [
-      { "docid": "71781", "score": 42.173 },
-      { "docid": "24042", "score": 39.551 }
-    ],
-    "timing_ms": { "command": 8.214, "server_uptime": 152.004, "init": 91.337 }
-  }
-}
-```
-
-### Example 2: `render_search_results`
-
-Request line:
-
-```json
-{
-  "id": 2,
-  "type": "render_search_results",
-  "docids": ["71781", "24042"],
-  "snippet_max_chars": 220,
-  "highlight_clues": [],
-  "inline_highlights": false
-}
-```
-
-Response line:
-
-```json
-{
-  "id": 2,
-  "type": "response",
-  "command": "render_search_results",
-  "success": true,
-  "data": {
-    "mode": "render_search_results",
-    "docids": ["71781", "24042"],
-    "results": [
-      {
-        "docid": "71781",
-        "title": "Johnny Cash",
-        "matched_terms": [],
-        "excerpt": "John R. Cash was an American singer-songwriter...",
-        "excerpt_truncated": true
-      },
-      {
-        "docid": "24042",
-        "title": "Another title",
-        "matched_terms": [],
-        "excerpt": "Preview text for the second result...",
-        "excerpt_truncated": false
-      }
-    ],
-    "timing_ms": { "command": 3.102, "server_uptime": 155.229, "init": 91.337 }
-  }
-}
-```
-
-### Example 3: `read_document`
-
-Request line:
-
-```json
-{ "id": 3, "type": "read_document", "docid": "71781", "offset": 1, "limit": 200 }
-```
-
-Response line:
-
-```json
-{
-  "id": 3,
-  "type": "response",
-  "command": "read_document",
-  "success": true,
-  "data": {
-    "mode": "read_document",
-    "docid": "71781",
-    "found": true,
-    "offset": 1,
-    "limit": 200,
-    "total_lines": 781,
-    "returned_line_start": 1,
-    "returned_line_end": 200,
-    "truncated": true,
-    "next_offset": 201,
-    "text": "Line 1...\nLine 2...\n...",
-    "timing_ms": { "command": 2.487, "server_uptime": 157.901, "init": 91.337 }
-  }
-}
-```
-
-### Example 4: missing document
-
-Request line:
-
-```json
-{ "id": 4, "type": "read_document", "docid": "does-not-exist", "offset": 1, "limit": 200 }
-```
-
-Response line:
-
-```json
-{
-  "id": 4,
-  "type": "response",
-  "command": "read_document",
-  "success": true,
-  "data": {
-    "mode": "read_document",
-    "docid": "does-not-exist",
-    "found": false,
-    "error": "Document with docid 'does-not-exist' not found",
-    "timing_ms": { "command": 0.422, "server_uptime": 158.44, "init": 91.337 }
-  }
-}
-```
-
-### Example 5: `ping`
-
-Request line:
-
-```json
-{ "id": 5, "type": "ping" }
-```
-
-Response line:
-
-```json
-{ "id": 5, "type": "response", "command": "ping", "success": true, "data": { "ok": true } }
-```
-
-## Source files for reference
-
-- extension: `src/pi-search/extension.ts`
-- JSONL helper: `src/pi-search/lib/jsonl.ts`
-- JVM backend: `jvm/src/main/java/dev/jhy/piserini/Bm25Server.java`
-- local launcher: `scripts/bm25_server.sh`
-- generic shared launcher: `scripts/launch_shared_bm25_benchmark.sh`
+- tool registration
+- `search_id` cache ownership
+- `read_search_results` pagination UX
+- top-level tool descriptions and prompt guidance
+- extension-facing repair messages
+- generic `pi-search` runtime policies
+
+Those now belong to package-owned `pi-search` modules under `src/pi-search/`.
+
+## Configuration flow
+
+The extension now requires explicit backend config via:
+
+- `PI_SEARCH_EXTENSION_CONFIG`
+
+Package-owned config parsing lives in:
+
+- `src/pi-search/config.ts`
+
+That config can describe multiple backend kinds, including:
+
+- `anserini-bm25`
+- `mock`
+- `http-json`
+
+The BM25 integration path only applies when:
+
+- `backend.kind === "anserini-bm25"`
+
+This is important because BM25-specific environment and transport details are no longer the universal extension contract.
+
+They are only one backend choice inside that contract.
+
+## BM25 transport modes
+
+For `anserini-bm25`, the current repo-local integration supports two transport modes.
+
+### Stdio mode
+
+The repo constructs a local BM25 helper process and communicates over stdin/stdout.
+
+Relevant module:
+
+- `src/bm25/bm25_stdio_rpc_client.ts`
+
+This path is responsible for:
+
+- resolving the configured index path relative to the current working directory
+- launching the helper process
+- sending JSONL requests
+- validating JSONL responses
+
+### TCP mode
+
+The repo connects to an already-running BM25 helper endpoint.
+
+Relevant module:
+
+- `src/bm25/bm25_tcp_rpc_client.ts`
+
+This path is responsible for:
+
+- connecting to the configured host and port
+- sending JSONL requests
+- validating JSONL responses
+
+## Replacement guidance
+
+If you want to replace the in-repo Anserini BM25 path, there are two different levels at which you can do it.
+
+### Option 1: replace only the BM25 implementation
+
+Keep the package-owned `pi-search` layer and replace the BM25 integration/backend.
+
+In that case, you should target one of these seams:
+
+- implement another `PiSearchBackend` adapter under `src/pi-search/searcher/adapters/`
+- or provide another repo-local backend factory injection path
+
+This is the preferred path if you still want the same `pi-search` tool UX.
+
+### Option 2: replace the whole extension product
+
+If you replace `src/pi-search/extension.ts` behavior itself, you are no longer just swapping BM25.
+
+You are changing the actual `pi-search` extension product surface.
+
+That is a different architectural change and should be treated as such.
+
+## What this document intentionally does not define
+
+This document is no longer the source of truth for:
+
+- the full `pi-search` tool contract
+- non-BM25 backend contracts like `mock` or `http-json`
+- generic extension validation rules
+- benchmark-harness ownership
+
+Those topics belong in:
+
+- `docs/pi-search-contract.md`
+- `src/pi-search/searcher/contract/`
+- the relevant adapter modules and tests
+
+## Maintainer checklist
+
+If BM25 integration changes again, keep these rules true:
+
+1. `src/pi-search/extension.ts` must stay free of direct `src/bm25/*` imports.
+2. `src/extensions/pi_search.ts` should remain a thin repo-local wrapper.
+3. Repo-local transport/process construction should stay in `src/bm25/pi_search_backend_factory.ts` or an equivalent repo-owned integration layer.
+4. BM25-specific request/response handling should stay behind the Anserini adapter boundary.
+5. Package-owned `pi-search` logic should continue to depend on the normalized `PiSearchBackend` contract, not BM25 helper details.
+
+If those rules remain true, `pi-search` stays extractable while `pi-serini` still supports the in-repo Anserini BM25 path cleanly.

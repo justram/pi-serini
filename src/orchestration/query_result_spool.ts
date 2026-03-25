@@ -1,7 +1,7 @@
 import { appendFileSync, existsSync, mkdirSync, readFileSync, rmSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 
-import { serializeJsonLine } from "../pi-search/lib/jsonl";
+import { serializeJsonLine } from "../runtime/jsonl";
 
 export type QueryNormalizedResult = {
   type: "tool_call" | "output_text";

@@ -79,7 +79,7 @@ export function resolveBenchmarkQuerySetLaunchPlan(
         : 300),
     thinking: args.thinking ?? readEnv("THINKING") ?? "medium",
     piBin: args.piBin ?? readEnv("PI_BIN") ?? "pi",
-    extensionPath: args.extensionPath ?? readEnv("EXTENSION") ?? "src/pi-search/extension.ts",
+    extensionPath: args.extensionPath ?? readEnv("EXTENSION") ?? "src/extensions/pi_search.ts",
     queryPath: config.queryPath,
     qrelsPath: config.qrelsPath,
     indexPath: config.indexPath,

@@ -47,7 +47,7 @@ void test("run_pi_benchmark records a failed query artifact when pi stdout ends 
       "--thinking",
       "medium",
       "--extension",
-      "src/pi-search/extension.ts",
+      "src/extensions/pi_search.ts",
       "--pi",
       fakePiPath,
       "--timeoutSeconds",

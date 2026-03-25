@@ -42,13 +42,15 @@ Current ownership layout:
   - `adapters/`
   - `runtime.ts`
 - `src/pi-search/agent_prompt.ts`
+- `src/pi-search/extension.ts`
+  - package-owned extension registration/composition
+  - accepts injected backend creation instead of importing repo-local BM25 wiring
 - `src/pi-search/prompt_policy.ts`
 - `src/pi-search/search_cache.ts`
 - `src/pi-search/spill.ts`
 - `src/pi-search/tool_handlers.ts`
 - `src/pi-search/tool_types.ts`
 - `src/pi-search/config.ts`
-- `src/pi-search/extension.ts`
 
 ### `pi-serini` owns
 
@@ -62,9 +64,12 @@ That includes:
 - recall/evaluation/reporting logic
 - benchmark-visible classification of extension failures
 - judge evaluation over finalized benchmark artifacts
+- repo-local extension entry wrappers that compose `pi-search` with in-repo integration layers
 
-Current main consumers:
+Current main consumers / wrappers:
 
+- `src/extensions/pi_search.ts`
+  - thin repo-local wrapper that injects `src/bm25/pi_search_backend_factory.ts` into the package-owned `src/pi-search/extension.ts`
 - `src/orchestration/run_pi_benchmark.ts`
 - `src/evaluation/evaluate_run_with_pi.ts`
 - downstream summarize/evaluate/report modules

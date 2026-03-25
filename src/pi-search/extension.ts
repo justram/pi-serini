@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { resolvePiSearchExtensionConfigFromEnv } from "./config";
-import { PiSearchBackendRuntime } from "./searcher/runtime";
+import { resolvePiSearchExtensionConfigFromEnv, type PiSearchExtensionConfig } from "./config";
 import {
   BENCHMARK_TIMEOUT_SECONDS,
   dumpPromptSnapshot,
@@ -15,6 +14,11 @@ import {
   ReadSearchResultsParamsSchema,
 } from "./protocol/schemas";
 import { SearchSessionStore } from "./search_cache";
+import {
+  PiSearchBackendRuntime,
+  type PiSearchBackendFactory,
+  type PiSearchBackendRuntimeOptions,
+} from "./searcher/runtime";
 import { ManagedTempSpillDir } from "./spill";
 import {
   executeReadDocumentTool,
@@ -22,11 +26,28 @@ import {
   executeSearchTool,
 } from "./tool_handlers";
 
-export default function (pi: ExtensionAPI) {
-  const extensionConfig = resolvePiSearchExtensionConfigFromEnv();
+export type PiSearchExtensionOptions = {
+  resolveConfig?: (env: NodeJS.ProcessEnv) => PiSearchExtensionConfig;
+  backendRuntime?: PiSearchBackendRuntime;
+  createBackend?: PiSearchBackendFactory;
+  buildCacheKey?: PiSearchBackendRuntimeOptions["buildCacheKey"];
+  spillDirPrefix?: string;
+};
+
+export function registerPiSearchExtension(
+  pi: ExtensionAPI,
+  options: PiSearchExtensionOptions = {},
+): void {
+  const extensionConfig =
+    options.resolveConfig?.(process.env) ?? resolvePiSearchExtensionConfigFromEnv(process.env);
   const searchStore = new SearchSessionStore();
-  const backendRuntime = new PiSearchBackendRuntime(extensionConfig);
-  const spillDir = new ManagedTempSpillDir("pi-search-extension-");
+  const backendRuntime =
+    options.backendRuntime ??
+    new PiSearchBackendRuntime(extensionConfig, {
+      buildCacheKey: options.buildCacheKey,
+      createBackend: options.createBackend,
+    });
+  const spillDir = new ManagedTempSpillDir(options.spillDirPrefix ?? "pi-search-extension-");
   const submitNowDelayMs = getSubmitNowDelayMs();
   let spillSequence = 0;
   let submitNowTimer: ReturnType<typeof setTimeout> | null = null;
@@ -193,4 +214,8 @@ export default function (pi: ExtensionAPI) {
       return executeReadDocumentTool(params, signal, ctx, toolDeps);
     },
   });
+}
+
+export default function (pi: ExtensionAPI) {
+  registerPiSearchExtension(pi);
 }

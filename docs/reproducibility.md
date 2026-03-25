@@ -207,12 +207,12 @@ Older runs that predate stored run commit fields will only show report-time prov
 
 ## Prompt normalization
 
-The BM25 extension strips benchmark-irrelevant prompt sections before each turn:
+The `pi-search` extension strips benchmark-irrelevant prompt sections before each turn:
 
 - the pi docs block
 - the repo project-context block
 
-The extension keeps the generic pi scaffold plus BM25-specific extension instructions.
+The extension keeps the generic pi scaffold plus the `pi-search` retrieval instructions used for benchmark runs.
 
 ## Local-only artifact safety
 

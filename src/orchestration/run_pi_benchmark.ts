@@ -10,7 +10,7 @@ import {
 import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
-import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
+import { attachJsonlLineReader } from "../runtime/jsonl";
 import { buildAnseriniBm25TcpExtensionConfig } from "../pi-search/config";
 import { extractRetrievedDocidsFromPiSearchToolDetails } from "../pi-search/protocol/tool_result_details";
 import { startBm25ServerTcp } from "../bm25/bm25_server_process";
@@ -206,7 +206,7 @@ function parseArgs(argv: string[]) {
     outputDir: "runs/pi_bm25",
     model: "openai-codex/gpt-5.4-mini",
     thinking: "medium",
-    extension: "src/pi-search/extension.ts",
+    extension: "src/extensions/pi_search.ts",
     pi: "pi",
     limit: "0",
     timeoutSeconds: "900",

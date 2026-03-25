@@ -2,7 +2,7 @@ import { createWriteStream, mkdirSync } from "node:fs";
 import { spawn, type ChildProcess, type ChildProcessWithoutNullStreams } from "node:child_process";
 import { dirname, join } from "node:path";
 import { Type, type Static } from "@sinclair/typebox";
-import { attachJsonlLineReader } from "../pi-search/lib/jsonl";
+import { attachJsonlLineReader } from "../runtime/jsonl";
 import { createJsonValidator } from "../lib/json_validation";
 
 export type Bm25ServerReadyEndpoint = {

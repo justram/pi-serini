@@ -48,7 +48,7 @@ void test("run_pi_benchmark records pi-search tool failures as benchmark-visible
       "--thinking",
       "medium",
       "--extension",
-      "src/pi-search/extension.ts",
+      "src/extensions/pi_search.ts",
       "--pi",
       fakePiPath,
       "--timeoutSeconds",
