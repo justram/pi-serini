@@ -9,6 +9,7 @@ import {
   SUBMIT_NOW_TRIGGER_RATIO,
 } from "./prompt_policy";
 import {
+  GrepDocumentParamsSchema,
   PlainSearchParamsSchema,
   ReadDocumentParamsSchema,
   ReadSearchResultsParamsSchema,
@@ -21,6 +22,7 @@ import {
 } from "./searcher/runtime";
 import { ManagedTempSpillDir } from "./spill";
 import {
+  executeGrepDocumentTool,
   executeReadDocumentTool,
   executeReadSearchResultsTool,
   executeSearchTool,
@@ -133,7 +135,8 @@ export function registerPiSearchExtension(
     if (
       event.toolName === "search" ||
       event.toolName === "read_search_results" ||
-      event.toolName === "read_document"
+      event.toolName === "read_document" ||
+      event.toolName === "grep_document"
     ) {
       console.error(
         `[pi-search] Blocking ${event.toolName} after timeout steer; model must submit final answer now.`,
@@ -212,6 +215,26 @@ export function registerPiSearchExtension(
     parameters: ReadDocumentParamsSchema,
     async execute(_toolCallId, params, signal, _onUpdate, ctx) {
       return executeReadDocumentTool(params, signal, ctx, toolDeps);
+    },
+  });
+
+  pi.registerTool({
+    name: "grep_document",
+    label: "Grep Document",
+    description:
+      "Search for a regex pattern inside a retrieved document by docid. Returns paginated match excerpts with configurable character context before and after each match. The first argument must be reason, a brief rationale of at most 100 words.",
+    promptSnippet:
+      "Always supply reason first, under 100 words. Use pattern for a JavaScript-compatible regular expression. Use before_chars and after_chars to control how much surrounding text is shown around each match.",
+    promptGuidelines: [
+      "Always provide reason as the first argument. Keep it specific and under 100 words.",
+      "Use grep_document when you know which document to look in and want to locate a specific term or pattern quickly.",
+      "Prefer grep_document over re-reading the full document when you are looking for a specific fact.",
+      "Use before_chars and after_chars to include surrounding context when the match alone is not enough to interpret.",
+      "If there are more matches than the limit, use the suggested next offset to paginate.",
+    ],
+    parameters: GrepDocumentParamsSchema,
+    async execute(_toolCallId, params, signal, _onUpdate, ctx) {
+      return executeGrepDocumentTool(params, signal, ctx, toolDeps);
     },
   });
 }

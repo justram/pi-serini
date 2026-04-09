@@ -609,7 +609,7 @@ function applyEventToAccumulator(
       if (state.openSearchSession !== null) {
         state.openSearchSession.sawBrowse = true;
       }
-    } else if (toolName === "read_document") {
+    } else if (toolName === "read_document" || toolName === "grep_document") {
       state.readDocumentCalls += 1;
       const args = state.toolArgsByCallId.get(String(event.toolCallId));
       const maybeDocid =
