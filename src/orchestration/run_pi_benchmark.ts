@@ -11,6 +11,7 @@ import { dirname, join, resolve } from "node:path";
 import { tmpdir } from "node:os";
 
 import { attachJsonlLineReader } from "../runtime/jsonl";
+import { PiSessionTranscriptWriter } from "../runtime/pi_session_trace";
 import { buildAnseriniBm25TcpExtensionConfig } from "../pi-search/config";
 import {
   extractPiSearchFailureMetadata,
@@ -94,6 +95,8 @@ type PersistedRunSetup = {
   bm25Threads?: string;
   maxShardAttempts?: string;
   shardRetryMode?: string;
+  traceArtifactPath?: string;
+  traceArtifactFormat?: string;
 };
 
 type RunPiOptions = {
@@ -708,11 +711,16 @@ async function runPiOnce(
     let stderrTail = "";
     let timedOut = false;
     const startedAt = Date.now();
+    const rawEventsWriter = new PiSessionTranscriptWriter(
+      (line) => rawEventsStream.write(`${line}\n`),
+      { cwd: process.cwd(), startedAtMs: startedAt },
+    );
     let lastProgressAt = startedAt;
     let settled = false;
 
     const cleanupStreams = () => {
       stopReadingStdout();
+      rawEventsWriter.finalize();
       rawEventsStream.end();
       stderrStream.end();
     };
@@ -776,7 +784,7 @@ async function runPiOnce(
         );
         return;
       }
-      rawEventsStream.write(`${trimmed}\n`);
+      rawEventsWriter.appendEvent(event);
       applyEventToAccumulator(state, event, normalizedResultSpool);
       lastProgressAt = Date.now();
       logEventProgress(options.queryId, event, (lastProgressAt - startedAt) / 1000);
@@ -969,6 +977,8 @@ function buildPersistedRunSetup(args: {
     bm25Threads: resolveEnvValue("PI_BM25_THREADS", "1"),
     maxShardAttempts: resolveEnvValue("MAX_SHARD_ATTEMPTS"),
     shardRetryMode: resolveEnvValue("SHARD_RETRY_MODE"),
+    traceArtifactPath: "raw-events/<query_id>.jsonl",
+    traceArtifactFormat: "pi-session-transcript-v1",
   };
 }
 

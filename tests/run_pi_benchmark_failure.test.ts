@@ -92,6 +92,16 @@ void test("run_pi_benchmark records a failed query artifact when pi stdout ends 
     ),
   );
 
-  const rawEvents = readFileSync(join(outputDir, "raw-events", "1.jsonl"), "utf8");
-  assert.equal(rawEvents.trim().split(/\r?\n/).length, 3);
+  const rawEvents = readFileSync(join(outputDir, "raw-events", "1.jsonl"), "utf8")
+    .trim()
+    .split(/\r?\n/)
+    .map(
+      (line) =>
+        JSON.parse(line) as { type: string; message?: { role?: string; toolName?: string } },
+    );
+  assert.equal(rawEvents.length, 2);
+  assert.equal(rawEvents[0]?.type, "session");
+  assert.equal(rawEvents[1]?.type, "message");
+  assert.equal(rawEvents[1]?.message?.role, "toolResult");
+  assert.equal(rawEvents[1]?.message?.toolName, "search");
 });

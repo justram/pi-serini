@@ -26,6 +26,7 @@ import { loadJudgeEvalRelevantDocids } from "./judge_eval_qrels";
 import { prepareIsolatedAgentDir } from "../runtime/pi_agent_dir";
 import { parsePiEventJsonLine, type PiEvent } from "../runtime/pi_json_protocol";
 import { startPiJsonProcess, startPiProcessTimeout } from "../runtime/pi_process";
+import { serializePiEventsAsSessionTranscript } from "../runtime/pi_session_trace";
 import {
   getAgentDocids,
   getCitedDocids,
@@ -674,7 +675,7 @@ function summarizeJudgeUsage(events: PiEvent[]): JudgeUsage {
 }
 
 function serializeEvents(events: PiEvent[]): string {
-  return events.map((event) => JSON.stringify(event)).join("\n");
+  return serializePiEventsAsSessionTranscript(events, { cwd: process.cwd() });
 }
 
 function aggregateUsage(records: EvaluationRecord[]): JudgeUsage {

@@ -179,14 +179,14 @@ If you want to replace the bundled backend entirely, see [bm25-extension-interfa
 
 ## Result format
 
-Each run writes one normalized JSON file per query, stores raw event traces separately, and snapshots benchmark metadata into the run root so later analysis does not depend on mutable shell defaults.
+Each run writes one normalized JSON file per query, stores compact per-query Pi session-style transcript artifacts separately, and snapshots benchmark metadata into the run root so later analysis does not depend on mutable shell defaults.
 
 Typical benchmark-aware artifact layout now looks like:
 
 - `runs/<run>/benchmark_manifest_snapshot.json`
 - `runs/<run>/run_setup.json`
 - `runs/<run>/<query_id>.json`
-- `runs/<run>/raw-events/...`
+- `runs/<run>/raw-events/...` — compact Pi session-style transcript artifacts (legacy directory name retained for compatibility)
 - `runs/<run>/stderr/...`
 - `runs/<run>/report.md`
 - `runs/<run>/report_assets/...`
@@ -248,4 +248,4 @@ In practice:
 
 - copied compatibility auth files now live in temporary isolated agent directories, not under `runs/` or `evals/`
 - `prompt-dumps/` may still contain sensitive prompt material when prompt dumping is enabled
-- `stderr/` and raw event traces may still contain operator- or provider-relevant details worth reviewing before distribution
+- `stderr/` and compact session-style trace artifacts may still contain operator- or provider-relevant details worth reviewing before distribution

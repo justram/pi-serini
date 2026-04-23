@@ -174,4 +174,6 @@ export type RunSetup = {
   bm25Threads?: string;
   maxShardAttempts?: string;
   shardRetryMode?: string;
+  traceArtifactPath?: string;
+  traceArtifactFormat?: string;
 };

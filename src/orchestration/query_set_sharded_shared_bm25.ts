@@ -99,6 +99,8 @@ type PersistedRunSetup = {
   bm25Threads?: string;
   maxShardAttempts?: string;
   shardRetryMode?: string;
+  traceArtifactPath?: string;
+  traceArtifactFormat?: string;
 };
 
 const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..", "..");
@@ -530,6 +532,8 @@ function buildPersistedRunSetup(args: {
     bm25Threads: resolveEnvValue("PI_BM25_THREADS", "1"),
     maxShardAttempts: resolveEnvValue("MAX_SHARD_ATTEMPTS"),
     shardRetryMode: resolveEnvValue("SHARD_RETRY_MODE"),
+    traceArtifactPath: "raw-events/<query_id>.jsonl",
+    traceArtifactFormat: "pi-session-transcript-v1",
   };
 }
 

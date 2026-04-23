@@ -267,7 +267,7 @@ Single-run roots are benchmark-aware by manifest content rather than by a requir
 - `<run>/benchmark_manifest_snapshot.json`
 - `<run>/run_setup.json`
 - `<run>/<query_id>.json`
-- `<run>/raw-events/`
+- `<run>/raw-events/` — compact per-query Pi session-style transcript artifacts (legacy directory name retained for compatibility)
 - `<run>/stderr/`
 - `<run>/report.md`
 - `<run>/report_assets/`
@@ -288,7 +288,7 @@ Evaluation outputs are benchmark-namespaced where cross-run collisions matter:
 - judge evaluation:
   - `evals/pi_judge/<benchmark>/<run-relative-path>/evaluation_summary.json`
   - `evals/pi_judge/<benchmark>/<run-relative-path>/per-query/...`
-  - `evals/pi_judge/<benchmark>/<run-relative-path>/raw-events/...`
+  - `evals/pi_judge/<benchmark>/<run-relative-path>/raw-events/...` for compact judge-session transcript artifacts
 - retrieval summaries:
   - `evals/retrieval/<benchmark>/<source-relative-path>.summary.json`
 
@@ -450,7 +450,7 @@ Run artifacts typically include:
 - `benchmark_manifest_snapshot.json` — resolved benchmark condition
 - `run_setup.json` — structured persisted run setup for report-time reproducibility
 - `<query_id>.json` — normalized per-query result
-- `raw-events/<query_id>.jsonl` — raw `pi` event stream
+- `raw-events/<query_id>.jsonl` — compact Pi session-style transcript artifact for that query. The directory name is kept for compatibility, but the contents are no longer the full live event stream. Instead they store finalized session-like entries (for example finalized assistant messages and tool results), which are much smaller than the old event-level telemetry.
 - `stderr/<query_id>.log` — per-query stderr
 - `prompt-dumps/` — only when prompt dumping is enabled
 
