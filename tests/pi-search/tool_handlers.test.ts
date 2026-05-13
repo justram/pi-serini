@@ -7,6 +7,7 @@ import { PiSearchBackendRuntime } from "../../src/pi-search/searcher/runtime";
 import { SearchSessionStore } from "../../src/pi-search/search_cache";
 import { ManagedTempSpillDir } from "../../src/pi-search/spill";
 import {
+  executeGrepDocumentTool,
   executeReadDocumentTool,
   executeReadSearchResultsTool,
   executeSearchTool,
@@ -212,6 +213,122 @@ void test("mock adapter can power continuable read_document semantics through th
   assert.equal(result.details.returnedLineEnd, 2);
   assert.equal(result.details.truncated, true);
   assert.equal(result.details.nextOffset, 3);
+
+  cleanup();
+});
+
+void test("grep_document rejects invalid regex with repair-friendly error", async () => {
+  const { deps, cleanup } = createDeps({
+    capabilities: { backendId: "mock", supportsScore: false, supportsSnippets: false, supportsExactTotalHits: false },
+    search: async () => { throw new Error("should not be called"); },
+    readDocument: async () => { throw new Error("should not be called"); },
+  });
+
+  await assert.rejects(
+    () =>
+      executeGrepDocumentTool(
+        { reason: "test", docid: "doc-1", pattern: "[invalid" },
+        undefined,
+        { cwd: "." },
+        deps,
+      ),
+    /Invalid grep_document arguments: pattern is not a valid regular expression/,
+  );
+
+  cleanup();
+});
+
+void test("grep_document reports missing docid as tool execution failure", async () => {
+  const { deps, cleanup } = createDeps({
+    capabilities: { backendId: "mock", supportsScore: false, supportsSnippets: false, supportsExactTotalHits: false },
+    search: async () => { throw new Error("should not be called"); },
+    readDocument: async () => ({ found: false, docid: "doc-404", timingMs: { request: 1 } }),
+  });
+
+  await assert.rejects(
+    () =>
+      executeGrepDocumentTool(
+        { reason: "test", docid: "doc-404", pattern: "foo" },
+        undefined,
+        { cwd: "." },
+        deps,
+      ),
+    /grep_document failed: docid 'doc-404' was not found/,
+  );
+
+  cleanup();
+});
+
+void test("grep_document returns zero-match output for unmatched pattern", async () => {
+  const { deps, cleanup } = createRuntimeDeps();
+
+  const result = await executeGrepDocumentTool(
+    { reason: "look for nonexistent term", docid: "doc-1", pattern: "xyzzy_no_match_12345" },
+    undefined,
+    { cwd: "." },
+    deps,
+  );
+
+  assert.match(result.content[0].text, /matches 0-0 of 0/);
+  assert.equal(result.details.totalMatches, 0);
+  assert.equal(result.details.returnedMatchStart, 0);
+  assert.equal(result.details.returnedMatchEnd, 0);
+  assert.equal(result.details.nextOffset, undefined);
+
+  cleanup();
+});
+
+void test("grep_document finds matches and returns char context", async () => {
+  const { deps, cleanup } = createRuntimeDeps();
+
+  // doc-1 text: "Ada Lovelace wrote notes on the analytical engine.\nShe is often described as an early computer pioneer.\nThis line provides extra context."
+  // "Ada" appears at char 0; with after_chars=10 we expect "Ada Lovelace" in the excerpt
+  const result = await executeGrepDocumentTool(
+    { reason: "find Ada", docid: "doc-1", pattern: "Ada", before_chars: 0, after_chars: 10 },
+    undefined,
+    { cwd: "." },
+    deps,
+  );
+
+  assert.match(result.content[0].text, /grep="Ada"/);
+  assert.match(result.content[0].text, /matches 1-\d+ of \d+/);
+  assert.match(result.content[0].text, /Ada/);
+  assert.equal(result.details.docid, "doc-1");
+  assert.equal(result.details.pattern, "Ada");
+  assert.ok(result.details.totalMatches >= 1);
+  assert.equal(result.details.returnedMatchStart, 1);
+
+  // Verify after_chars=10 produces the correct excerpt window: "Ada" (3 chars) + 10 after = "Ada Lovelace"
+  assert.match(result.content[0].text, /Ada Lovelace/);
+
+  cleanup();
+});
+
+void test("grep_document paginates with offset and limit", async () => {
+  const { deps, cleanup } = createRuntimeDeps();
+
+  // doc-2 text: "Charles Babbage designed mechanical computing devices.\nThe analytical engine appears in many histories of computing."
+  // "al" appears 3 times: once in "mechanical", twice in "analytical"
+  const page1 = await executeGrepDocumentTool(
+    { reason: "first match", docid: "doc-2", pattern: "al", offset: 1, limit: 1 },
+    undefined,
+    { cwd: "." },
+    deps,
+  );
+
+  assert.equal(page1.details.returnedMatchStart, 1);
+  assert.equal(page1.details.returnedMatchEnd, 1);
+  assert.ok(page1.details.nextOffset === 2);
+
+  const page2 = await executeGrepDocumentTool(
+    { reason: "second match", docid: "doc-2", pattern: "al", offset: 2, limit: 1 },
+    undefined,
+    { cwd: "." },
+    deps,
+  );
+
+  assert.equal(page2.details.returnedMatchStart, 2);
+  assert.equal(page2.details.returnedMatchEnd, 2);
 
   cleanup();
 });

@@ -77,3 +77,16 @@ export type ReadDocumentDetails = {
   outputTruncation?: TruncationResult;
   fullOutputPath?: string;
 };
+
+export type GrepDocumentDetails = {
+  docid: string;
+  pattern: string;
+  totalMatches: number;
+  offset: number;
+  limit: number;
+  returnedMatchStart: number;
+  returnedMatchEnd: number;
+  nextOffset?: number;
+  outputTruncation?: TruncationResult;
+  fullOutputPath?: string;
+};

@@ -33,6 +33,29 @@ export const ReadDocumentParamsSchema = Type.Object({
   limit: Type.Optional(Type.Number({ description: "Maximum number of lines to read." })),
 });
 
+export const GrepDocumentParamsSchema = Type.Object({
+  reason: Type.String({
+    description:
+      "Brief rationale for this grep, maximum 100 words. State the specific pattern or term you are looking for inside this document.",
+  }),
+  docid: Type.String({ description: "Document id to search within." }),
+  pattern: Type.String({
+    description: "JavaScript-compatible regular expression pattern to search for.",
+  }),
+  before_chars: Type.Optional(
+    Type.Number({ description: "Characters to include before each match. Default 200." }),
+  ),
+  after_chars: Type.Optional(
+    Type.Number({ description: "Characters to include after each match. Default 200." }),
+  ),
+  offset: Type.Optional(
+    Type.Number({ description: "First match to return, 1-indexed (default 1)." }),
+  ),
+  limit: Type.Optional(
+    Type.Number({ description: "Maximum number of matches to return in this page (default 20)." }),
+  ),
+});
+
 export const SearchResultLiteSchema = Type.Object(
   {
     docid: Type.String(),
@@ -104,6 +127,7 @@ export const ReadDocumentPayloadSchema = Type.Object(
 export type PlainSearchParams = Static<typeof PlainSearchParamsSchema>;
 export type ReadSearchResultsParams = Static<typeof ReadSearchResultsParamsSchema>;
 export type ReadDocumentParams = Static<typeof ReadDocumentParamsSchema>;
+export type GrepDocumentParams = Static<typeof GrepDocumentParamsSchema>;
 export type SearchResultLite = Static<typeof SearchResultLiteSchema>;
 export type SearchResultPreview = Static<typeof SearchResultPreviewSchema>;
 export type RpcTimingMs = Static<typeof RpcTimingMsSchema>;

@@ -66,7 +66,7 @@ export function buildSearchSpillFileName(page: SearchPageLike, spillSequence: nu
 
 function spillFullOutput(
   spillDir: ManagedTempSpillDir,
-  kind: "read" | "search",
+  kind: "read" | "search" | "grep",
   fileName: string,
   content: string,
 ): string {
@@ -130,6 +130,56 @@ export function truncateSearchOutput(
     "",
     `[Output truncated: showing ${truncation.outputLines} of ${truncation.totalLines} lines (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}). ${omittedLines} lines (${formatSize(omittedBytes)}) omitted. Full output saved to: ${fullOutputPath}]`,
     "Use read_document(docid) to inspect a document in paginated chunks.",
+  ].join("\n");
+
+  return {
+    text: `${truncation.content}${suffix}`,
+    truncation,
+    fullOutputPath,
+  };
+}
+
+type GrepSpillPayload = {
+  docid: string;
+  pattern: string;
+  offset: number;
+  limit: number;
+  nextOffset?: number;
+};
+
+export function buildGrepSpillFileName(
+  payload: GrepSpillPayload,
+  spillSequence: number,
+): string {
+  const docid = sanitizeSpillPathPart(payload.docid);
+  const pattern = sanitizeSpillPathPart(payload.pattern);
+  return `${spillSequence}-${docid}-grep-${pattern}-offset-${payload.offset}.txt`;
+}
+
+export function truncateGrepOutput(
+  spillDir: ManagedTempSpillDir,
+  spillFileName: string,
+  text: string,
+  parsed: GrepSpillPayload,
+): { text: string; truncation?: TruncationResult; fullOutputPath?: string } {
+  const truncation = truncateHead(text, {
+    maxLines: DEFAULT_MAX_LINES,
+    maxBytes: DEFAULT_MAX_BYTES,
+  });
+  if (!truncation.truncated) {
+    return { text };
+  }
+
+  const fullOutputPath = spillFullOutput(spillDir, "grep", spillFileName, text);
+  const omittedLines = truncation.totalLines - truncation.outputLines;
+  const omittedBytes = truncation.totalBytes - truncation.outputBytes;
+  const continuationHint = parsed.nextOffset
+    ? `Use grep_document({"docid":"${parsed.docid}","pattern":${JSON.stringify(parsed.pattern)},"offset":${parsed.nextOffset},"limit":${parsed.limit}}) to continue.`
+    : "Use a smaller limit to get fewer matches at a time.";
+  const suffix = [
+    "",
+    `[Output truncated: showing ${truncation.outputLines} of ${truncation.totalLines} lines (${formatSize(truncation.outputBytes)} of ${formatSize(truncation.totalBytes)}). ${omittedLines} lines (${formatSize(omittedBytes)}) omitted. Full output saved to: ${fullOutputPath}]`,
+    continuationHint,
   ].join("\n");
 
   return {

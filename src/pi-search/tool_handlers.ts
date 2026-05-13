@@ -1,14 +1,17 @@
 import type { PiSearchBackendRuntime } from "./searcher/runtime";
 import { PiSearchInvalidToolArgumentsError, PiSearchToolExecutionError } from "./protocol/errors";
 import type {
+  GrepDocumentParams,
   PlainSearchParams,
   ReadDocumentParams,
   ReadSearchResultsParams,
 } from "./protocol/schemas";
 import {
+  buildGrepSpillFileName,
   buildReadSpillFileName,
   buildSearchSpillFileName,
   type ManagedTempSpillDir,
+  truncateGrepOutput,
   truncateReadDocumentOutput,
   truncateSearchOutput,
 } from "./spill";
@@ -19,6 +22,7 @@ import {
   SearchSessionStore,
 } from "./search_cache";
 import type {
+  GrepDocumentDetails,
   ReadDocumentDetails,
   ReadSearchResultsDetails,
   SearchDetails,
@@ -63,6 +67,61 @@ function formatReadDocumentText(parsed: {
     lines.push("");
     lines.push(
       `[Document truncated. Continue with read_document({"docid":"${parsed.docid}","offset":${parsed.nextOffset},"limit":${parsed.limit}}).]`,
+    );
+  }
+
+  return lines.join("\n").trim();
+}
+
+function normalizeNonNegInteger(value: number | undefined, fallback: number): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) return fallback;
+  return Math.max(0, Math.floor(value));
+}
+
+function formatGrepText(opts: {
+  docid: string;
+  pattern: string;
+  text: string;
+  pageMatches: Array<{ start: number; end: number }>;
+  totalMatches: number;
+  returnedMatchStart: number;
+  returnedMatchEnd: number;
+  beforeChars: number;
+  afterChars: number;
+  limit: number;
+  nextOffset?: number;
+}): string {
+  const {
+    docid,
+    pattern,
+    text,
+    pageMatches,
+    totalMatches,
+    returnedMatchStart,
+    returnedMatchEnd,
+    beforeChars,
+    afterChars,
+    nextOffset,
+    limit,
+  } = opts;
+
+  const lines: string[] = [
+    `[docid=${docid} grep=${JSON.stringify(pattern)} matches ${returnedMatchStart}-${returnedMatchEnd} of ${totalMatches}]`,
+    "",
+  ];
+
+  for (let i = 0; i < pageMatches.length; i++) {
+    const { start, end } = pageMatches[i];
+    const excerptStart = Math.max(0, start - beforeChars);
+    const excerptEnd = Math.min(text.length, end + afterChars);
+    lines.push(`--- match ${returnedMatchStart + i} (char ${start}) ---`);
+    lines.push(text.slice(excerptStart, excerptEnd));
+    lines.push("");
+  }
+
+  if (nextOffset !== undefined) {
+    lines.push(
+      `[${returnedMatchEnd - returnedMatchStart + 1} matches shown. Use grep_document({"docid":"${docid}","pattern":${JSON.stringify(pattern)},"offset":${nextOffset},"limit":${limit}}) to see more.]`,
     );
   }
 
@@ -247,5 +306,144 @@ export async function executeReadDocumentTool(
       outputTruncation: rendered.truncation,
       fullOutputPath: rendered.fullOutputPath,
     } satisfies ReadDocumentDetails,
+  };
+}
+
+export async function executeGrepDocumentTool(
+  params: GrepDocumentParams,
+  signal: AbortSignal | undefined,
+  ctx: ToolExecutionContext,
+  deps: ToolHandlerDeps,
+) {
+  let regex: RegExp;
+  try {
+    regex = new RegExp(params.pattern, "g");
+  } catch (e) {
+    throw new PiSearchInvalidToolArgumentsError(
+      "grep_document arguments",
+      `pattern is not a valid regular expression: ${e instanceof Error ? e.message : String(e)}`,
+    );
+  }
+
+  const backend = deps.backendRuntime.getBackend(ctx.cwd);
+  const response = await backend.readDocument(
+    { docid: params.docid, offset: 1, limit: 2_000_000 },
+    signal,
+  );
+
+  if (!response.found) {
+    throw new PiSearchToolExecutionError(
+      "grep_document",
+      `docid '${params.docid}' was not found. Choose a docid returned by search(...) or read_search_results(...).`,
+    );
+  }
+
+  const text = response.text;
+  const beforeChars = normalizeNonNegInteger(params.before_chars, 200);
+  const afterChars = normalizeNonNegInteger(params.after_chars, 200);
+  const offset = normalizePositiveInteger(params.offset, 1);
+  const limit = normalizePositiveInteger(params.limit, 20);
+
+  // Collect all matches
+  const allMatches: Array<{ start: number; end: number }> = [];
+  let m: RegExpExecArray | null;
+  while ((m = regex.exec(text)) !== null) {
+    allMatches.push({ start: m.index, end: m.index + m[0].length });
+    if (m[0].length === 0) regex.lastIndex++; // guard against zero-length match infinite loop
+  }
+
+  const totalMatches = allMatches.length;
+
+  if (totalMatches === 0) {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `[docid=${params.docid} grep=${JSON.stringify(params.pattern)} matches 0-0 of 0]`,
+        },
+      ],
+      details: {
+        docid: params.docid,
+        pattern: params.pattern,
+        totalMatches: 0,
+        offset,
+        limit,
+        returnedMatchStart: 0,
+        returnedMatchEnd: 0,
+        nextOffset: undefined,
+      } satisfies GrepDocumentDetails,
+    };
+  }
+
+  const startIdx = offset - 1;
+  const pageMatches = allMatches.slice(startIdx, startIdx + limit);
+
+  if (pageMatches.length === 0) {
+    return {
+      content: [
+        {
+          type: "text" as const,
+          text: `[docid=${params.docid} grep=${JSON.stringify(params.pattern)} matches 0-0 of ${totalMatches}]`,
+        },
+      ],
+      details: {
+        docid: params.docid,
+        pattern: params.pattern,
+        totalMatches,
+        offset,
+        limit,
+        returnedMatchStart: 0,
+        returnedMatchEnd: 0,
+        nextOffset: undefined,
+      } satisfies GrepDocumentDetails,
+    };
+  }
+
+  const returnedMatchStart = startIdx + 1;
+  const returnedMatchEnd = startIdx + pageMatches.length;
+  const nextOffset = returnedMatchEnd < totalMatches ? returnedMatchEnd + 1 : undefined;
+
+  const formatted = formatGrepText({
+    docid: params.docid,
+    pattern: params.pattern,
+    text,
+    pageMatches,
+    totalMatches,
+    returnedMatchStart,
+    returnedMatchEnd,
+    beforeChars,
+    afterChars,
+    limit,
+    nextOffset,
+  });
+
+  const spillPayload = {
+    docid: params.docid,
+    pattern: params.pattern,
+    offset,
+    limit,
+    nextOffset,
+  };
+  const rendered = truncateGrepOutput(
+    deps.spillDir,
+    buildGrepSpillFileName(spillPayload, deps.nextSpillSequence()),
+    formatted,
+    spillPayload,
+  );
+
+  return {
+    content: [{ type: "text" as const, text: rendered.text }],
+    details: {
+      docid: params.docid,
+      pattern: params.pattern,
+      totalMatches,
+      offset,
+      limit,
+      returnedMatchStart,
+      returnedMatchEnd,
+      nextOffset,
+      outputTruncation: rendered.truncation,
+      fullOutputPath: rendered.fullOutputPath,
+    } satisfies GrepDocumentDetails,
   };
 }
